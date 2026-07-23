@@ -687,11 +687,13 @@ const MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'A
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 
 function formatDateFull(dateStr) {
-  const date = new Date(dateStr + 'T00:00:00');
+  const date = new Date(String(dateStr || '') + 'T00:00:00');
+  if (isNaN(date.getTime())) return String(dateStr || '');
   return DOW_FULL[date.getDay()] + ', ' + date.getDate() + '. ' + MONTHS[date.getMonth()];
 }
 function formatDateShort(dateStr) {
-  const p = dateStr.split('-');
+  const p = String(dateStr || '').split('-');
+  if (p.length < 3) return String(dateStr || '');
   return parseInt(p[2]) + '.' + parseInt(p[1]) + '.';
 }
 function transferIconName(typ) {
@@ -743,8 +745,9 @@ function loadUIFromAppData() {
 
   if (todayData) {
     const dayNum = Math.floor((new Date(todayData.datum) - startDate) / (1000 * 60 * 60 * 24)) + 1;
-    document.getElementById('todayDate').textContent = formatDateFull(todayData.datum) + ' · Tag ' + dayNum + ' von ' + tage.length;
-    document.getElementById('todayLocText').textContent = todayData.ort;
+    const tagInfo = isNaN(dayNum) ? '' : ' · Tag ' + dayNum + ' von ' + tage.length;
+    document.getElementById('todayDate').textContent = formatDateFull(todayData.datum) + tagInfo;
+    document.getElementById('todayLocText').textContent = todayData.ort || '–';
 
     const hotel = todayData.hotel || {};
     currentHotelName = hotel.name || '';
@@ -1246,15 +1249,57 @@ document.getElementById('importInput').addEventListener('change', function(e) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = (ev) => {
+    let text = String(ev.target.result || '').replace(/^﻿/, '').trim();
+    // Versehentliche Markdown-Codeblöcke (```json ... ```) entfernen
+    const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fence) text = fence[1].trim();
+
+    let data;
     try {
-      appData = JSON.parse(ev.target.result);
+      data = JSON.parse(text);
+    } catch(err) {
+      alert('Die Datei ist keine gültige JSON-Datei.\n\n' + err.message +
+        '\n\nTipp: In der Datei dürfen keine Kommentare, kein „...“ und keine Markdown-Zeichen (```) stehen.');
+      return;
+    }
+
+    // Häufige Verpackungen automatisch auspacken
+    let d = data;
+    ['reisedaten', 'data', 'json', 'result'].forEach(k => {
+      if (d && !d.tage && d[k] && typeof d[k] === 'object') d = d[k];
+    });
+    // Alternative Feldnamen für den Tagesplan zulassen
+    if (d && !Array.isArray(d.tage)) {
+      const alt = ['days', 'itinerary', 'tagesplan', 'plan', 'reiseplan'].find(k => Array.isArray(d[k]));
+      if (alt) d.tage = d[alt];
+    }
+
+    if (!d || typeof d !== 'object' || !Array.isArray(d.tage) || d.tage.length === 0) {
+      const gefunden = d && typeof d === 'object' ? Object.keys(d).join(', ') : '(keine)';
+      alert('Datei gelesen, aber kein Reiseplan gefunden – deshalb bleibt alles leer.\n\n' +
+        'Gefundene Felder: ' + gefunden + '\n\n' +
+        'Erwartet wird ein "tage"-Array (Liste von Tagen). Die genaue Struktur steht in DATEN-VORLAGE.md – ' +
+        'am einfachsten die demo-daten.json als Vorlage nehmen und die Werte ersetzen.');
+      return;
+    }
+
+    if (!d.reise) d.reise = {};
+    appData = d;
+    try {
       localStorage.setItem('reisebegleiter_data', JSON.stringify(appData));
+    } catch(err) {
+      alert('Import geladen, aber Speichern fehlgeschlagen (Speicher evtl. voll): ' + err.message);
+    }
+    try {
       loadUIFromAppData();
       updateSpendTotal();
-      alert('Reisedaten importiert!');
     } catch(err) {
-      alert('Fehler beim Importieren: ' + err.message);
+      alert('Import geladen, aber beim Anzeigen gab es ein Problem:\n' + err.message +
+        '\n\nMeist fehlt bei einem Tag das Feld "datum" (Format JJJJ-MM-TT).');
+      return;
     }
+    showScreen('screenToday');
+    alert('Reisedaten importiert! ' + appData.tage.length + ' Tage geladen.');
   };
   reader.readAsText(file);
 });
