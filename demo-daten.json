@@ -1,0 +1,292 @@
+{
+  "reise": {
+    "titel": "Thailand Solo-Reise",
+    "start": "2026-12-20",
+    "ende": "2027-01-16",
+    "tage": 28,
+    "stationen": 9
+  },
+  "tage": [
+    {
+      "datum": "2026-12-20",
+      "wochentag": "Fr",
+      "ort": "Zürich → Bangkok",
+      "hotel": {
+        "name": "Flug LX 180",
+        "adresse": "Zürich (ZRH) → Bangkok (BKK)",
+        "tel": "",
+        "whatsapp": "",
+        "checkin": "18:00",
+        "gps": ""
+      },
+      "transfer": null,
+      "hinweise": ["Flugzeit ca. 12h. Abfahrt 08:00 Kloten"],
+      "programm": []
+    },
+    {
+      "datum": "2026-12-21",
+      "wochentag": "Sa",
+      "ort": "Bangkok",
+      "hotel": {
+        "name": "Sam Sen Boutique Hotel",
+        "adresse": "Samsen Rd, Pom Prap, Bangkok 10100",
+        "tel": "+66 2 282 4141",
+        "whatsapp": "+66812341234",
+        "checkin": "14:00",
+        "gps": "13.7512,100.5083"
+      },
+      "transfer": null,
+      "hinweise": ["SkyTrain-Nähe. Bankomat auf der Strasse"],
+      "programm": []
+    },
+    {
+      "datum": "2026-12-22",
+      "wochentag": "So",
+      "ort": "Bangkok",
+      "hotel": {
+        "name": "Sam Sen Boutique Hotel",
+        "adresse": "Samsen Rd, Pom Prap, Bangkok 10100",
+        "tel": "+66 2 282 4141",
+        "whatsapp": "",
+        "checkin": "14:00",
+        "gps": "13.7512,100.5083"
+      },
+      "transfer": null,
+      "hinweise": ["Tempel, Märkte, Erkundung"],
+      "programm": []
+    },
+    {
+      "datum": "2026-12-23",
+      "wochentag": "Mo",
+      "ort": "Bangkok → Chiang Mai",
+      "hotel": {
+        "name": "Ping Nakara Hotel",
+        "adresse": "Hang Dong, Chiang Mai",
+        "tel": "+66 53 327 000",
+        "whatsapp": "",
+        "checkin": "15:00",
+        "gps": "18.8089,98.8689"
+      },
+      "transfer": {
+        "typ": "Flug",
+        "zeit": "11:55",
+        "detail": "P9BW5F Bangkok → Chiang Mai",
+        "ticketRef": "flight-chiangmai"
+      },
+      "hinweise": ["Früh zum Flughafen (09:00)"],
+      "programm": []
+    },
+    {
+      "datum": "2026-12-24",
+      "wochentag": "Di",
+      "ort": "Chiang Mai → Koh Lanta",
+      "hotel": {
+        "name": "The Dive House (Koh Lanta)",
+        "adresse": "Koh Lanta, Krabi",
+        "tel": "+66 75 684 331",
+        "whatsapp": "",
+        "checkin": "17:00",
+        "gps": "8.2833,99.0667"
+      },
+      "transfer": {
+        "typ": "Flug + Boot",
+        "zeit": "07:55",
+        "detail": "Chiang Mai → Krabi, dann Boot nach Koh Lanta",
+        "ticketRef": "flight-krabi"
+      },
+      "hinweise": ["Frühe Abfahrt! 06:00 Hotel. Tauchen am Nachmittag?"],
+      "programm": []
+    },
+    {
+      "datum": "2026-12-25",
+      "wochentag": "Mi",
+      "ort": "Koh Lanta",
+      "hotel": {
+        "name": "The Dive House (Koh Lanta)",
+        "adresse": "Koh Lanta, Krabi",
+        "tel": "+66 75 684 331",
+        "whatsapp": "",
+        "checkin": "17:00",
+        "gps": "8.2833,99.0667"
+      },
+      "transfer": {
+        "typ": "Tauchen",
+        "zeit": "07:30",
+        "detail": "Dive Center Pickup",
+        "ticketRef": null
+      },
+      "hinweise": ["Weihnachtstag. Tauchen (2 Dives). Permit/Versicherung?"],
+      "programm": []
+    },
+    {
+      "datum": "2026-12-26",
+      "wochentag": "Do",
+      "ort": "Koh Ngai",
+      "hotel": {
+        "name": "Thanya Beach Resort",
+        "adresse": "Koh Ngai, Krabi",
+        "tel": "+66 8 7654 3210",
+        "whatsapp": "",
+        "checkin": "14:00",
+        "gps": "8.1234,99.1234"
+      },
+      "transfer": {
+        "typ": "Boot",
+        "zeit": "10:00",
+        "detail": "ab Koh Lanta (30 min)",
+        "ticketRef": "boat-ngai"
+      },
+      "hinweise": ["Kleine Insel. Kein Bankomat. Snorkeln"],
+      "programm": []
+    },
+    {
+      "datum": "2026-12-27",
+      "wochentag": "Fr",
+      "ort": "Koh Muk",
+      "hotel": {
+        "name": "Koh Muk Resort",
+        "adresse": "Koh Muk, Krabi",
+        "tel": "+66 75 545 555",
+        "whatsapp": "",
+        "checkin": "15:00",
+        "gps": "8.0667,98.9333"
+      },
+      "transfer": {
+        "typ": "Boot",
+        "zeit": "10:00",
+        "detail": "ab Koh Ngai (45 min)",
+        "ticketRef": null
+      },
+      "hinweise": ["Emerald-Pool-Besuch. Taucherinseln"],
+      "programm": []
+    },
+    {
+      "datum": "2027-01-05",
+      "wochentag": "Mo",
+      "ort": "Phuket → Bangkok",
+      "hotel": {
+        "name": "NapPark Soi 4 Bangkok (Hotel noch offen)",
+        "adresse": "Sukhumvit Rd, Bangkok",
+        "tel": "",
+        "whatsapp": "",
+        "checkin": "14:00",
+        "gps": "13.7330,100.5590"
+      },
+      "transfer": {
+        "typ": "Flug",
+        "zeit": "13:00",
+        "detail": "Phuket → Bangkok (noch zu buchen)",
+        "ticketRef": null
+      },
+      "hinweise": ["Flug erst 13:00, nicht früher buchen. 3 Nächte Bangkok."],
+      "programm": []
+    },
+    {
+      "datum": "2027-01-16",
+      "wochentag": "Fr",
+      "ort": "Bangkok → Zürich",
+      "hotel": {
+        "name": "Flug nach Hause",
+        "adresse": "Bangkok (BKK) → Zürich (ZRH)",
+        "tel": "",
+        "whatsapp": "",
+        "checkin": "23:55",
+        "gps": ""
+      },
+      "transfer": null,
+      "hinweise": ["Rückflug 23:55. Zum Flughafen ca. 18:00"],
+      "programm": []
+    }
+  ],
+  "tickets": [
+    {
+      "id": "flight-zh-bkk",
+      "gruppe": "Flüge",
+      "titel": "Zürich – Bangkok",
+      "info": "LX 180 · 20.12.2026 08:00",
+      "status": "vorhanden",
+      "abDatum": "2026-12-20"
+    },
+    {
+      "id": "flight-chiangmai",
+      "gruppe": "Flüge",
+      "titel": "Bangkok – Chiang Mai",
+      "info": "P9BW5F · 23.12.2026 11:55",
+      "status": "vorhanden",
+      "abDatum": "2026-12-23"
+    },
+    {
+      "id": "flight-krabi",
+      "gruppe": "Flüge",
+      "titel": "Chiang Mai – Krabi",
+      "info": "TG 201 · 24.12.2026 07:55",
+      "status": "vorhanden",
+      "abDatum": "2026-12-24"
+    },
+    {
+      "id": "hotel-sam-sen",
+      "gruppe": "Hotels",
+      "titel": "Sam Sen Boutique (Bangkok)",
+      "info": "21.–23.12.2026 · bestätigt",
+      "status": "vorhanden",
+      "abDatum": "2026-12-21"
+    },
+    {
+      "id": "hotel-chiangmai",
+      "gruppe": "Hotels",
+      "titel": "Ping Nakara (Chiang Mai)",
+      "info": "23.12.2026 · bestätigt",
+      "status": "vorhanden",
+      "abDatum": "2026-12-23"
+    },
+    {
+      "id": "hotel-kohlanta",
+      "gruppe": "Hotels",
+      "titel": "The Dive House (Koh Lanta)",
+      "info": "24.–25.12.2026 · noch offen",
+      "status": "foto_noetig",
+      "abDatum": "2026-12-24"
+    },
+    {
+      "id": "hotel-kohmuk",
+      "gruppe": "Hotels",
+      "titel": "Koh Muk Resort",
+      "info": "26.–27.12.2026 · bestätigt",
+      "status": "vorhanden",
+      "abDatum": "2026-12-26"
+    },
+    {
+      "id": "boat-ngai",
+      "gruppe": "Boote & Einreise",
+      "titel": "Boot Koh Lanta → Koh Ngai",
+      "info": "24.12.2026 10:00",
+      "status": "foto_noetig",
+      "abDatum": "2026-12-24"
+    },
+    {
+      "id": "tdac",
+      "gruppe": "Boote & Einreise",
+      "titel": "Einreiseformular TDAC",
+      "info": "Noch zu ausfüllen (ab 9.12.)",
+      "status": "fehlt",
+      "abDatum": "2026-12-20"
+    }
+  ],
+  "notfall": {
+    "botschaft": "+66 2 674 6900",
+    "notruf": "191",
+    "feuerwehr": "199",
+    "polizei": "1155",
+    "ambulanz": "1669"
+  },
+  "budget": {
+    "gesamt_chf": 6500,
+    "pro_tag": 232,
+    "ausgebenBisher": 0
+  },
+  "ausgaben": [],
+  "favoriten": {
+    "Bangkok": ["7-Eleven", "SkyTrain", "Bankomat"],
+    "KohNgai": ["Pier", "Tauchbasis", "Apotheke"]
+  }
+}

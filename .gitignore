@@ -1,0 +1,21 @@
+# Echte Reisedaten – NIEMALS commiten!
+reisedaten.json
+reisedaten*.json
+*.private.json
+reisedaten-backup-*.json
+
+# Lokale Einstellungen
+.env
+.env.local
+*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
