@@ -196,6 +196,31 @@ python3 -c "import json; json.load(open('reisedaten.json'))" && echo "✓ JSON k
 - **Hotel-Foto:** Über den Foto-Knopf in der App hinzufügen (bleibt auf dem Gerät); das Feld `hotel.foto` musst du nicht von Hand füllen
 - **Reihenfolge:** Die App sortiert die Tage automatisch nach Datum – die Reihenfolge in der Datei ist egal
 - **Karte:** Die Routen-Karte entsteht aus den `gps`-Koordinaten der Hotels – je mehr Tage GPS haben, desto besser die Karte
+- **Feldnamen egal:** Gross-/Kleinschreibung und deutsch/englisch werden automatisch erkannt (`Datum`/`date`, `Ort`/`location`, `Hotel` als Text oder Objekt). Fehlender `wochentag` wird aus dem Datum berechnet.
+
+## Optionale Felder für die Optik
+
+### Airline-Badge bei Flügen
+Im `transfer` eines Flugtags:
+```json
+"transfer": { "typ": "Flug", "airline": "Swiss", "flugnr": "LX 180", "zeit": "17:30", "detail": "ZRH → BKK" }
+```
+→ zeigt ein farbiges Badge in der Markenfarbe (Swiss, Edelweiss, Lufthansa, Thai, Eurowings, Emirates, Qatar, Turkish, Singapore, AirAsia, Bangkok Airways; sonst neutral).
+
+### Hotel-Link (Buchung öffnen)
+Im `hotel`-Objekt:
+```json
+"hotel": { "name": "…", "url": "https://www.booking.com/…" }
+```
+→ zeigt einen „Buchung"-Knopf, der die Seite im Browser öffnet.
+
+### Bilder (aus dem Repo, lokal)
+- **Regionsbild pro Ort:** Datei `assets/region-<slug>.jpg` ins Repo legen. Verfügbare Slugs:
+  `bangkok, chiangmai, kohlanta, kohngai, kohmuk, kohlipe, phuket, kohsamui, krabi, phangan, kohtao, ayutthaya`.
+  Beispiel: `assets/region-bangkok.jpg` erscheint automatisch bei allen Bangkok-Tagen.
+- **Eigenes Hotelfoto:** entweder in der App über den **Foto-Knopf** speichern (bleibt auf dem Gerät),
+  oder im `hotel`-Objekt `"foto": "assets/hotel-xyz.jpg"` auf eine Repo-Datei zeigen.
+- **Wichtig:** Externe Bilder (z. B. direkt von booking.com) kann die App aus Datenschutzgründen **nicht** laden – Bilder müssen lokal (Gerät) oder als Repo-Datei vorliegen.
 
 ## Beispiel: Minimale reisedaten.json
 
