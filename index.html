@@ -220,6 +220,14 @@ body {
   background: var(--gold-bg); color: var(--gold);
 }
 .day-chip.teal { background: rgba(0, 0, 0, 0.25); color: var(--teal); }
+.airline-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px; border-radius: 12px;
+  font-size: 12px; font-weight: 650; color: #fff;
+  margin-top: 6px; margin-right: 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+.airline-badge svg { opacity: 0.95; }
 
 /* Tagesplan Timeline */
 .tl { display: flex; flex-direction: column; gap: 10px; }
@@ -373,6 +381,7 @@ a { color: var(--teal); }
           <div class="row" id="hotelBtnRow">
             <button class="btn btn-inline" id="hotelCall"><span class="ic" data-icon="phone" data-size="16"></span>Anrufen</button>
             <button class="btn btn-inline" id="hotelMap"><span class="ic" data-icon="map" data-size="16"></span>Karte</button>
+            <button class="btn btn-inline" id="hotelUrlBtn" style="display: none;"><span class="ic" data-icon="doc" data-size="16"></span>Buchung</button>
             <button class="btn btn-inline" id="hotelPhotoBtn" title="Eigenes Foto speichern (bleibt auf dem Gerät)"><span class="ic" data-icon="camera" data-size="16"></span>Foto</button>
           </div>
         </div>
@@ -388,6 +397,7 @@ a { color: var(--teal); }
           <div class="card-label">Heute unterwegs</div>
           <div class="card-title" id="transferTime">–</div>
           <div class="card-sub" id="transferDetail">–</div>
+          <div id="transferAirline"></div>
           <span class="chip" id="transferStatus">Ticket gespeichert</span>
         </div>
         <div class="chevron ic" data-icon="chevR"></div>
@@ -703,6 +713,51 @@ function transferIconName(typ) {
   if (t.includes('bus') || t.includes('taxi') || t.includes('auto') || t.includes('transfer')) return 'car';
   return 'car';
 }
+/* Airline-Badge (Markenfarbe, kein fremdes Logo) */
+const AIRLINE_COLORS = {
+  'swiss': '#d0021b', ' lx': '#d0021b', 'lx ': '#d0021b',
+  'edelweiss': '#e2001a', 'wk': '#e2001a',
+  'lufthansa': '#0a1d3f', 'lh': '#0a1d3f',
+  'thai': '#4b286d', 'tg': '#4b286d',
+  'eurowings': '#a4157d', 'ew': '#a4157d',
+  'bangkok airways': '#1a4b8c', 'pg': '#1a4b8c',
+  'qatar': '#5c0632', 'qr': '#5c0632',
+  'emirates': '#d71921', 'ek': '#d71921',
+  'turkish': '#c8102e', 'tk': '#c8102e',
+  'singapore': '#f8a01c', 'sq': '#f8a01c',
+  'air asia': '#e0142d', 'fd': '#e0142d', 'ak': '#e0142d'
+};
+function airlineColor(txt) {
+  const k = ' ' + String(txt || '').toLowerCase().trim() + ' ';
+  for (const key in AIRLINE_COLORS) { if (k.indexOf(key) !== -1) return AIRLINE_COLORS[key]; }
+  return '#0f4a44';
+}
+function airlineBadge(tr) {
+  if (!tr) return '';
+  const isFlight = /flug|flight/i.test(tr.typ || '') || tr.airline || tr.flugnr;
+  if (!isFlight || (!tr.airline && !tr.flugnr)) return '';
+  const label = [tr.airline, tr.flugnr].filter(Boolean).join(' ');
+  const col = airlineColor((tr.airline || '') + ' ' + (tr.flugnr || ''));
+  return '<span class="airline-badge" style="background:' + col + '">' + icon('plane', 13) + esc(label) + '</span>';
+}
+function isImageSrc(s) {
+  s = String(s || '');
+  return s.indexOf('data:image/') === 0 || /^(\.\/)?assets\//.test(s) || /\.(jpe?g|png|webp|gif|svg)$/i.test(s);
+}
+function slugRegion(ort) {
+  const s = String(ort || '').toLowerCase();
+  const map = [['bangkok', 'bangkok'], ['chiang', 'chiangmai'], ['lanta', 'kohlanta'],
+    ['ngai', 'kohngai'], ['muk', 'kohmuk'], ['lipe', 'kohlipe'], ['phuket', 'phuket'],
+    ['samui', 'kohsamui'], ['phi phi', 'phiphi'], ['krabi', 'krabi'], ['pha ngan', 'phangan'],
+    ['tao', 'kohtao'], ['ayutthaya', 'ayutthaya']];
+  for (let i = 0; i < map.length; i++) { if (s.indexOf(map[i][0]) !== -1) return map[i][1]; }
+  return null;
+}
+function regionImage(ort) {
+  const slug = slugRegion(ort);
+  return slug ? 'assets/region-' + slug + '.jpg' : null;
+}
+
 function greeting() {
   const h = new Date().getHours();
   const name = appData && appData.reise && appData.reise.name ? ', ' + appData.reise.name : '';
@@ -841,12 +896,25 @@ function loadUIFromAppData() {
     addrEl.style.display = hotel.adresse ? '' : 'none';
     document.getElementById('hotelCheckin').textContent = hotel.checkin ? 'Check-in ab ' + hotel.checkin : '';
     const fotoEl = document.getElementById('hotelFoto');
-    if (hotel.foto) { fotoEl.src = hotel.foto; fotoEl.style.display = ''; }
-    else { fotoEl.style.display = 'none'; fotoEl.removeAttribute('src'); }
+    if (hotel.foto && isImageSrc(hotel.foto)) {
+      fotoEl.src = hotel.foto; fotoEl.style.display = '';
+    } else {
+      fotoEl.style.display = 'none'; fotoEl.removeAttribute('src');
+      const rp = regionImage(todayData.ort);
+      if (rp) withAsset(rp, () => { fotoEl.src = rp; fotoEl.style.display = ''; });
+    }
+
+    const urlBtn = document.getElementById('hotelUrlBtn');
+    if (hotel.url && /^https?:\/\//i.test(hotel.url)) {
+      urlBtn.style.display = '';
+      urlBtn.onclick = () => window.open(hotel.url, '_blank', 'noopener');
+    } else {
+      urlBtn.style.display = 'none';
+    }
 
     const callBtn = document.getElementById('hotelCall');
     callBtn.onclick = () => window.location = 'tel:' + hotel.tel;
-    if (!hotel.tel) callBtn.disabled = true;
+    callBtn.disabled = !hotel.tel;
 
     if (hotel.whatsapp && !document.getElementById('waBtn')) {
       const row = document.getElementById('hotelBtnRow');
@@ -864,6 +932,7 @@ function loadUIFromAppData() {
       document.getElementById('transferIcon').innerHTML = icon(transferIconName(tr.typ));
       document.getElementById('transferTime').textContent = tr.zeit + ' ' + tr.typ;
       document.getElementById('transferDetail').textContent = tr.detail || '';
+      document.getElementById('transferAirline').innerHTML = airlineBadge(tr);
       const ticket = (appData.tickets || []).find(t => t.id === tr.ticketRef);
       document.getElementById('transferStatus').textContent = ticket && ticket.status === 'vorhanden' ? 'Ticket gespeichert' : 'Ticket noch nicht hochgeladen';
     } else {
@@ -906,7 +975,7 @@ function renderDayList() {
       '<div class="day-main">' +
         '<div class="day-location">' + esc(day.ort) + (isToday ? ' · Heute' : '') + '</div>' +
         '<div class="day-hotel">' + esc(day.hotel && day.hotel.name || '') + '</div>' +
-        (day.transfer ? '<span class="' + chipCls + '">' + icon(transferIconName(day.transfer.typ), 13) + esc(day.transfer.typ + ' ' + day.transfer.zeit) + '</span>' : '') +
+        (day.transfer ? '<div>' + '<span class="' + chipCls + '">' + icon(transferIconName(day.transfer.typ), 13) + esc(day.transfer.typ + ' ' + day.transfer.zeit) + '</span>' + airlineBadge(day.transfer) + '</div>' : '') +
       '</div>' +
       '<div class="day-arrow chevron ic">' + icon('chevR', 18) + '</div>';
     div.addEventListener('click', () => openDay(idx));
@@ -935,10 +1004,11 @@ function openDay(idx) {
 
   const items = [];
   if (day.transfer) {
-    items.push({ zeit: day.transfer.zeit, titel: day.transfer.typ, sub: day.transfer.detail, cls: 'gold', ic: transferIconName(day.transfer.typ) });
+    items.push({ zeit: day.transfer.zeit, titel: day.transfer.typ, sub: day.transfer.detail, cls: 'gold', ic: transferIconName(day.transfer.typ), badge: airlineBadge(day.transfer) });
   }
   if (day.hotel && day.hotel.name && day.hotel.checkin) {
-    items.push({ zeit: day.hotel.checkin, titel: 'Check-in · ' + day.hotel.name, sub: day.hotel.adresse || '', cls: 'teal', ic: 'bed', foto: day.hotel.foto || null });
+    const hFoto = (day.hotel.foto && isImageSrc(day.hotel.foto)) ? day.hotel.foto : regionImage(day.ort);
+    items.push({ zeit: day.hotel.checkin, titel: 'Check-in · ' + day.hotel.name, sub: day.hotel.adresse || '', cls: 'teal', ic: 'bed', foto: hFoto });
   }
   (day.programm || []).forEach(p => {
     if (typeof p === 'string') {
@@ -966,8 +1036,9 @@ function openDay(idx) {
         (it.zeit ? '<div class="tl-time">' + esc(it.zeit) + '</div>' : '') +
         '<div class="tl-title">' + esc(it.titel) + '</div>' +
         (it.sub ? '<div class="tl-sub">' + esc(it.sub) + '</div>' : '') +
+        (it.badge ? '<div>' + it.badge + '</div>' : '') +
       '</div>' +
-      (it.foto && String(it.foto).indexOf('data:image/') === 0 ? '<img src="' + esc(it.foto) + '" alt="" style="width: 54px; height: 54px; object-fit: cover; border-radius: 10px; flex: 0 0 54px;">' : '');
+      (it.foto && isImageSrc(it.foto) ? '<img src="' + esc(it.foto) + '" alt="" onerror="this.style.display=\'none\'" style="width: 54px; height: 54px; object-fit: cover; border-radius: 10px; flex: 0 0 54px;">' : '');
     tl.appendChild(div);
   });
   showScreen('screenDay', 'screenPlan');
