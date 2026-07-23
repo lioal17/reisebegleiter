@@ -1,6 +1,7 @@
 {
   "reise": {
-    "titel": "Thailand Solo-Reise",
+    "titel": "Thailand Demo-Reise (fiktiv)",
+    "name": "Alex",
     "start": "2026-12-20",
     "ende": "2027-01-16",
     "tage": 28,
@@ -9,268 +10,520 @@
   "tage": [
     {
       "datum": "2026-12-20",
-      "wochentag": "Fr",
+      "wochentag": "So",
       "ort": "Zürich → Bangkok",
       "hotel": {
-        "name": "Flug LX 180",
+        "name": "Nachtflug ZB 415",
         "adresse": "Zürich (ZRH) → Bangkok (BKK)",
         "tel": "",
         "whatsapp": "",
-        "checkin": "18:00",
+        "checkin": "17:30",
         "gps": ""
       },
-      "transfer": null,
-      "hinweise": ["Flugzeit ca. 12h. Abfahrt 08:00 Kloten"],
+      "transfer": { "typ": "Flug", "zeit": "17:30", "detail": "ZB 415 Zürich → Bangkok", "ticketRef": "f-zrh-bkk" },
+      "hinweise": ["Flugzeit ca. 11.5h. Spätestens 15:00 am Flughafen"],
       "programm": []
     },
     {
       "datum": "2026-12-21",
-      "wochentag": "Sa",
+      "wochentag": "Mo",
       "ort": "Bangkok",
       "hotel": {
-        "name": "Sam Sen Boutique Hotel",
-        "adresse": "Samsen Rd, Pom Prap, Bangkok 10100",
-        "tel": "+66 2 282 4141",
-        "whatsapp": "+66812341234",
+        "name": "Flussblick Boutique Hotel",
+        "adresse": "Uferweg 12, Altstadt, Bangkok (Demo-Adresse)",
+        "tel": "+66 2 000 11 22",
+        "whatsapp": "+66800001122",
         "checkin": "14:00",
         "gps": "13.7512,100.5083"
       },
       "transfer": null,
-      "hinweise": ["SkyTrain-Nähe. Bankomat auf der Strasse"],
-      "programm": []
+      "hinweise": ["Ankunft früh morgens – Zimmer evtl. erst ab 14:00"],
+      "programm": [
+        { "zeit": "16:00", "titel": "Spaziergang am Fluss", "detail": "Locker ankommen" },
+        { "zeit": "19:00", "titel": "Abendessen Nachtmarkt", "detail": "Streetfood probieren" }
+      ]
     },
     {
       "datum": "2026-12-22",
-      "wochentag": "So",
+      "wochentag": "Di",
       "ort": "Bangkok",
       "hotel": {
-        "name": "Sam Sen Boutique Hotel",
-        "adresse": "Samsen Rd, Pom Prap, Bangkok 10100",
-        "tel": "+66 2 282 4141",
+        "name": "Flussblick Boutique Hotel",
+        "adresse": "Uferweg 12, Altstadt, Bangkok (Demo-Adresse)",
+        "tel": "+66 2 000 11 22",
         "whatsapp": "",
         "checkin": "14:00",
         "gps": "13.7512,100.5083"
       },
       "transfer": null,
-      "hinweise": ["Tempel, Märkte, Erkundung"],
-      "programm": []
+      "hinweise": ["Tempel: Schultern und Knie bedecken"],
+      "programm": [
+        { "zeit": "09:00", "titel": "Tempel-Tour", "detail": "Grosser Palast & Umgebung" },
+        { "zeit": "15:00", "titel": "Bootsfahrt Klongs", "detail": "Kanäle der Altstadt" }
+      ]
     },
     {
       "datum": "2026-12-23",
-      "wochentag": "Mo",
+      "wochentag": "Mi",
       "ort": "Bangkok → Chiang Mai",
       "hotel": {
-        "name": "Ping Nakara Hotel",
-        "adresse": "Hang Dong, Chiang Mai",
-        "tel": "+66 53 327 000",
+        "name": "Baan Sirikan Resort",
+        "adresse": "Gartenweg 8, Chiang Mai (Demo-Adresse)",
+        "tel": "+66 53 000 33 44",
         "whatsapp": "",
         "checkin": "15:00",
-        "gps": "18.8089,98.8689"
+        "gps": "18.7890,98.9853"
       },
-      "transfer": {
-        "typ": "Flug",
-        "zeit": "11:55",
-        "detail": "P9BW5F Bangkok → Chiang Mai",
-        "ticketRef": "flight-chiangmai"
-      },
-      "hinweise": ["Früh zum Flughafen (09:00)"],
-      "programm": []
+      "transfer": { "typ": "Flug", "zeit": "11:30", "detail": "ZB 202 Bangkok → Chiang Mai", "ticketRef": "f-bkk-cnx" },
+      "hinweise": ["09:30 am Flughafen sein"],
+      "programm": [
+        { "zeit": "18:00", "titel": "Altstadt-Bummel", "detail": "Abendmarkt" }
+      ]
     },
     {
       "datum": "2026-12-24",
-      "wochentag": "Di",
-      "ort": "Chiang Mai → Koh Lanta",
+      "wochentag": "Do",
+      "ort": "Chiang Mai",
       "hotel": {
-        "name": "The Dive House (Koh Lanta)",
-        "adresse": "Koh Lanta, Krabi",
-        "tel": "+66 75 684 331",
+        "name": "Baan Sirikan Resort",
+        "adresse": "Gartenweg 8, Chiang Mai (Demo-Adresse)",
+        "tel": "+66 53 000 33 44",
         "whatsapp": "",
-        "checkin": "17:00",
-        "gps": "8.2833,99.0667"
+        "checkin": "15:00",
+        "gps": "18.7890,98.9853"
       },
-      "transfer": {
-        "typ": "Flug + Boot",
-        "zeit": "07:55",
-        "detail": "Chiang Mai → Krabi, dann Boot nach Koh Lanta",
-        "ticketRef": "flight-krabi"
-      },
-      "hinweise": ["Frühe Abfahrt! 06:00 Hotel. Tauchen am Nachmittag?"],
-      "programm": []
+      "transfer": null,
+      "hinweise": ["Heiligabend – Restaurant vorreservieren"],
+      "programm": [
+        { "zeit": "10:00", "titel": "Thai-Kochkurs", "detail": "Markt + 4 Gerichte" },
+        { "zeit": "19:30", "titel": "Weihnachtsessen", "detail": "Demo-Restaurant am Fluss" }
+      ]
     },
     {
       "datum": "2026-12-25",
-      "wochentag": "Mi",
-      "ort": "Koh Lanta",
+      "wochentag": "Fr",
+      "ort": "Chiang Mai",
       "hotel": {
-        "name": "The Dive House (Koh Lanta)",
-        "adresse": "Koh Lanta, Krabi",
-        "tel": "+66 75 684 331",
+        "name": "Baan Sirikan Resort",
+        "adresse": "Gartenweg 8, Chiang Mai (Demo-Adresse)",
+        "tel": "+66 53 000 33 44",
         "whatsapp": "",
-        "checkin": "17:00",
-        "gps": "8.2833,99.0667"
+        "checkin": "15:00",
+        "gps": "18.7890,98.9853"
       },
-      "transfer": {
-        "typ": "Tauchen",
-        "zeit": "07:30",
-        "detail": "Dive Center Pickup",
-        "ticketRef": null
-      },
-      "hinweise": ["Weihnachtstag. Tauchen (2 Dives). Permit/Versicherung?"],
-      "programm": []
+      "transfer": null,
+      "hinweise": [],
+      "programm": [
+        { "zeit": "08:00", "titel": "Elefanten-Schutzpark", "detail": "Tagesausflug, Abholung im Hotel" }
+      ]
     },
     {
       "datum": "2026-12-26",
-      "wochentag": "Do",
-      "ort": "Koh Ngai",
+      "wochentag": "Sa",
+      "ort": "Chiang Mai → Koh Lanta",
       "hotel": {
-        "name": "Thanya Beach Resort",
-        "adresse": "Koh Ngai, Krabi",
-        "tel": "+66 8 7654 3210",
-        "whatsapp": "",
-        "checkin": "14:00",
-        "gps": "8.1234,99.1234"
+        "name": "Korallen Lodge",
+        "adresse": "Strandpfad 3, Koh Lanta (Demo-Adresse)",
+        "tel": "+66 75 000 55 66",
+        "whatsapp": "+66800005566",
+        "checkin": "16:00",
+        "gps": "7.6200,99.0700"
       },
-      "transfer": {
-        "typ": "Boot",
-        "zeit": "10:00",
-        "detail": "ab Koh Lanta (30 min)",
-        "ticketRef": "boat-ngai"
-      },
-      "hinweise": ["Kleine Insel. Kein Bankomat. Snorkeln"],
+      "transfer": { "typ": "Flug + Boot", "zeit": "08:10", "detail": "ZB 118 nach Krabi, dann Boot", "ticketRef": "f-cnx-kbv" },
+      "hinweise": ["Früher Start: 06:15 ab Hotel"],
       "programm": []
     },
     {
       "datum": "2026-12-27",
-      "wochentag": "Fr",
-      "ort": "Koh Muk",
+      "wochentag": "So",
+      "ort": "Koh Lanta",
       "hotel": {
-        "name": "Koh Muk Resort",
-        "adresse": "Koh Muk, Krabi",
-        "tel": "+66 75 545 555",
+        "name": "Korallen Lodge",
+        "adresse": "Strandpfad 3, Koh Lanta (Demo-Adresse)",
+        "tel": "+66 75 000 55 66",
+        "whatsapp": "",
+        "checkin": "16:00",
+        "gps": "7.6200,99.0700"
+      },
+      "transfer": { "typ": "Tauchen", "zeit": "07:30", "detail": "Abholung Tauchbasis (2 Tauchgänge)", "ticketRef": null },
+      "hinweise": ["Tauchversicherung-Nachweis mitnehmen"],
+      "programm": [
+        { "zeit": "18:00", "titel": "Sonnenuntergang am Strand", "detail": "" }
+      ]
+    },
+    {
+      "datum": "2026-12-28",
+      "wochentag": "Mo",
+      "ort": "Koh Lanta",
+      "hotel": {
+        "name": "Korallen Lodge",
+        "adresse": "Strandpfad 3, Koh Lanta (Demo-Adresse)",
+        "tel": "+66 75 000 55 66",
+        "whatsapp": "",
+        "checkin": "16:00",
+        "gps": "7.6200,99.0700"
+      },
+      "transfer": null,
+      "hinweise": [],
+      "programm": [
+        { "zeit": "10:00", "titel": "Strand & Relax", "detail": "" },
+        { "zeit": "17:00", "titel": "Roller-Tour Süden", "detail": "Leuchtturm-Aussichtspunkt" }
+      ]
+    },
+    {
+      "datum": "2026-12-29",
+      "wochentag": "Di",
+      "ort": "Koh Lanta → Koh Ngai",
+      "hotel": {
+        "name": "Sandmond Resort",
+        "adresse": "Nordstrand, Koh Ngai (Demo-Adresse)",
+        "tel": "+66 80 000 77 88",
+        "whatsapp": "",
+        "checkin": "14:00",
+        "gps": "7.4100,99.2060"
+      },
+      "transfer": { "typ": "Boot", "zeit": "10:30", "detail": "Fähre ab Koh Lanta (ca. 40 min)", "ticketRef": "b-lanta-ngai" },
+      "hinweise": ["Kein Bankomat auf der Insel – Bargeld mitnehmen"],
+      "programm": []
+    },
+    {
+      "datum": "2026-12-30",
+      "wochentag": "Mi",
+      "ort": "Koh Ngai",
+      "hotel": {
+        "name": "Sandmond Resort",
+        "adresse": "Nordstrand, Koh Ngai (Demo-Adresse)",
+        "tel": "+66 80 000 77 88",
+        "whatsapp": "",
+        "checkin": "14:00",
+        "gps": "7.4100,99.2060"
+      },
+      "transfer": null,
+      "hinweise": [],
+      "programm": [
+        { "zeit": "09:30", "titel": "Schnorchel-Ausflug", "detail": "3 Spots, ab Resort-Steg" }
+      ]
+    },
+    {
+      "datum": "2026-12-31",
+      "wochentag": "Do",
+      "ort": "Koh Ngai",
+      "hotel": {
+        "name": "Sandmond Resort",
+        "adresse": "Nordstrand, Koh Ngai (Demo-Adresse)",
+        "tel": "+66 80 000 77 88",
+        "whatsapp": "",
+        "checkin": "14:00",
+        "gps": "7.4100,99.2060"
+      },
+      "transfer": null,
+      "hinweise": ["Silvester: Strand-BBQ im Resort"],
+      "programm": [
+        { "zeit": "19:00", "titel": "Silvester-BBQ", "detail": "Am Strand, mit Feuershow" }
+      ]
+    },
+    {
+      "datum": "2027-01-01",
+      "wochentag": "Fr",
+      "ort": "Koh Ngai",
+      "hotel": {
+        "name": "Sandmond Resort",
+        "adresse": "Nordstrand, Koh Ngai (Demo-Adresse)",
+        "tel": "+66 80 000 77 88",
+        "whatsapp": "",
+        "checkin": "14:00",
+        "gps": "7.4100,99.2060"
+      },
+      "transfer": null,
+      "hinweise": ["Neujahr – einfach gar nichts vorhaben 🌴"],
+      "programm": []
+    },
+    {
+      "datum": "2027-01-02",
+      "wochentag": "Sa",
+      "ort": "Koh Ngai → Koh Muk",
+      "hotel": {
+        "name": "Lagunen Resort",
+        "adresse": "Westbucht, Koh Muk (Demo-Adresse)",
+        "tel": "+66 75 000 99 00",
         "whatsapp": "",
         "checkin": "15:00",
-        "gps": "8.0667,98.9333"
+        "gps": "7.3630,99.0730"
       },
-      "transfer": {
-        "typ": "Boot",
-        "zeit": "10:00",
-        "detail": "ab Koh Ngai (45 min)",
-        "ticketRef": null
+      "transfer": { "typ": "Boot", "zeit": "09:45", "detail": "Longtail ab Koh Ngai (ca. 45 min)", "ticketRef": "b-ngai-muk" },
+      "hinweise": [],
+      "programm": [
+        { "zeit": "14:00", "titel": "Smaragd-Höhle", "detail": "Bei Ebbe hineinschwimmen" }
+      ]
+    },
+    {
+      "datum": "2027-01-03",
+      "wochentag": "So",
+      "ort": "Koh Muk",
+      "hotel": {
+        "name": "Lagunen Resort",
+        "adresse": "Westbucht, Koh Muk (Demo-Adresse)",
+        "tel": "+66 75 000 99 00",
+        "whatsapp": "",
+        "checkin": "15:00",
+        "gps": "7.3630,99.0730"
       },
-      "hinweise": ["Emerald-Pool-Besuch. Taucherinseln"],
+      "transfer": null,
+      "hinweise": [],
+      "programm": [
+        { "zeit": "10:00", "titel": "Dorf-Spaziergang", "detail": "Fischerdorf & Kaffee" },
+        { "zeit": "16:00", "titel": "Kajak-Tour", "detail": "Entlang der Klippen" }
+      ]
+    },
+    {
+      "datum": "2027-01-04",
+      "wochentag": "Mo",
+      "ort": "Koh Muk → Koh Lipe",
+      "hotel": {
+        "name": "Muschelbucht Bungalows",
+        "adresse": "Sonnenaufgangsstrand, Koh Lipe (Demo-Adresse)",
+        "tel": "+66 89 000 22 33",
+        "whatsapp": "+66890002233",
+        "checkin": "14:00",
+        "gps": "6.4900,99.3030"
+      },
+      "transfer": { "typ": "Boot", "zeit": "11:15", "detail": "Speedboot Richtung Süden (ca. 2h)", "ticketRef": "b-muk-lipe" },
+      "hinweise": ["Trockensack fürs Gepäck bereithalten"],
       "programm": []
     },
     {
       "datum": "2027-01-05",
+      "wochentag": "Di",
+      "ort": "Koh Lipe",
+      "hotel": {
+        "name": "Muschelbucht Bungalows",
+        "adresse": "Sonnenaufgangsstrand, Koh Lipe (Demo-Adresse)",
+        "tel": "+66 89 000 22 33",
+        "whatsapp": "",
+        "checkin": "14:00",
+        "gps": "6.4900,99.3030"
+      },
+      "transfer": null,
+      "hinweise": [],
+      "programm": [
+        { "zeit": "09:00", "titel": "Schnorcheln Hausriff", "detail": "Direkt vor dem Bungalow" }
+      ]
+    },
+    {
+      "datum": "2027-01-06",
+      "wochentag": "Mi",
+      "ort": "Koh Lipe",
+      "hotel": {
+        "name": "Muschelbucht Bungalows",
+        "adresse": "Sonnenaufgangsstrand, Koh Lipe (Demo-Adresse)",
+        "tel": "+66 89 000 22 33",
+        "whatsapp": "",
+        "checkin": "14:00",
+        "gps": "6.4900,99.3030"
+      },
+      "transfer": null,
+      "hinweise": [],
+      "programm": [
+        { "zeit": "10:00", "titel": "Inselhüpfen-Tour", "detail": "Longtail, 4 Stopps" },
+        { "zeit": "19:00", "titel": "Abendessen Walking Street", "detail": "" }
+      ]
+    },
+    {
+      "datum": "2027-01-07",
+      "wochentag": "Do",
+      "ort": "Koh Lipe → Phuket",
+      "hotel": {
+        "name": "Ankerplatz Hotel",
+        "adresse": "Hafenstrasse 21, Phuket-Altstadt (Demo-Adresse)",
+        "tel": "+66 76 000 44 55",
+        "whatsapp": "",
+        "checkin": "15:00",
+        "gps": "7.8850,98.3923"
+      },
+      "transfer": { "typ": "Boot + Bus", "zeit": "09:00", "detail": "Fähre + Transferbus (ca. 6h)", "ticketRef": "b-lipe-hkt" },
+      "hinweise": ["Langer Reisetag – Snacks einpacken"],
+      "programm": []
+    },
+    {
+      "datum": "2027-01-08",
+      "wochentag": "Fr",
+      "ort": "Phuket",
+      "hotel": {
+        "name": "Ankerplatz Hotel",
+        "adresse": "Hafenstrasse 21, Phuket-Altstadt (Demo-Adresse)",
+        "tel": "+66 76 000 44 55",
+        "whatsapp": "",
+        "checkin": "15:00",
+        "gps": "7.8850,98.3923"
+      },
+      "transfer": null,
+      "hinweise": [],
+      "programm": [
+        { "zeit": "10:00", "titel": "Altstadt-Tour", "detail": "Bunte Häuser, Cafés" },
+        { "zeit": "17:00", "titel": "Aussichtspunkt", "detail": "Sonnenuntergang" }
+      ]
+    },
+    {
+      "datum": "2027-01-09",
+      "wochentag": "Sa",
+      "ort": "Phuket",
+      "hotel": {
+        "name": "Ankerplatz Hotel",
+        "adresse": "Hafenstrasse 21, Phuket-Altstadt (Demo-Adresse)",
+        "tel": "+66 76 000 44 55",
+        "whatsapp": "",
+        "checkin": "15:00",
+        "gps": "7.8850,98.3923"
+      },
+      "transfer": { "typ": "Boot", "zeit": "08:30", "detail": "Tagesausflug Buchten-Tour", "ticketRef": null },
+      "hinweise": [],
+      "programm": []
+    },
+    {
+      "datum": "2027-01-10",
+      "wochentag": "So",
+      "ort": "Phuket",
+      "hotel": {
+        "name": "Ankerplatz Hotel",
+        "adresse": "Hafenstrasse 21, Phuket-Altstadt (Demo-Adresse)",
+        "tel": "+66 76 000 44 55",
+        "whatsapp": "",
+        "checkin": "15:00",
+        "gps": "7.8850,98.3923"
+      },
+      "transfer": null,
+      "hinweise": [],
+      "programm": [
+        { "zeit": "11:00", "titel": "Strandtag", "detail": "" },
+        { "zeit": "16:00", "titel": "Massage", "detail": "1h, Demo-Spa" }
+      ]
+    },
+    {
+      "datum": "2027-01-11",
       "wochentag": "Mo",
       "ort": "Phuket → Bangkok",
       "hotel": {
-        "name": "NapPark Soi 4 Bangkok (Hotel noch offen)",
-        "adresse": "Sukhumvit Rd, Bangkok",
-        "tel": "",
+        "name": "City Nest Hotel",
+        "adresse": "Marktgasse 5, Bangkok (Demo-Adresse)",
+        "tel": "+66 2 000 66 77",
         "whatsapp": "",
         "checkin": "14:00",
         "gps": "13.7330,100.5590"
       },
-      "transfer": {
-        "typ": "Flug",
-        "zeit": "13:00",
-        "detail": "Phuket → Bangkok (noch zu buchen)",
-        "ticketRef": null
-      },
-      "hinweise": ["Flug erst 13:00, nicht früher buchen. 3 Nächte Bangkok."],
+      "transfer": { "typ": "Flug", "zeit": "13:40", "detail": "ZB 309 Phuket → Bangkok", "ticketRef": "f-hkt-bkk" },
+      "hinweise": ["Gepäck: Muscheln nicht einpacken (verboten)"],
       "programm": []
     },
     {
-      "datum": "2027-01-16",
+      "datum": "2027-01-12",
+      "wochentag": "Di",
+      "ort": "Bangkok",
+      "hotel": {
+        "name": "City Nest Hotel",
+        "adresse": "Marktgasse 5, Bangkok (Demo-Adresse)",
+        "tel": "+66 2 000 66 77",
+        "whatsapp": "",
+        "checkin": "14:00",
+        "gps": "13.7330,100.5590"
+      },
+      "transfer": null,
+      "hinweise": [],
+      "programm": [
+        { "zeit": "10:00", "titel": "Shopping", "detail": "Mitbringsel besorgen" }
+      ]
+    },
+    {
+      "datum": "2027-01-13",
+      "wochentag": "Mi",
+      "ort": "Bangkok",
+      "hotel": {
+        "name": "City Nest Hotel",
+        "adresse": "Marktgasse 5, Bangkok (Demo-Adresse)",
+        "tel": "+66 2 000 66 77",
+        "whatsapp": "",
+        "checkin": "14:00",
+        "gps": "13.7330,100.5590"
+      },
+      "transfer": null,
+      "hinweise": ["Früh los, wird heiss"],
+      "programm": [
+        { "zeit": "07:30", "titel": "Tagesausflug Ruinenstadt", "detail": "Mit Zug, Rückkehr ca. 18:00" }
+      ]
+    },
+    {
+      "datum": "2027-01-14",
+      "wochentag": "Do",
+      "ort": "Bangkok",
+      "hotel": {
+        "name": "City Nest Hotel",
+        "adresse": "Marktgasse 5, Bangkok (Demo-Adresse)",
+        "tel": "+66 2 000 66 77",
+        "whatsapp": "",
+        "checkin": "14:00",
+        "gps": "13.7330,100.5590"
+      },
+      "transfer": null,
+      "hinweise": [],
+      "programm": [
+        { "zeit": "18:00", "titel": "Rooftop-Abschiedsessen", "detail": "Demo-Skybar" }
+      ]
+    },
+    {
+      "datum": "2027-01-15",
       "wochentag": "Fr",
+      "ort": "Bangkok",
+      "hotel": {
+        "name": "City Nest Hotel",
+        "adresse": "Marktgasse 5, Bangkok (Demo-Adresse)",
+        "tel": "+66 2 000 66 77",
+        "whatsapp": "",
+        "checkin": "14:00",
+        "gps": "13.7330,100.5590"
+      },
+      "transfer": null,
+      "hinweise": ["Koffer packen, Online-Check-in Rückflug"],
+      "programm": [
+        { "zeit": "15:00", "titel": "Spa & Massage", "detail": "Entspannt in den Rückflug" }
+      ]
+    },
+    {
+      "datum": "2027-01-16",
+      "wochentag": "Sa",
       "ort": "Bangkok → Zürich",
       "hotel": {
-        "name": "Flug nach Hause",
+        "name": "Rückflug ZB 416",
         "adresse": "Bangkok (BKK) → Zürich (ZRH)",
         "tel": "",
         "whatsapp": "",
-        "checkin": "23:55",
+        "checkin": "23:40",
         "gps": ""
       },
-      "transfer": null,
-      "hinweise": ["Rückflug 23:55. Zum Flughafen ca. 18:00"],
+      "transfer": { "typ": "Flug", "zeit": "23:40", "detail": "ZB 416 Bangkok → Zürich", "ticketRef": "f-bkk-zrh" },
+      "hinweise": ["Spätester Check-out 12:00, Gepäck an Rezeption. Ca. 20:30 zum Flughafen"],
       "programm": []
     }
   ],
   "tickets": [
-    {
-      "id": "flight-zh-bkk",
-      "gruppe": "Flüge",
-      "titel": "Zürich – Bangkok",
-      "info": "LX 180 · 20.12.2026 08:00",
-      "status": "vorhanden",
-      "abDatum": "2026-12-20"
-    },
-    {
-      "id": "flight-chiangmai",
-      "gruppe": "Flüge",
-      "titel": "Bangkok – Chiang Mai",
-      "info": "P9BW5F · 23.12.2026 11:55",
-      "status": "vorhanden",
-      "abDatum": "2026-12-23"
-    },
-    {
-      "id": "flight-krabi",
-      "gruppe": "Flüge",
-      "titel": "Chiang Mai – Krabi",
-      "info": "TG 201 · 24.12.2026 07:55",
-      "status": "vorhanden",
-      "abDatum": "2026-12-24"
-    },
-    {
-      "id": "hotel-sam-sen",
-      "gruppe": "Hotels",
-      "titel": "Sam Sen Boutique (Bangkok)",
-      "info": "21.–23.12.2026 · bestätigt",
-      "status": "vorhanden",
-      "abDatum": "2026-12-21"
-    },
-    {
-      "id": "hotel-chiangmai",
-      "gruppe": "Hotels",
-      "titel": "Ping Nakara (Chiang Mai)",
-      "info": "23.12.2026 · bestätigt",
-      "status": "vorhanden",
-      "abDatum": "2026-12-23"
-    },
-    {
-      "id": "hotel-kohlanta",
-      "gruppe": "Hotels",
-      "titel": "The Dive House (Koh Lanta)",
-      "info": "24.–25.12.2026 · noch offen",
-      "status": "foto_noetig",
-      "abDatum": "2026-12-24"
-    },
-    {
-      "id": "hotel-kohmuk",
-      "gruppe": "Hotels",
-      "titel": "Koh Muk Resort",
-      "info": "26.–27.12.2026 · bestätigt",
-      "status": "vorhanden",
-      "abDatum": "2026-12-26"
-    },
-    {
-      "id": "boat-ngai",
-      "gruppe": "Boote & Einreise",
-      "titel": "Boot Koh Lanta → Koh Ngai",
-      "info": "24.12.2026 10:00",
-      "status": "foto_noetig",
-      "abDatum": "2026-12-24"
-    },
-    {
-      "id": "tdac",
-      "gruppe": "Boote & Einreise",
-      "titel": "Einreiseformular TDAC",
-      "info": "Noch zu ausfüllen (ab 9.12.)",
-      "status": "fehlt",
-      "abDatum": "2026-12-20"
-    }
+    { "id": "f-zrh-bkk", "gruppe": "Flüge", "titel": "Zürich – Bangkok", "info": "ZB 415 · 20.12.2026 17:30 · Code DEMO01", "status": "vorhanden", "abDatum": "2026-12-20" },
+    { "id": "f-bkk-cnx", "gruppe": "Flüge", "titel": "Bangkok – Chiang Mai", "info": "ZB 202 · 23.12.2026 11:30 · Code DEMO02", "status": "vorhanden", "abDatum": "2026-12-23" },
+    { "id": "f-cnx-kbv", "gruppe": "Flüge", "titel": "Chiang Mai – Krabi", "info": "ZB 118 · 26.12.2026 08:10 · Code DEMO03", "status": "vorhanden", "abDatum": "2026-12-26" },
+    { "id": "f-hkt-bkk", "gruppe": "Flüge", "titel": "Phuket – Bangkok", "info": "ZB 309 · 11.01.2027 13:40 · noch zu buchen", "status": "fehlt", "abDatum": "2027-01-11" },
+    { "id": "f-bkk-zrh", "gruppe": "Flüge", "titel": "Bangkok – Zürich", "info": "ZB 416 · 16.01.2027 23:40 · Code DEMO04", "status": "vorhanden", "abDatum": "2027-01-16" },
+    { "id": "h-bangkok-1", "gruppe": "Hotels", "titel": "Flussblick Boutique (Bangkok)", "info": "21.–23.12. · bestätigt", "status": "vorhanden", "abDatum": "2026-12-21" },
+    { "id": "h-chiangmai", "gruppe": "Hotels", "titel": "Baan Sirikan (Chiang Mai)", "info": "23.–26.12. · bestätigt", "status": "vorhanden", "abDatum": "2026-12-23" },
+    { "id": "h-kohlanta", "gruppe": "Hotels", "titel": "Korallen Lodge (Koh Lanta)", "info": "26.–29.12. · Voucher fotografieren", "status": "foto_noetig", "abDatum": "2026-12-26" },
+    { "id": "h-kohngai", "gruppe": "Hotels", "titel": "Sandmond Resort (Koh Ngai)", "info": "29.12.–02.01. · bestätigt", "status": "vorhanden", "abDatum": "2026-12-29" },
+    { "id": "h-kohmuk", "gruppe": "Hotels", "titel": "Lagunen Resort (Koh Muk)", "info": "02.–04.01. · bestätigt", "status": "vorhanden", "abDatum": "2027-01-02" },
+    { "id": "h-kohlipe", "gruppe": "Hotels", "titel": "Muschelbucht Bungalows (Koh Lipe)", "info": "04.–07.01. · bestätigt", "status": "vorhanden", "abDatum": "2027-01-04" },
+    { "id": "h-phuket", "gruppe": "Hotels", "titel": "Ankerplatz Hotel (Phuket)", "info": "07.–11.01. · bestätigt", "status": "vorhanden", "abDatum": "2027-01-07" },
+    { "id": "h-bangkok-2", "gruppe": "Hotels", "titel": "City Nest (Bangkok)", "info": "11.–16.01. · bestätigt", "status": "vorhanden", "abDatum": "2027-01-11" },
+    { "id": "b-lanta-ngai", "gruppe": "Boote & Fähren", "titel": "Fähre Koh Lanta → Koh Ngai", "info": "29.12.2026 10:30", "status": "vorhanden", "abDatum": "2026-12-29" },
+    { "id": "b-ngai-muk", "gruppe": "Boote & Fähren", "titel": "Longtail Koh Ngai → Koh Muk", "info": "02.01.2027 09:45 · vor Ort zahlen", "status": "foto_noetig", "abDatum": "2027-01-02" },
+    { "id": "b-muk-lipe", "gruppe": "Boote & Fähren", "titel": "Speedboot Koh Muk → Koh Lipe", "info": "04.01.2027 11:15", "status": "vorhanden", "abDatum": "2027-01-04" },
+    { "id": "b-lipe-hkt", "gruppe": "Boote & Fähren", "titel": "Fähre + Bus Koh Lipe → Phuket", "info": "07.01.2027 09:00", "status": "vorhanden", "abDatum": "2027-01-07" },
+    { "id": "einreise-form", "gruppe": "Einreise & Visa", "titel": "Digitale Ankunftskarte", "info": "Online ausfüllen ab 3 Tage vor Abflug", "status": "fehlt", "abDatum": "2026-12-20" },
+    { "id": "pass-kopie", "gruppe": "Reisepass", "titel": "Reisepass-Kopie", "info": "Foto der Datenseite (Demo)", "status": "foto_noetig", "abDatum": "2026-12-20" },
+    { "id": "versicherung", "gruppe": "Versicherung", "titel": "Reiseversicherung SafeTrip", "info": "Police STV-0000-DEMO · Hotline +00 000 00 00", "status": "vorhanden", "abDatum": "2026-12-20" }
   ],
   "notfall": {
     "botschaft": "+66 2 674 6900",
@@ -286,7 +539,8 @@
   },
   "ausgaben": [],
   "favoriten": {
-    "Bangkok": ["7-Eleven", "SkyTrain", "Bankomat"],
-    "KohNgai": ["Pier", "Tauchbasis", "Apotheke"]
+    "Bangkok": ["Minimarkt", "SkyTrain", "Bankomat"],
+    "KohNgai": ["Pier", "Tauchbasis", "Apotheke"],
+    "KohLipe": ["Walking Street", "Pier", "Minimarkt"]
   }
 }

@@ -27,11 +27,11 @@ Du brauchst:
       "wochentag": "Fr",
       "ort": "Zürich → Bangkok",
       "hotel": {
-        "name": "Flug LX 180",
+        "name": "Nachtflug ZB 415",
         "adresse": "Zürich (ZRH) → Bangkok (BKK)",
         "tel": "",
         "whatsapp": "",
-        "checkin": "18:00",
+        "checkin": "17:30",
         "gps": ""
       },
       "transfer": null,
@@ -44,7 +44,7 @@ Du brauchst:
       "id": "flight-zh-bkk",
       "gruppe": "Flüge",
       "titel": "Zürich – Bangkok",
-      "info": "LX 180 · 20.12.2026 08:00",
+      "info": "ZB 415 · 20.12.2026 17:30",
       "status": "vorhanden",
       "abDatum": "2026-12-20"
     }
@@ -99,7 +99,7 @@ Du brauchst:
   "transfer": {                   // null wenn kein Transfer
     "typ": "Flug",                // "Flug", "Boot", "Bus", "Tauchen", etc.
     "zeit": "08:00",              // Abfahrtszeit
-    "detail": "LX 180",           // Flugnummer, Route, etc.
+    "detail": "ZB 415",           // Flugnummer, Route, etc.
     "ticketRef": "flight-bkk"     // Referenz zu Ticket-ID (siehe unten)
   } oder null,
   "hinweise": [
@@ -117,9 +117,9 @@ Für jeden Flug, Hotel, Boot, Einreiseformular:
 ```json
 {
   "id": "flight-zh-bkk",           // Eindeutige ID (z.B. flight-bkk)
-  "gruppe": "Flüge",               // "Flüge", "Hotels", "Boote & Einreise"
+  "gruppe": "Flüge",               // z.B. "Flüge", "Hotels", "Boote & Fähren", "Einreise & Visa", "Reisepass", "Versicherung"
   "titel": "Zürich – Bangkok",     // Lesbarer Name
-  "info": "LX 180 · 20.12.2026 08:00",  // Buchungsnummer, Datum
+  "info": "ZB 415 · 20.12.2026 17:30",  // Buchungsnummer, Datum
   "status": "vorhanden",           // "vorhanden", "foto_noetig", "fehlt"
   "abDatum": "2026-12-20"          // Wann wird es gebraucht?
 }
@@ -192,6 +192,10 @@ python3 -c "import json; json.load(open('reisedaten.json'))" && echo "✓ JSON k
 - **Telefon-Link:** `tel:` funktioniert nur mit echten Nummern im Format `+66 XX XXXXXX`
 - **Datum-Format:** Immer `YYYY-MM-DD` (2026-12-20)
 - **Fehlende Infos:** `null` oder `""` verwenden
+- **Begrüssung mit Namen:** Optional `"name": "DeinName"` im `reise`-Block – wird nur lokal angezeigt
+- **Hotel-Foto:** Über den Foto-Knopf in der App hinzufügen (bleibt auf dem Gerät); das Feld `hotel.foto` musst du nicht von Hand füllen
+- **Reihenfolge:** Die App sortiert die Tage automatisch nach Datum – die Reihenfolge in der Datei ist egal
+- **Karte:** Die Routen-Karte entsteht aus den `gps`-Koordinaten der Hotels – je mehr Tage GPS haben, desto besser die Karte
 
 ## Beispiel: Minimale reisedaten.json
 
