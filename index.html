@@ -335,20 +335,23 @@ a { color: var(--teal); }
     </div>
 
     <div class="card card-teal" id="todayNight">
+      <img id="hotelFoto" alt="Hotel-Foto" style="display: none; width: 100%; max-height: 150px; object-fit: cover; border-radius: 12px; margin-bottom: 12px;">
       <div class="card-row">
         <div class="badge-ic"><span class="ic" data-icon="bed"></span></div>
         <div style="flex: 1; min-width: 0;">
           <div class="card-label">Heute Nacht</div>
           <div class="card-title" id="hotelName">–</div>
+          <div class="card-sub" id="hotelAddr" style="display: none;"></div>
           <div class="card-sub" id="hotelCheckin">–</div>
-          <span class="chip"><span class="ic" data-icon="doc" data-size="13"></span>Hotelinfo</span>
           <div class="row" id="hotelBtnRow">
             <button class="btn btn-inline" id="hotelCall"><span class="ic" data-icon="phone" data-size="16"></span>Anrufen</button>
             <button class="btn btn-inline" id="hotelMap"><span class="ic" data-icon="map" data-size="16"></span>Karte</button>
+            <button class="btn btn-inline" id="hotelPhotoBtn" title="Eigenes Foto speichern (bleibt auf dem Gerät)"><span class="ic" data-icon="camera" data-size="16"></span>Foto</button>
           </div>
         </div>
         <div class="chevron ic" data-icon="chevR"></div>
       </div>
+      <input type="file" id="hotelPhotoInput" accept="image/*" style="display: none;">
     </div>
 
     <div class="card card-gold" id="todayTransfer" style="display: none;">
@@ -576,6 +579,7 @@ const ICONS = {
   utensils: '<path d="M7 3v18M4 3v5a3 3 0 0 0 6 0V3"/><path d="M17 3c-2 3-2 6.5 0 9v9"/>',
   car: '<path d="M5 15.5l1.4-4.6A2 2 0 0 1 8.3 9.5h7.4a2 2 0 0 1 1.9 1.4L19 15.5"/><rect x="4" y="15.5" width="16" height="3.5" rx="1.2"/><path d="M7 19v1.5M17 19v1.5"/>',
   map: '<path d="M9 4l6 2 5.4-1.8a.5.5 0 0 1 .6.5V18l-6 2-6-2-5.4 1.8a.5.5 0 0 1-.6-.5V6l6-2z"/><path d="M9 4v14M15 6v14"/>',
+  camera: '<path d="M4 8a2 2 0 0 1 2-2h2l1.5-2h5L16 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z"/><circle cx="12" cy="13" r="3.5"/>',
   down: '<path d="M12 3v12m-4.5-4L12 15.5 16.5 11"/><path d="M4 20h16"/>',
   up: '<path d="M12 15V3.5M7.5 7.5L12 3l4.5 4.5"/><path d="M4 20h16"/>'
 };
@@ -591,6 +595,7 @@ let appData = null;
 let selectedCategory = 'Transport';
 let dayScreenReturn = 'screenPlan';
 let mapScreenReturn = 'screenPlan';
+let currentHotelName = '';
 
 /* ---------- Navigation ---------- */
 function showScreen(screenId, navScreenId) {
@@ -674,6 +679,7 @@ function loadUIFromAppData() {
   if (!appData) return;
   const reise = appData.reise || {};
   const tage = appData.tage || [];
+  tage.sort((a, b) => String(a.datum).localeCompare(String(b.datum)));
   const today = new Date();
   const startDate = new Date(reise.start);
   const todayStr = today.toISOString().split('T')[0];
@@ -689,8 +695,15 @@ function loadUIFromAppData() {
     document.getElementById('todayLocText').textContent = todayData.ort;
 
     const hotel = todayData.hotel || {};
+    currentHotelName = hotel.name || '';
     document.getElementById('hotelName').textContent = hotel.name || '–';
+    const addrEl = document.getElementById('hotelAddr');
+    addrEl.textContent = hotel.adresse || '';
+    addrEl.style.display = hotel.adresse ? '' : 'none';
     document.getElementById('hotelCheckin').textContent = hotel.checkin ? 'Check-in ab ' + hotel.checkin : '';
+    const fotoEl = document.getElementById('hotelFoto');
+    if (hotel.foto) { fotoEl.src = hotel.foto; fotoEl.style.display = ''; }
+    else { fotoEl.style.display = 'none'; fotoEl.removeAttribute('src'); }
 
     const callBtn = document.getElementById('hotelCall');
     callBtn.onclick = () => window.location = 'tel:' + hotel.tel;
@@ -786,7 +799,7 @@ function openDay(idx) {
     items.push({ zeit: day.transfer.zeit, titel: day.transfer.typ, sub: day.transfer.detail, cls: 'gold', ic: transferIconName(day.transfer.typ) });
   }
   if (day.hotel && day.hotel.name && day.hotel.checkin) {
-    items.push({ zeit: day.hotel.checkin, titel: 'Check-in · ' + day.hotel.name, sub: day.hotel.adresse || '', cls: 'teal', ic: 'bed' });
+    items.push({ zeit: day.hotel.checkin, titel: 'Check-in · ' + day.hotel.name, sub: day.hotel.adresse || '', cls: 'teal', ic: 'bed', foto: day.hotel.foto || null });
   }
   (day.programm || []).forEach(p => {
     if (typeof p === 'string') {
@@ -814,7 +827,8 @@ function openDay(idx) {
         (it.zeit ? '<div class="tl-time">' + esc(it.zeit) + '</div>' : '') +
         '<div class="tl-title">' + esc(it.titel) + '</div>' +
         (it.sub ? '<div class="tl-sub">' + esc(it.sub) + '</div>' : '') +
-      '</div>';
+      '</div>' +
+      (it.foto && String(it.foto).indexOf('data:image/') === 0 ? '<img src="' + esc(it.foto) + '" alt="" style="width: 54px; height: 54px; object-fit: cover; border-radius: 10px; flex: 0 0 54px;">' : '');
     tl.appendChild(div);
   });
   showScreen('screenDay', 'screenPlan');
@@ -906,6 +920,10 @@ function collectStations() {
 }
 function renderMap() {
   const wrap = document.getElementById('mapWrap');
+  if (!appData || !(appData.tage || []).length) {
+    wrap.innerHTML = '<div style="padding: 32px 16px; color: var(--muted); text-align: center;">Noch keine Reisedaten geladen.</div>';
+    return;
+  }
   const stations = collectStations();
   const W = 360, H = 540, PAD = 60;
   let pts;
@@ -1024,6 +1042,38 @@ function updateSpendTotal() {
   const chf = Math.ceil(total / 40 * 100) / 100;
   document.getElementById('spendTotal').textContent = chf.toFixed(2) + ' CHF';
 }
+
+/* ---------- Hotel-Foto (bleibt lokal auf dem Gerät) ---------- */
+document.getElementById('hotelPhotoBtn').addEventListener('click', () => document.getElementById('hotelPhotoInput').click());
+document.getElementById('hotelPhotoInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file || !currentHotelName) return;
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+  img.onload = () => {
+    const max = 900;
+    let w = img.width, h = img.height;
+    if (w > max || h > max) { const s = max / Math.max(w, h); w = Math.round(w * s); h = Math.round(h * s); }
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.getContext('2d').drawImage(img, 0, 0, w, h);
+    URL.revokeObjectURL(url);
+    const dataUri = c.toDataURL('image/jpeg', 0.8);
+    (appData.tage || []).forEach(d => {
+      if (d.hotel && d.hotel.name === currentHotelName) d.hotel.foto = dataUri;
+    });
+    try {
+      localStorage.setItem('reisebegleiter_data', JSON.stringify(appData));
+    } catch(err) {
+      alert('Speicher voll – Foto konnte nicht gespeichert werden.');
+      (appData.tage || []).forEach(d => { if (d.hotel && d.hotel.foto === dataUri) delete d.hotel.foto; });
+      return;
+    }
+    loadUIFromAppData();
+  };
+  img.src = url;
+  this.value = '';
+});
 
 /* ---------- Tickets hinzufügen ---------- */
 function pickTicketFile() { document.getElementById('ticketInput').click(); }
