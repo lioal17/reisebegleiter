@@ -1,17 +1,25 @@
-const CACHE_NAME = 'reisebegleiter-v2';
+const CACHE_NAME = 'reisebegleiter-v3';
 const urlsToCache = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './demo-daten.json'
+  './demo-daten.json',
+  './assets/hero.jpg',
+  './assets/tile-flug.jpg',
+  './assets/tile-boot.jpg',
+  './assets/tile-hotel.jpg',
+  './assets/tile-pass.jpg',
+  './assets/tile-schutz.jpg',
+  './assets/tile-visa.jpg',
+  './assets/tile-default.jpg'
 ];
 
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(urlsToCache).catch(() => {
-        console.log('Einige Dateien konnten nicht gecacht werden (das ist okay)');
-      });
+      return Promise.all(
+        urlsToCache.map(url => cache.add(url).catch(() => {}))
+      );
     })
   );
   self.skipWaiting();

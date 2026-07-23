@@ -54,6 +54,21 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 .screen.active { display: flex; flex-direction: column; }
+#screenToday { position: relative; }
+.hero-bg {
+  position: absolute; top: 0; left: 0; right: 0; height: 320px;
+  background-size: cover; background-position: center;
+  opacity: 0; transition: opacity 0.6s; pointer-events: none;
+  -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.95) 30%, transparent);
+  mask-image: linear-gradient(180deg, rgba(0,0,0,0.95) 30%, transparent);
+}
+.hero-bg.on { opacity: 0.45; }
+.palm-deco {
+  position: absolute; top: -6px; right: -22px;
+  color: rgba(47, 217, 192, 0.09); pointer-events: none;
+  transform: rotate(6deg);
+}
+.hero, #screenToday .card { position: relative; }
 
 /* Icons */
 .ic { display: inline-flex; align-items: center; justify-content: center; line-height: 0; }
@@ -240,9 +255,15 @@ body {
 .doc-tile:active { filter: brightness(1.15); }
 .doc-tile .art {
   position: absolute; right: -14px; bottom: -18px;
-  opacity: 0.30; pointer-events: none;
+  opacity: 0.35; pointer-events: none;
   transform: rotate(-8deg);
 }
+.doc-tile::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(5,12,15,0.35));
+  border-radius: inherit;
+}
+.doc-tile .t-name, .doc-tile .t-count { z-index: 1; text-shadow: 0 1px 6px rgba(0,0,0,0.5); }
 .doc-tile .t-name { font-weight: 650; font-size: 15px; position: relative; }
 .doc-tile .t-count { font-size: 12px; color: rgba(255, 255, 255, 0.7); position: relative; }
 .tile-flug { background: linear-gradient(140deg, #1c3a5e, #2c5c93); }
@@ -327,6 +348,8 @@ a { color: var(--teal); }
 
   <!-- HEUTE -->
   <div class="screen active" id="screenToday">
+    <div class="hero-bg" id="heroBg"></div>
+    <div class="palm-deco"><span class="ic" data-icon="palm" data-size="190"></span></div>
     <div class="hero">
       <div class="greet" id="greetLine">Guten Tag 👋</div>
       <h1 class="h1">Heute</h1>
@@ -669,9 +692,27 @@ function transferIconName(typ) {
 }
 function greeting() {
   const h = new Date().getHours();
-  if (h < 11) return 'Guten Morgen 👋';
-  if (h < 18) return 'Hallo 👋';
-  return 'Guten Abend 👋';
+  const name = appData && appData.reise && appData.reise.name ? ', ' + appData.reise.name : '';
+  if (h < 11) return 'Guten Morgen' + name + ' 👋';
+  if (h < 18) return 'Hallo' + name + ' 👋';
+  return 'Guten Abend' + name + ' 👋';
+}
+
+/* Optionale Bild-Assets aus dem Repo (assets/…) – rein lokal, mit Fallback */
+const assetCache = {};
+function withAsset(url, cb) {
+  if (url in assetCache) { if (assetCache[url]) cb(); return; }
+  const probe = new Image();
+  probe.onload = () => { assetCache[url] = true; cb(); };
+  probe.onerror = () => { assetCache[url] = false; };
+  probe.src = url;
+}
+function applyHeroAsset() {
+  withAsset('assets/hero.jpg', () => {
+    const el = document.getElementById('heroBg');
+    el.style.backgroundImage = 'url("assets/hero.jpg")';
+    el.classList.add('on');
+  });
 }
 
 /* ---------- Heute ---------- */
@@ -873,6 +914,13 @@ function renderTickets() {
       const el = document.getElementById(groupAnchorId(grp));
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
+    withAsset('assets/' + st.cls + '.jpg', () => {
+      tile.style.backgroundImage = 'linear-gradient(160deg, rgba(8,18,22,0.1), rgba(8,18,22,0.55)), url("assets/' + st.cls + '.jpg")';
+      tile.style.backgroundSize = 'cover';
+      tile.style.backgroundPosition = 'center';
+      const art = tile.querySelector('.art');
+      if (art) art.style.display = 'none';
+    });
     tiles.appendChild(tile);
 
     const grpDiv = document.createElement('div');
@@ -983,6 +1031,13 @@ function renderMap() {
       d += ' Q' + mx.toFixed(1) + ' ' + my.toFixed(1) + ' ' + p1.x.toFixed(1) + ' ' + p1.y.toFixed(1);
     }
     svg += '<path d="' + d + '" fill="none" stroke="#e6a23c" stroke-width="2.5" stroke-dasharray="1 9" stroke-linecap="round"/>';
+    let k = 1, maxLen = -1;
+    for (let i = 1; i < pts.length; i++) {
+      const len = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+      if (len > maxLen) { maxLen = len; k = i; }
+    }
+    const bx = (pts[k - 1].x + pts[k].x) / 2, by = (pts[k - 1].y + pts[k].y) / 2;
+    svg += '<g transform="translate(' + (bx - 11).toFixed(1) + ' ' + (by - 11).toFixed(1) + ')" fill="none" stroke="#eaf4f2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + ICONS.ship + '</g>';
   }
 
   const placedLabels = [];
@@ -1148,6 +1203,7 @@ if (saved) {
 if (new URLSearchParams(location.search).get('screen') === 'tickets') {
   showScreen('screenTickets');
 }
+applyHeroAsset();
 </script>
 </body>
 </html>
