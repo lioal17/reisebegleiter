@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reisebegleiter-v3';
+const CACHE_NAME = 'reisebegleiter-v4';
 const urlsToCache = [
   './',
   './index.html',
@@ -40,8 +40,32 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
+// HTML/App-Shell: immer zuerst aus dem Netz laden (damit Updates ankommen),
+// nur offline aus dem Cache. Bilder & Co.: zuerst Cache (schnell/offline).
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+  const isShell = event.request.mode === 'navigate' ||
+                  url.pathname.endsWith('/') ||
+                  url.pathname.endsWith('index.html') ||
+                  url.pathname.endsWith('sw.js') ||
+                  url.pathname.endsWith('manifest.webmanifest');
+
+  if (isShell) {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        if (response && response.status === 200 && response.type !== 'error') {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+        }
+        return response;
+      }).catch(() =>
+        caches.match(event.request).then(r => r || caches.match('./index.html'))
+      )
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then(response => {
@@ -51,13 +75,9 @@ self.addEventListener('fetch', event => {
           return response;
         }
         const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, responseToCache);
-        });
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache));
         return response;
-      }).catch(() => {
-        return caches.match(event.request) || new Response('Offline – bitte später versuchen');
-      });
+      }).catch(() => caches.match(event.request) || new Response('Offline'));
     })
   );
 });
