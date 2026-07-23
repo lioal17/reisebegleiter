@@ -653,17 +653,17 @@ async function loadDemoData() {
 
 function getDemoDataFallback() {
   return {
-    reise: { titel: 'Thailand Solo', start: '2026-12-20', ende: '2027-01-16' },
+    reise: { titel: 'Thailand Demo-Reise (fiktiv)', start: '2026-12-20', ende: '2027-01-16' },
     tage: [
-      { datum: '2026-12-20', wochentag: 'Fr', ort: 'Zürich → Bangkok', hotel: { name: 'Flug', adresse: 'LX 180', tel: '', whatsapp: '', checkin: '18:00', gps: '' }, transfer: null, hinweise: [], programm: [] },
-      { datum: '2026-12-21', wochentag: 'Sa', ort: 'Bangkok', hotel: { name: 'Demo Hotel', adresse: 'Sukhumvit Rd', tel: '+66 2 123 4567', whatsapp: '+66812345678', checkin: '14:00', gps: '13.7563,100.5018' }, transfer: null, hinweise: [], programm: [] },
-      { datum: '2026-12-22', wochentag: 'So', ort: 'Bangkok → Koh Samui', hotel: { name: 'Beach Resort', adresse: 'Koh Samui', tel: '', whatsapp: '', checkin: '16:00', gps: '9.5120,100.0136' }, transfer: { typ: 'Flug', zeit: '10:00', detail: 'P9BW5F', ticketRef: 'flight-samui' }, hinweise: ['Frühzeitig zum Flughafen'], programm: [] },
-      { datum: '2026-12-24', wochentag: 'Di', ort: 'Koh Ngai', hotel: { name: 'Thanya Beach Resort', adresse: 'Koh Ngai', tel: '+66 8 7654 3210', whatsapp: '', checkin: '14:00', gps: '8.1234,99.1234' }, transfer: { typ: 'Boot', zeit: '10:00', detail: 'ab Koh Lanta', ticketRef: 'boat-ngai' }, hinweise: ['Kein Bankomat auf der Insel'], programm: [] }
+      { datum: '2026-12-20', wochentag: 'So', ort: 'Zürich → Bangkok', hotel: { name: 'Nachtflug ZB 415', adresse: 'Zürich (ZRH) → Bangkok (BKK)', tel: '', whatsapp: '', checkin: '17:30', gps: '' }, transfer: null, hinweise: [], programm: [] },
+      { datum: '2026-12-21', wochentag: 'Mo', ort: 'Bangkok', hotel: { name: 'Flussblick Boutique Hotel', adresse: 'Uferweg 12, Bangkok (Demo-Adresse)', tel: '+66 2 000 11 22', whatsapp: '+66800001122', checkin: '14:00', gps: '13.7512,100.5083' }, transfer: null, hinweise: [], programm: [] },
+      { datum: '2026-12-22', wochentag: 'Di', ort: 'Bangkok → Koh Samui', hotel: { name: 'Palmwind Resort', adresse: 'Koh Samui (Demo-Adresse)', tel: '', whatsapp: '', checkin: '16:00', gps: '9.5120,100.0136' }, transfer: { typ: 'Flug', zeit: '10:00', detail: 'ZB 555 · Code DEMO05', ticketRef: 'flight-samui' }, hinweise: ['Frühzeitig zum Flughafen'], programm: [] },
+      { datum: '2026-12-24', wochentag: 'Do', ort: 'Koh Ngai', hotel: { name: 'Sandmond Resort', adresse: 'Nordstrand, Koh Ngai (Demo-Adresse)', tel: '+66 80 000 77 88', whatsapp: '', checkin: '14:00', gps: '8.1234,99.1234' }, transfer: { typ: 'Boot', zeit: '10:00', detail: 'ab Koh Lanta', ticketRef: 'boat-ngai' }, hinweise: ['Kein Bankomat auf der Insel'], programm: [] }
     ],
     tickets: [
-      { id: 'flight-zh-bkk', gruppe: 'Flüge', titel: 'Zürich – Bangkok', info: 'LX 180 · 20.12. 18:00', status: 'vorhanden', abDatum: '2026-12-20' },
-      { id: 'hotel-samui', gruppe: 'Hotels', titel: 'Samui Beach Resort', info: '21.–23.12. · bestätigt', status: 'vorhanden', abDatum: '2026-12-21' },
-      { id: 'boat-ngai', gruppe: 'Boote & Einreise', titel: 'Boot Lanta – Koh Ngai', info: '24.12. 10:00', status: 'foto_noetig', abDatum: '2026-12-24' }
+      { id: 'flight-zh-bkk', gruppe: 'Flüge', titel: 'Zürich – Bangkok', info: 'ZB 415 · 20.12. 17:30', status: 'vorhanden', abDatum: '2026-12-20' },
+      { id: 'hotel-samui', gruppe: 'Hotels', titel: 'Palmwind Resort (Koh Samui)', info: '22.–23.12. · bestätigt', status: 'vorhanden', abDatum: '2026-12-22' },
+      { id: 'boat-ngai', gruppe: 'Boote & Fähren', titel: 'Boot Lanta – Koh Ngai', info: '24.12. 10:00', status: 'foto_noetig', abDatum: '2026-12-24' }
     ],
     notfall: { botschaft: '+66 2 674 6900', notruf: '191', feuerwehr: '199' },
     ausgaben: []
@@ -878,7 +878,7 @@ function openDay(idx) {
 /* ---------- Dokumente ---------- */
 function tileStyle(gruppe) {
   const g = (gruppe || '').toLowerCase();
-  if (g.includes('flug') || g.includes('flight')) return { cls: 'tile-flug', ic: 'plane' };
+  if (g.includes('flug') || g.includes('flüg') || g.includes('flight')) return { cls: 'tile-flug', ic: 'plane' };
   if (g.includes('boot') || g.includes('fähre') || g.includes('schiff')) return { cls: 'tile-boot', ic: 'ship' };
   if (g.includes('hotel') || g.includes('unterkunft')) return { cls: 'tile-hotel', ic: 'palm' };
   if (g.includes('pass')) return { cls: 'tile-pass', ic: 'pass' };
