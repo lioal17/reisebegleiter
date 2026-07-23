@@ -127,7 +127,7 @@
         "tel": "+66 75 000 55 66",
         "whatsapp": "+66800005566",
         "checkin": "16:00",
-        "gps": "8.2833,99.0667"
+        "gps": "7.6200,99.0700"
       },
       "transfer": { "typ": "Flug + Boot", "zeit": "08:10", "detail": "ZB 118 nach Krabi, dann Boot", "ticketRef": "f-cnx-kbv" },
       "hinweise": ["Früher Start: 06:15 ab Hotel"],
@@ -143,7 +143,7 @@
         "tel": "+66 75 000 55 66",
         "whatsapp": "",
         "checkin": "16:00",
-        "gps": "8.2833,99.0667"
+        "gps": "7.6200,99.0700"
       },
       "transfer": { "typ": "Tauchen", "zeit": "07:30", "detail": "Abholung Tauchbasis (2 Tauchgänge)", "ticketRef": null },
       "hinweise": ["Tauchversicherung-Nachweis mitnehmen"],
@@ -161,7 +161,7 @@
         "tel": "+66 75 000 55 66",
         "whatsapp": "",
         "checkin": "16:00",
-        "gps": "8.2833,99.0667"
+        "gps": "7.6200,99.0700"
       },
       "transfer": null,
       "hinweise": [],
@@ -180,7 +180,7 @@
         "tel": "+66 80 000 77 88",
         "whatsapp": "",
         "checkin": "14:00",
-        "gps": "8.1234,99.1234"
+        "gps": "7.4100,99.2060"
       },
       "transfer": { "typ": "Boot", "zeit": "10:30", "detail": "Fähre ab Koh Lanta (ca. 40 min)", "ticketRef": "b-lanta-ngai" },
       "hinweise": ["Kein Bankomat auf der Insel – Bargeld mitnehmen"],
@@ -196,7 +196,7 @@
         "tel": "+66 80 000 77 88",
         "whatsapp": "",
         "checkin": "14:00",
-        "gps": "8.1234,99.1234"
+        "gps": "7.4100,99.2060"
       },
       "transfer": null,
       "hinweise": [],
@@ -214,7 +214,7 @@
         "tel": "+66 80 000 77 88",
         "whatsapp": "",
         "checkin": "14:00",
-        "gps": "8.1234,99.1234"
+        "gps": "7.4100,99.2060"
       },
       "transfer": null,
       "hinweise": ["Silvester: Strand-BBQ im Resort"],
@@ -232,7 +232,7 @@
         "tel": "+66 80 000 77 88",
         "whatsapp": "",
         "checkin": "14:00",
-        "gps": "8.1234,99.1234"
+        "gps": "7.4100,99.2060"
       },
       "transfer": null,
       "hinweise": ["Neujahr – einfach gar nichts vorhaben 🌴"],
@@ -248,7 +248,7 @@
         "tel": "+66 75 000 99 00",
         "whatsapp": "",
         "checkin": "15:00",
-        "gps": "8.0667,98.9333"
+        "gps": "7.3630,99.0730"
       },
       "transfer": { "typ": "Boot", "zeit": "09:45", "detail": "Longtail ab Koh Ngai (ca. 45 min)", "ticketRef": "b-ngai-muk" },
       "hinweise": [],
@@ -266,7 +266,7 @@
         "tel": "+66 75 000 99 00",
         "whatsapp": "",
         "checkin": "15:00",
-        "gps": "8.0667,98.9333"
+        "gps": "7.3630,99.0730"
       },
       "transfer": null,
       "hinweise": [],
