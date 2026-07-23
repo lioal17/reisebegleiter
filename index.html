@@ -760,7 +760,8 @@ function normalizeDay(raw) {
       whatsapp: pickField(hotelRaw, ['whatsapp', 'wa', 'wapp']) || '',
       checkin: pickField(hotelRaw, ['checkin', 'check_in', 'check-in', 'einchecken', 'ankunft']) || '',
       gps: pickField(hotelRaw, ['gps', 'koordinaten', 'coords', 'coordinates', 'latlon', 'position']) || '',
-      foto: pickField(hotelRaw, ['foto', 'photo', 'bild', 'image']) || ''
+      foto: pickField(hotelRaw, ['foto', 'photo', 'bild', 'image']) || '',
+      url: pickField(hotelRaw, ['url', 'link', 'website', 'webseite', 'booking', 'buchungslink', 'buchung']) || ''
     };
   } else hotel = {};
   if (!hotel.name) hotel.name = pickField(raw, ['hotelname', 'hotel_name', 'unterkunftname']) || hotel.name || '';
@@ -771,6 +772,8 @@ function normalizeDay(raw) {
       typ: pickField(transferRaw, ['typ', 'type', 'art', 'mittel']) || '',
       zeit: pickField(transferRaw, ['zeit', 'time', 'uhrzeit', 'abfahrt', 'start']) || '',
       detail: pickField(transferRaw, ['detail', 'details', 'info', 'beschreibung', 'route']) || '',
+      airline: pickField(transferRaw, ['airline', 'fluggesellschaft', 'carrier', 'gesellschaft']) || '',
+      flugnr: pickField(transferRaw, ['flugnr', 'flugnummer', 'flightno', 'flightnumber', 'flug']) || '',
       ticketRef: pickField(transferRaw, ['ticketref', 'ticket', 'ticketid']) || null
     };
   } else if (typeof transferRaw === 'string' && transferRaw) {
