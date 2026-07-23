@@ -728,9 +728,90 @@ function applyHeroAsset() {
   });
 }
 
+/* ---------- Daten-Normalisierung (erkennt abweichende Feldnamen) ---------- */
+function pickField(obj, keys) {
+  if (!obj || typeof obj !== 'object') return undefined;
+  const lower = {};
+  for (const k in obj) lower[k.toLowerCase()] = obj[k];
+  for (const key of keys) {
+    const v = lower[key.toLowerCase()];
+    if (v !== undefined && v !== null && v !== '') return v;
+  }
+  return undefined;
+}
+function normalizeDay(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  // schon im richtigen Format? (idempotent)
+  const datum = pickField(raw, ['datum', 'date', 'tag', 'day', 'tagdatum', 'reisetag']) || '';
+  let wochentag = pickField(raw, ['wochentag', 'weekday', 'dow', 'tagkurz', 'wday']) || '';
+  if (!wochentag && datum) {
+    const d = new Date(String(datum) + 'T00:00:00');
+    if (!isNaN(d.getTime())) wochentag = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][d.getDay()];
+  }
+  const ort = pickField(raw, ['ort', 'location', 'city', 'stadt', 'place', 'ziel', 'destination', 'standort']) || '';
+  let hotelRaw = pickField(raw, ['hotel', 'unterkunft', 'accommodation', 'stay', 'lodging', 'hotelinfo']);
+  let hotel;
+  if (typeof hotelRaw === 'string') hotel = { name: hotelRaw };
+  else if (hotelRaw && typeof hotelRaw === 'object') {
+    hotel = {
+      name: pickField(hotelRaw, ['name', 'hotelname', 'titel', 'title', 'bezeichnung']) || '',
+      adresse: pickField(hotelRaw, ['adresse', 'address', 'anschrift', 'ort', 'location']) || '',
+      tel: pickField(hotelRaw, ['tel', 'telefon', 'phone', 'telephone', 'nummer']) || '',
+      whatsapp: pickField(hotelRaw, ['whatsapp', 'wa', 'wapp']) || '',
+      checkin: pickField(hotelRaw, ['checkin', 'check_in', 'check-in', 'einchecken', 'ankunft']) || '',
+      gps: pickField(hotelRaw, ['gps', 'koordinaten', 'coords', 'coordinates', 'latlon', 'position']) || '',
+      foto: pickField(hotelRaw, ['foto', 'photo', 'bild', 'image']) || ''
+    };
+  } else hotel = {};
+  if (!hotel.name) hotel.name = pickField(raw, ['hotelname', 'hotel_name', 'unterkunftname']) || hotel.name || '';
+  let transferRaw = pickField(raw, ['transfer', 'transport', 'anreise', 'fahrt', 'reise']);
+  let transfer = null;
+  if (transferRaw && typeof transferRaw === 'object') {
+    transfer = {
+      typ: pickField(transferRaw, ['typ', 'type', 'art', 'mittel']) || '',
+      zeit: pickField(transferRaw, ['zeit', 'time', 'uhrzeit', 'abfahrt', 'start']) || '',
+      detail: pickField(transferRaw, ['detail', 'details', 'info', 'beschreibung', 'route']) || '',
+      ticketRef: pickField(transferRaw, ['ticketref', 'ticket', 'ticketid']) || null
+    };
+  } else if (typeof transferRaw === 'string' && transferRaw) {
+    transfer = { typ: transferRaw, zeit: '', detail: '', ticketRef: null };
+  }
+  let hinweise = pickField(raw, ['hinweise', 'notes', 'hints', 'bemerkungen', 'anmerkungen', 'todo', 'wichtig']);
+  if (!Array.isArray(hinweise)) hinweise = hinweise ? [String(hinweise)] : [];
+  let programm = pickField(raw, ['programm', 'program', 'aktivitaeten', 'aktivitäten', 'activities', 'schedule', 'tagesplan', 'agenda']);
+  if (!Array.isArray(programm)) programm = programm ? [programm] : [];
+  return { datum: datum, wochentag: wochentag, ort: ort, hotel: hotel, transfer: transfer, hinweise: hinweise, programm: programm };
+}
+function normalizeTicket(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  return {
+    id: pickField(raw, ['id', 'ref', 'key']) || ('t' + Math.random().toString(36).slice(2, 8)),
+    gruppe: pickField(raw, ['gruppe', 'group', 'kategorie', 'category', 'typ', 'type']) || 'Dokumente',
+    titel: pickField(raw, ['titel', 'title', 'name', 'bezeichnung']) || '',
+    info: pickField(raw, ['info', 'details', 'detail', 'beschreibung', 'description']) || '',
+    status: pickField(raw, ['status', 'zustand']) || 'vorhanden',
+    abDatum: pickField(raw, ['abdatum', 'datum', 'date', 'ab']) || ''
+  };
+}
+function normalizeAppData(d) {
+  if (!d || typeof d !== 'object') return d;
+  const tageRaw = Array.isArray(d.tage) ? d.tage : (Array.isArray(d.days) ? d.days : (Array.isArray(d.itinerary) ? d.itinerary : []));
+  d.tage = tageRaw.map(normalizeDay).filter(Boolean);
+  if (Array.isArray(d.tickets)) d.tickets = d.tickets.map(normalizeTicket).filter(Boolean);
+  else {
+    const tRaw = pickField(d, ['tickets', 'dokumente', 'documents', 'belege']);
+    if (Array.isArray(tRaw)) d.tickets = tRaw.map(normalizeTicket).filter(Boolean);
+  }
+  if (!d.reise || typeof d.reise !== 'object') d.reise = {};
+  if (!d.reise.start) d.reise.start = pickField(d, ['start', 'startdatum', 'von']) || (d.tage[0] && d.tage[0].datum) || '';
+  return d;
+}
+
 /* ---------- Heute ---------- */
 function loadUIFromAppData() {
   if (!appData) return;
+  appData = normalizeAppData(appData);
+  try { localStorage.setItem('reisebegleiter_data', JSON.stringify(appData)); } catch(e) {}
   const reise = appData.reise || {};
   const tage = appData.tage || [];
   tage.sort((a, b) => String(a.datum).localeCompare(String(b.datum)));
