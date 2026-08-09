@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reisebegleiter-v3';
+const CACHE_NAME = 'reisebegleiter-v4';
 const urlsToCache = [
   './',
   './index.html',
@@ -43,21 +43,25 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
 
+  // Fremde Hosts fasst der Service Worker nicht an. Konkret: die
+  // Wetterabfrage laeuft am Cache vorbei, sonst wuerde ein einmal
+  // geholter Wert fuer immer stehen bleiben. Ihr Zwischenspeicher
+  // liegt mit eigenem Zeitstempel in der App.
+  if (new URL(event.request.url).origin !== self.location.origin) return;
+
   event.respondWith(
-    caches.match(event.request).then(response => {
-      if (response) return response;
-      return fetch(event.request).then(response => {
-        if (!response || response.status !== 200 || response.type === 'error') {
-          return response;
-        }
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, responseToCache);
-        });
-        return response;
-      }).catch(() => {
-        return caches.match(event.request) || new Response('Offline – bitte später versuchen');
-      });
+    caches.match(event.request).then(treffer => {
+      if (treffer) return treffer;
+      return fetch(event.request).then(antwort => {
+        if (!antwort || antwort.status !== 200 || antwort.type === 'error') return antwort;
+        const kopie = antwort.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, kopie));
+        return antwort;
+      }).catch(() =>
+        caches.match(event.request).then(alt => alt || new Response('Offline – bitte später versuchen', {
+          status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        }))
+      );
     })
   );
 });

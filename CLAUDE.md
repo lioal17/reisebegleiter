@@ -8,15 +8,28 @@ Immer einzuhalten:
 
 - Die App bleibt eine **reine Offline-/Local-First-Webapp** (eine einzige `index.html`, Daten nur in `localStorage`/`IndexedDB`, **kein** Backend, kein Tracking, keine Telemetrie).
 - **Keine** Funktion einbauen, die Reisedaten per Netzwerk sendet: kein `fetch`/XHR/WebSocket/`sendBeacon`/Formular-POST an externe Ziele, kein Cloud-Sync, kein Analytics.
-- Die **Content-Security-Policy nicht aufweichen** (`default-src 'none'`, `connect-src 'self'`, `form-action 'none'`), sodass keine Datenexfiltration möglich wird.
+- Die **Content-Security-Policy nicht aufweichen** (`default-src 'none'`, `form-action 'none'`), sodass keine Datenexfiltration möglich wird. Für `connect-src` gilt die Präzisierung unten – sie ist abschliessend.
 - **Nie** echte Reisedaten in Commits, Pull Requests, Screenshots, Logs, Artifacts oder Issue-/PR-Kommentaren – und niemals an Dritte oder externe Dienste – weitergeben. Export-`*.json` (Datensicherungen) gehören **nicht** ins Repository (siehe `.gitignore`).
 - Test-/Demodaten sind **immer frei erfunden** (keine echten Orte/Hotels/Flüge wenn möglich; Nummern angepasst).
 - **Kein externer Zugriff von außen:** Weder Dritte noch externe Anwendungen oder Dienste dürfen auf Reisedaten zugreifen können. Keine Funktion/Integration darf einen Zugriffsweg von außerhalb des lokalen Systems öffnen (keine Freigaben, keine Remote-Schnittstellen, kein Sync-Dienst).
 - **Auch Claude selbst ist ein externer Kanal:** Reisedaten dürfen **nicht** in den Claude-Chat gelangen (keine echten Namen/Hotels/Abläufe in Nachrichten, Screenshots oder eingefügten Exporten). Claude fordert nie echte Reisedaten an und arbeitet ausschliesslich mit erfundenen Demodaten.
 
+### Präzisierung `connect-src`: genau eine Ausnahme
+
+`connect-src` ist **nicht** mehr `'self'` allein, sondern `'self' https://api.open-meteo.com`. Diese Ausnahme ist abschliessend und an vier Bedingungen gebunden:
+
+1. **Genau ein Dienst.** Open-Meteo, ohne Schlüssel, ohne Konto, ohne Registrierung. Kein zweiter Host kommt dazu, egal wie nützlich er wäre.
+2. **Nur Koordinaten, auf eine Nachkommastelle gerundet.** Rund elf Kilometer Unschärfe. Der Dienst erfährt die Region, nicht die Unterkunft. Die Rundung passiert im Code, nicht im Kopf: `Math.round(x * 10) / 10`.
+3. **Nur ausgehende Abfrage von Wetterwerten.** Keine Namen, keine Daten, keine Termine, keine Kennungen, kein Zeitplan der Reise. Ein Request enthält ausschliesslich gerundete Koordinaten und die gewünschten Wetterfelder.
+4. **Die App bleibt ohne diesen Dienst voll funktionsfähig.** Fällt er aus oder ist kein Netz da, zeigt sie zwischengespeicherte Werte mit Zeitstempel, sonst fest eingebaute Klimamittelwerte. Wetter ist Beiwerk, nie Voraussetzung.
+
+Alles andere bleibt: `default-src 'none'`, `form-action 'none'`, kein Backend, kein Tracking, keine Telemetrie, kein Cloud-Sync.
+
+**Wer diese Ausnahme erweitern will, ändert zuerst diese Datei und fragt zuerst nach.**
+
 **Pflicht-Checkliste bei JEDER Anpassung (vor Commit/PR zu bestätigen):**
-1. Bleibt die App vollständig **offline und lokal** (kein neuer Netzwerkpfad)?
-2. Bleibt die **CSP unverändert restriktiv** (`default-src 'none'`, `form-action 'none'`)?
+1. Bleibt die App vollständig **offline nutzbar** (kein neuer Netzwerkpfad ausser der oben beschriebenen Wetter-Ausnahme)?
+2. Bleibt die **CSP unverändert restriktiv** (`default-src 'none'`, `form-action 'none'`, `connect-src` ohne weitere Hosts)?
 3. Enthalten Commit/PR/Screenshots/Logs/ZIPs **keine echten Reisedaten** (nur erfundene)?
 4. Entsteht **kein Zugriffsweg von außen** auf Reisedaten (keine Freigabe, kein Endpoint)?
 

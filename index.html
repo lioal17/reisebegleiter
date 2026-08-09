@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://api.open-meteo.com; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Reisebegleiter – Thailand 2026/27</title>
 <meta name="theme-color" content="#0e1b1e">
@@ -13,37 +13,123 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwNCIgZmlsbD0iIzBlMWIxZSIvPjxjaXJjbGUgY3g9IjM1MiIgY3k9IjE1MCIgcj0iNDAiIGZpbGw9IiNlNmEyM2MiLz48cGF0aCBkPSJNMjQ0IDM5NmM4LTcyIDIwLTEyNCA1Mi0xNzIiIHN0cm9rZT0iIzJmZDljMCIgc3Ryb2tlLXdpZHRoPSIyMCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTI5NiAyMjRjLTQwLTI2LTc4LTI0LTEwOC0yTTI5NiAyMjRjLTQtNDggMjItNzYgNjItODRNMjk2IDIyNGM0NC0yMCA4NC04IDEwNiAyNiIgc3Ryb2tlPSIjMmZkOWMwIiBzdHJva2Utd2lkdGg9IjE4IiBzdHJva2UtbGluZWNhcD0icm91bmQiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMTIwIDQyMGMyNC0xNCA0OC0xNCA3MiAwczQ4IDE0IDcyIDAgNDgtMTQgNzIgMCA0OCAxNCA3MiAwIiBzdHJva2U9IiMxYTVmNTgiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgZmlsbD0ibm9uZSIvPjwvc3ZnPgo=">
 <style>
 :root {
-  --bg: #0b1517;
-  --bg2: #0e1b1e;
-  --card: #12242a;
-  --card2: #16303a;
-  --line: #1d3a42;
-  --teal: #2fd9c0;
-  --teal-deep: #0f4a44;
-  --teal-bg: rgba(47, 217, 192, 0.10);
-  --gold: #e6a23c;
-  --gold-bg: rgba(230, 162, 60, 0.12);
-  --red: #e05d5d;
-  --red-bg: rgba(224, 93, 93, 0.12);
-  --purple: #9f7aea;
-  --text: #eaf4f2;
-  --muted: #85a09d;
-  --faint: #567571;
+  /* ---- Grundflaechen ---- */
+  --bg: #081011;
+  --bg2: #0D1516;
+  --card: #151D1E;
+  --card2: #1B2526;
+
+  /* ---- Linien ---- */
+  --line: #293536;
+  --line-active: #3B5656;
+  --divider: #293233;
+  --divider-soft: #202929;
+  --nav-line: #354142;
+
+  /* ---- Primaerfarbe ---- */
+  --teal: #20C9C1;
+  --teal-light: #63E2D8;
+  --teal-deep: #087F7B;
+  --teal-bg: #173D3B;
+
+  /* ---- Akzente nach Bedeutung ---- */
+  --hotel: #2CC7B9;
+  --hotel-bg: #173D3B;
+  --gold: #F2A23A;          /* Transfer / Boot / Transport */
+  --gold-bg: #49341D;
+  --flug: #3B9DEB;
+  --flug-bg: #19344A;
+  --essen: #E66D5A;
+  --essen-bg: #452A27;
+  --purple: #8064D8;        /* Aktivitaeten / Freizeit */
+  --purple-bg: #30284D;
+  --doc: #E6B95C;           /* Dokumente / Tickets */
+  --doc-bg: #44381F;
+  --red: #D95353;           /* Notfall / Wichtig */
+  --red-bg: #432526;
+
+  /* ---- Text ----
+     Hinweis: --faint nur fuer Nebensaechliches verwenden.
+     Zeiten, Orte und Betraege laufen immer ueber --text oder --muted,
+     sonst sind sie bei Sonnenlicht nicht mehr lesbar. */
+  --text: #F5F7F7;
+  --muted: #B7C0C0;
+  --faint: #788484;
+  --disabled: #505B5C;
+
+  /* ---- Radien ---- */
   --r: 16px;
+  --r-lg: 20px;
   --r-sm: 10px;
+  --r-btn: 14px;
+  --r-nav: 24px;
+
+  /* ---- Abstaende ---- */
+  --sp-xs: 4px;
+  --sp-s: 8px;
+  --sp-m: 12px;
+  --sp-l: 16px;
+  --sp-xl: 24px;
+  --sp-xxl: 32px;
+  --pad-card: 16px;
+  --pad-card-lg: 20px;
+  --gap-card: 10px;
+  --gap-group: 20px;
+  --edge: 16px;
+  --maxw: 560px;
+
+  /* ---- Bedienelemente ---- */
+  --btn-h: 48px;
+  --btn-h-lg: 52px;
+  --chip-h: 28px;
+  --nav-h: 78px;
+  --touch-min: 44px;
+
+  /* ---- Schrift ----
+     Kein Webfont: die App muss offline und ohne externe Verbindung
+     laufen. system-ui liefert auf Android Roboto, das kommt Inter
+     sehr nahe. */
+  --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+
+  /* ---- Typografie-Skala ----
+     Sechs Stufen, nicht mehr. Untergrenze fuer Inhalt ist --fs-mini
+     mit 12px, alles darunter ist bei Sonnenlicht nicht mehr lesbar.
+     --fs-label mit 11px ist ausschliesslich fuer Navigationsbeschriftung
+     erlaubt, nie fuer Zeiten, Orte oder Betraege. */
+  --fs-display: 32px;   /* "Heute", einmal pro Screen */
+  --fs-h1: 26px;        /* Screen-Titel */
+  --fs-h2: 20px;        /* Abschnittstitel, Betraege */
+  --fs-title: 17px;     /* Kartentitel */
+  --fs-body: 15px;      /* Fliesstext, Listeneintraege */
+  --fs-sub: 13px;       /* Untertitel, Zeiten, Chips */
+  --fs-mini: 12px;      /* Labels ueber Karten, Zaehler */
+  --fs-label: 11px;     /* nur Navigationsbeschriftung */
+  --fs-input: 16px;     /* fest: darunter zoomt iOS beim Tippen */
+
+  --lh-tight: 1.2;
+  --lh-normal: 1.45;
+
+  --fw-med: 500;
+  --fw-semi: 600;
+  --fw-bold: 700;
+
+  --ls-tight: -0.02em;   /* grosse Zahlen und Titel */
+  --ls-caps: 0.06em;     /* Grossbuchstaben-Labels */
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { height: 100%; }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font);
   background: var(--bg);
   background-image: radial-gradient(ellipse 120% 50% at 50% -10%, rgba(23, 112, 106, 0.28), transparent 60%);
   background-attachment: fixed;
   color: var(--text);
-  font-size: 16px;
-  line-height: 1.5;
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+  -webkit-text-size-adjust: 100%;
   overflow: hidden;
 }
+h1, h2, h3 { font-size: inherit; font-weight: inherit; }
 #app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
 .screen {
   display: none;
@@ -76,19 +162,20 @@ body {
 
 /* Kopfzeilen */
 .hero { padding: 8px 4px 18px; }
-.greet { font-size: 15px; color: var(--muted); margin-bottom: 2px; }
-.h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; }
-.sub { font-size: 14px; color: var(--muted); }
+.greet { font-size: var(--fs-body); color: var(--muted); margin-bottom: 2px; }
+.h1 { font-size: var(--fs-display); font-weight: var(--fw-bold); letter-spacing: var(--ls-tight); line-height: var(--lh-tight); }
+.h1.h1-screen { font-size: var(--fs-h1); }
+.sub { font-size: var(--fs-sub); color: var(--muted); }
 .loc-pill {
   display: inline-flex; align-items: center; gap: 6px;
   margin-top: 10px; padding: 5px 12px;
   background: var(--teal-bg); color: var(--teal);
   border: 1px solid rgba(47, 217, 192, 0.25);
-  border-radius: 20px; font-size: 13px; font-weight: 500;
+  border-radius: 20px; font-size: var(--fs-sub); font-weight: var(--fw-med);
 }
 .topbar { display: flex; align-items: center; gap: 10px; padding: 4px 0 16px; }
-.topbar .h1 { font-size: 24px; flex: 1; }
-.topbar-sub { font-size: 13px; color: var(--muted); }
+.topbar .h1 { font-size: var(--fs-h1); flex: 1; }
+.topbar-sub { font-size: var(--fs-sub); color: var(--muted); }
 .icon-btn {
   width: 40px; height: 40px; flex: 0 0 40px;
   display: flex; align-items: center; justify-content: center;
@@ -122,31 +209,43 @@ body {
   color: var(--teal);
 }
 .card-gold .badge-ic { color: var(--gold); }
-.card-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
-.card-teal .card-label, .card-gold .card-label { color: rgba(234, 244, 242, 0.65); }
-.card-title { font-size: 18px; font-weight: 650; margin: 2px 0; }
-.card-sub { font-size: 13px; color: var(--muted); }
-.card-teal .card-sub, .card-gold .card-sub { color: rgba(234, 244, 242, 0.7); }
+.card-label {
+  font-size: var(--fs-mini); color: var(--muted);
+  text-transform: uppercase; letter-spacing: var(--ls-caps);
+  font-weight: var(--fw-semi);
+}
+.card-teal .card-label, .card-gold .card-label { color: rgba(234, 244, 242, 0.72); }
+.card-title { font-size: var(--fs-title); font-weight: var(--fw-semi); line-height: var(--lh-tight); margin: 3px 0; }
+.card-title-lg { font-size: var(--fs-h2); letter-spacing: var(--ls-tight); }
+.card-title-sm { font-size: var(--fs-body); font-weight: var(--fw-semi); }
+.hint-line { font-size: var(--fs-mini); color: var(--muted); margin-top: 4px; }
+.status-line { font-size: var(--fs-mini); font-weight: var(--fw-semi); margin-top: 4px; }
+.status-red { color: var(--red); }
+.status-gold { color: var(--gold); }
+.card-sub { font-size: var(--fs-sub); color: var(--muted); }
+.card-teal .card-sub, .card-gold .card-sub { color: rgba(234, 244, 242, 0.75); }
 .chip {
   display: inline-flex; align-items: center; gap: 5px;
   margin-top: 8px; padding: 4px 10px;
-  border-radius: 14px; font-size: 12px; font-weight: 500;
+  border-radius: 14px; font-size: var(--fs-mini); font-weight: var(--fw-med);
   background: rgba(0, 0, 0, 0.25); color: var(--teal);
 }
 .card-gold .chip { color: #f4cf8f; }
 .chevron { color: var(--faint); align-self: center; flex: 0 0 auto; }
 
-.title { font-size: 22px; font-weight: 650; margin-bottom: 4px; }
-.subtitle { font-size: 14px; color: var(--muted); }
+.title { font-size: var(--fs-h2); font-weight: var(--fw-semi); margin-bottom: 4px; }
+.subtitle { font-size: var(--fs-body); color: var(--muted); }
 .btn {
   background: var(--teal-deep);
   color: var(--teal);
   border: 1px solid rgba(47, 217, 192, 0.3);
   padding: 11px 16px;
-  border-radius: 12px;
+  min-height: var(--touch-min);
+  border-radius: var(--r-btn);
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 550;
+  font-family: inherit;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-semi);
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
   transition: opacity 0.2s;
 }
@@ -154,28 +253,29 @@ body {
 .btn-secondary { background: var(--card2); color: var(--text); border-color: var(--line); }
 .btn-danger { background: rgba(224, 93, 93, 0.16); color: #f1a0a0; border-color: rgba(224, 93, 93, 0.4); }
 .row { display: flex; gap: 8px; margin-top: 10px; }
-.row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
-.btn-inline { flex: 1; padding: 10px; font-size: 13px; }
+.btn-inline { flex: 1; padding: 10px; font-size: var(--fs-sub); }
 .input-field {
   width: 100%;
-  padding: 11px;
+  padding: 12px;
   background: var(--bg2);
   border: 1px solid var(--line);
   color: var(--text);
-  border-radius: 12px;
-  font-size: 16px;
+  border-radius: var(--r-btn);
+  font-family: inherit;
+  font-size: var(--fs-input);
   margin-bottom: 8px;
 }
 .input-field::placeholder { color: var(--faint); }
-.badge-label { font-size: 12px; color: var(--muted); margin-top: 8px; }
+.badge-label { font-size: var(--fs-mini); color: var(--muted); margin-top: 8px; }
 .pill {
-  display: inline-block;
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: var(--chip-h);
   background: var(--bg2);
   color: var(--muted);
   padding: 6px 12px;
   border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--fs-sub);
+  font-weight: var(--fw-med);
   cursor: pointer;
   border: 1px solid var(--line);
   transition: all 0.2s;
@@ -185,8 +285,24 @@ body {
   width: 40px; height: 40px; flex: 0 0 40px;
   background: var(--teal-deep); color: var(--teal);
   border: 1px solid rgba(47, 217, 192, 0.3);
-  border-radius: 50%; cursor: pointer; font-size: 18px;
+  border-radius: 50%; cursor: pointer; font-size: var(--fs-title);
 }
+
+/* Wetter */
+.wx {
+  display: flex; align-items: center; gap: var(--sp-m);
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 12px var(--pad-card);
+  margin-bottom: var(--gap-card);
+}
+.wx-ic { color: var(--teal); flex: 0 0 auto; }
+.wx-main { flex: 1; min-width: 0; }
+.wx-temp { font-size: var(--fs-h2); font-weight: var(--fw-bold); letter-spacing: var(--ls-tight); line-height: var(--lh-tight); }
+.wx-desc { font-size: var(--fs-sub); color: var(--muted); }
+.wx-side { text-align: right; flex: 0 0 auto; }
+.wx-range { font-size: var(--fs-sub); color: var(--text); font-weight: var(--fw-med); }
+.wx-stamp { font-size: var(--fs-mini); color: var(--muted); margin-top: 2px; }
+.wx.wx-mittel .wx-ic { color: var(--muted); }
 
 /* Reiseplan */
 .day-list { display: flex; flex-direction: column; gap: 10px; }
@@ -206,17 +322,17 @@ body {
   box-shadow: 0 0 24px rgba(47, 217, 192, 0.12);
 }
 .day-left { flex: 0 0 52px; }
-.day-dow { font-size: 12px; color: var(--muted); }
-.day-item.today .day-dow { color: rgba(234, 244, 242, 0.65); }
-.day-date { font-size: 17px; font-weight: 650; }
+.day-dow { font-size: var(--fs-mini); color: var(--muted); }
+.day-item.today .day-dow { color: rgba(234, 244, 242, 0.72); }
+.day-date { font-size: var(--fs-title); font-weight: var(--fw-bold); letter-spacing: var(--ls-tight); }
 .day-main { flex: 1; min-width: 0; }
-.day-location { font-weight: 650; }
-.day-hotel { font-size: 13px; color: var(--muted); }
-.day-item.today .day-hotel { color: rgba(234, 244, 242, 0.7); }
+.day-location { font-size: var(--fs-body); font-weight: var(--fw-semi); }
+.day-hotel { font-size: var(--fs-sub); color: var(--muted); }
+.day-item.today .day-hotel { color: rgba(234, 244, 242, 0.75); }
 .day-chip {
   display: inline-flex; align-items: center; gap: 5px;
   margin-top: 6px; padding: 3px 9px;
-  border-radius: 12px; font-size: 12px; font-weight: 500;
+  border-radius: 12px; font-size: var(--fs-mini); font-weight: var(--fw-med);
   background: var(--gold-bg); color: var(--gold);
 }
 .day-chip.teal { background: rgba(0, 0, 0, 0.25); color: var(--teal); }
@@ -237,45 +353,64 @@ body {
 .tl-ic.gold { background: var(--gold-bg); color: var(--gold); }
 .tl-ic.purple { background: rgba(159, 122, 234, 0.14); color: var(--purple); }
 .tl-ic.red { background: var(--red-bg); color: var(--red); }
-.tl-time { font-size: 13px; font-weight: 650; color: var(--teal); }
-.tl-title { font-weight: 600; }
-.tl-sub { font-size: 13px; color: var(--muted); }
+.tl-time { font-size: var(--fs-sub); font-weight: var(--fw-bold); color: var(--teal); letter-spacing: 0.01em; }
+.tl-title { font-size: var(--fs-body); font-weight: var(--fw-semi); }
+.tl-sub { font-size: var(--fs-sub); color: var(--muted); }
 
-/* Dokumente Kacheln */
-.doc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+/* Dokumente Kacheln
+   Zwei Schichten: Farbverlauf plus Icon ist die Grundlage und
+   funktioniert ohne jedes Bild. Ein Bild aus assets/ legt sich
+   optional darueber, das Icon blendet dann aus. */
+.doc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap-card); margin-bottom: 18px; }
 .doc-tile {
   position: relative; overflow: hidden;
   border-radius: var(--r);
-  min-height: 128px;
-  padding: 14px;
+  min-height: 132px;
+  padding: var(--pad-card);
   display: flex; flex-direction: column; justify-content: flex-start;
   cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background-size: cover; background-position: center;
+  transition: transform 0.15s;
 }
-.doc-tile:active { filter: brightness(1.15); }
+.doc-tile:active { transform: scale(0.98); filter: brightness(1.12); }
+/* Icon als Grundschicht: gross, angeschnitten, ruhig */
 .doc-tile .art {
-  position: absolute; right: -14px; bottom: -18px;
-  opacity: 0.35; pointer-events: none;
+  position: absolute; right: -18px; bottom: -22px;
+  color: #fff; opacity: 0.22; pointer-events: none;
   transform: rotate(-8deg);
+}
+/* Textschutz: oben aufhellen, unten abdunkeln, damit weisse
+   Schrift auch auf einem spaeter nachgelieferten Bild traegt */
+.doc-tile::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(4,10,12,0.45) 0%, rgba(4,10,12,0) 55%);
+  border-radius: inherit;
 }
 .doc-tile::after {
   content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(5,12,15,0.35));
+  background: radial-gradient(120% 80% at 15% 0%, rgba(255,255,255,0.10), transparent 60%);
   border-radius: inherit;
 }
-.doc-tile .t-name, .doc-tile .t-count { z-index: 1; text-shadow: 0 1px 6px rgba(0,0,0,0.5); }
-.doc-tile .t-name { font-weight: 650; font-size: 15px; position: relative; }
-.doc-tile .t-count { font-size: 12px; color: rgba(255, 255, 255, 0.7); position: relative; }
-.tile-flug { background: linear-gradient(140deg, #1c3a5e, #2c5c93); }
-.tile-boot { background: linear-gradient(140deg, #0e4a44, #17756c); }
-.tile-hotel { background: linear-gradient(140deg, #5c3b16, #8a5a24); }
-.tile-pass { background: linear-gradient(140deg, #4a2026, #713039); }
-.tile-schutz { background: linear-gradient(140deg, #322557, #4c3a85); }
-.tile-visa { background: linear-gradient(140deg, #59481c, #83702f); }
-.tile-default { background: linear-gradient(140deg, #1e3238, #2c4a52); }
+.doc-tile .t-name, .doc-tile .t-count {
+  position: relative; z-index: 1;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.55);
+}
+.doc-tile .t-name {
+  font-size: var(--fs-title); font-weight: var(--fw-bold);
+  line-height: var(--lh-tight); letter-spacing: var(--ls-tight);
+}
+.doc-tile .t-count { font-size: var(--fs-mini); color: rgba(255, 255, 255, 0.82); margin-top: 3px; }
+.tile-flug { background-image: linear-gradient(145deg, #16324f, #2f6aa8); }
+.tile-boot { background-image: linear-gradient(145deg, #0b423d, #17847a); }
+.tile-hotel { background-image: linear-gradient(145deg, #533413, #9a6526); }
+.tile-pass { background-image: linear-gradient(145deg, #431c22, #7d343f); }
+.tile-schutz { background-image: linear-gradient(145deg, #2c204e, #55429a); }
+.tile-visa { background-image: linear-gradient(145deg, #514019, #927d34); }
+.tile-default { background-image: linear-gradient(145deg, #1b2d32, #31545e); }
 .grp-head {
-  font-size: 12px; color: var(--muted); font-weight: 650;
-  margin: 16px 0 8px; text-transform: uppercase; letter-spacing: 0.06em;
+  font-size: var(--fs-mini); color: var(--muted); font-weight: var(--fw-bold);
+  margin: var(--sp-l) 0 var(--sp-s); text-transform: uppercase; letter-spacing: var(--ls-caps);
 }
 .upload-box {
   border: 2px dashed var(--line);
@@ -301,11 +436,76 @@ body {
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 4px 18px rgba(47, 217, 192, 0.4);
 }
-.map-note { font-size: 12px; color: var(--faint); margin-top: 10px; text-align: center; }
-#geoStatus { font-size: 12px; color: var(--teal); text-align: center; margin-top: 8px; min-height: 16px; }
+.map-note { font-size: var(--fs-mini); color: var(--muted); margin-top: 10px; text-align: center; }
+#geoStatus { font-size: var(--fs-mini); color: var(--teal); text-align: center; margin-top: 8px; min-height: 16px; }
 .icon-btn.geo-on { color: var(--teal); border-color: rgba(47, 217, 192, 0.5); box-shadow: 0 0 12px rgba(47, 217, 192, 0.3); }
 .me-pulse { animation: mepulse 2s ease-out infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes mepulse { 0% { transform: scale(0.4); opacity: 0.9; } 100% { transform: scale(1.8); opacity: 0; } }
+
+/* Werkzeuge: Ausgaben */
+.spend-head { display: flex; justify-content: space-between; align-items: baseline; }
+.spend-total {
+  font-size: var(--fs-h2); font-weight: var(--fw-bold);
+  color: var(--teal); letter-spacing: var(--ls-tight);
+}
+.spend-input-row {
+  display: flex; align-items: center; gap: var(--sp-m);
+  margin: var(--sp-m) 0;
+  background: var(--bg2); border: 1px solid var(--line);
+  border-radius: var(--r-btn); padding: 10px 14px;
+}
+.spend-input {
+  flex: 1; min-width: 0;
+  background: none; border: none; color: var(--text);
+  font-family: inherit; font-size: 30px; font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-tight);
+}
+.spend-input:focus { outline: none; }
+.spend-input::placeholder { color: var(--disabled); }
+.spend-cur { text-align: right; flex: 0 0 auto; }
+.spend-cur-unit { font-size: var(--fs-sub); color: var(--muted); font-weight: var(--fw-semi); }
+.spend-cur-chf { font-size: var(--fs-sub); color: var(--teal); }
+.cat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-s); }
+.cat-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 5px; min-height: 66px;
+  background: var(--bg2); border: 1px solid var(--line);
+  border-radius: var(--r-btn); color: var(--text);
+  font-family: inherit; font-size: var(--fs-mini); font-weight: var(--fw-med);
+  cursor: pointer; transition: transform 0.12s, border-color 0.15s;
+}
+.cat-btn .ic { color: var(--teal); }
+.cat-btn:active { transform: scale(0.96); border-color: var(--teal); background: var(--teal-bg); }
+.cat-btn.gebucht { border-color: var(--teal); background: var(--teal-bg); }
+.cat-btn:disabled { opacity: 0.45; cursor: default; }
+.spend-last {
+  display: none; align-items: center; gap: var(--sp-s);
+  margin-top: var(--sp-m); padding-top: var(--sp-m);
+  border-top: 1px solid var(--divider-soft);
+  font-size: var(--fs-sub); color: var(--muted);
+}
+.spend-last.on { display: flex; }
+.spend-last-text { flex: 1; min-width: 0; }
+.spend-undo {
+  flex: 0 0 auto; background: none; border: none;
+  color: var(--teal); font-family: inherit; font-size: var(--fs-sub);
+  font-weight: var(--fw-semi); cursor: pointer; padding: 6px 4px;
+}
+
+/* Werkzeuge: Umrechner, Uebersetzer, Notfall */
+.conv-row { display: flex; gap: var(--sp-s); align-items: center; margin-top: var(--sp-m); }
+.conv-row .input-field { flex: 1; margin: 0; }
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-s); margin-top: var(--sp-m); }
+.card-notfall { border-color: rgba(217, 83, 83, 0.4); }
+.card-label-red { color: var(--red); display: inline-flex; align-items: center; gap: 6px; }
+.notfall-liste { margin-top: var(--sp-m); border-top: 1px solid var(--divider-soft); }
+.notfall-zeile {
+  display: flex; justify-content: space-between; align-items: center; gap: var(--sp-m);
+  padding: 11px 0; border-bottom: 1px solid var(--divider-soft);
+  color: var(--text); font-size: var(--fs-body); text-decoration: none;
+}
+.notfall-zeile:last-child { border-bottom: none; }
+.notfall-nr { color: var(--muted); font-size: var(--fs-sub); }
 
 /* Navigation */
 .nav {
@@ -332,14 +532,14 @@ body {
 }
 .nav-btn.active { color: var(--teal); }
 .nav-btn.active .ic { filter: drop-shadow(0 0 8px rgba(47, 217, 192, 0.8)); }
-.nav-label { font-size: 11px; font-weight: 500; }
+.nav-label { font-size: var(--fs-label); font-weight: var(--fw-med); }
 
 .offline-badge {
   position: fixed; top: 10px; right: 10px;
   background: var(--gold-bg); color: var(--gold);
   border: 1px solid rgba(230, 162, 60, 0.4);
   padding: 4px 10px; border-radius: 14px;
-  font-size: 12px; font-weight: 550; z-index: 101;
+  font-size: var(--fs-mini); font-weight: var(--fw-semi); z-index: 101;
   display: none;
 }
 .offline-badge.show { display: block; }
@@ -359,6 +559,20 @@ a { color: var(--teal); }
       <h1 class="h1">Heute</h1>
       <div class="sub" id="todayDate">–</div>
       <div class="loc-pill"><span class="ic" data-icon="pin" data-size="15"></span><span id="todayLocText">–</span></div>
+    </div>
+
+    <!-- Wetter: Beiwerk, nie Voraussetzung. Faellt der Dienst aus,
+         stehen hier zwischengespeicherte Werte oder Klimamittel. -->
+    <div class="wx" id="wxCard" style="display: none;">
+      <div class="wx-ic ic" id="wxIcon"></div>
+      <div class="wx-main">
+        <div class="wx-temp" id="wxTemp">–</div>
+        <div class="wx-desc" id="wxDesc">Wetter wird geladen …</div>
+      </div>
+      <div class="wx-side">
+        <div class="wx-range" id="wxRange"></div>
+        <div class="wx-stamp" id="wxStamp"></div>
+      </div>
     </div>
 
     <div class="card card-teal" id="todayNight">
@@ -399,7 +613,7 @@ a { color: var(--teal); }
         <div class="badge-ic" style="color: var(--gold);"><span class="ic" data-icon="pin"></span></div>
         <div style="flex: 1;">
           <div class="card-label">Nicht vergessen</div>
-          <div class="card-title" style="font-size: 15px;" id="notesText">–</div>
+          <div class="card-title card-title-sm" id="notesText">–</div>
         </div>
       </div>
     </div>
@@ -409,7 +623,7 @@ a { color: var(--teal); }
   <div class="screen" id="screenPlan">
     <div class="topbar">
       <div style="flex: 1;">
-        <h1 class="h1" style="font-size: 26px;">Reiseplan</h1>
+        <h1 class="h1">Reiseplan</h1>
         <div class="topbar-sub" id="planStats">–</div>
       </div>
       <button class="icon-btn" id="openMapBtn" title="Karte"><span class="ic" data-icon="map"></span></button>
@@ -422,7 +636,7 @@ a { color: var(--teal); }
     <div class="topbar">
       <button class="icon-btn" id="dayBackBtn"><span class="ic" data-icon="chevL"></span></button>
       <div style="flex: 1;">
-        <h1 class="h1" style="font-size: 24px;" id="dayTitle">Tagesplan</h1>
+        <h1 class="h1" id="dayTitle">Tagesplan</h1>
         <div class="topbar-sub" id="daySub">–</div>
       </div>
     </div>
@@ -433,7 +647,7 @@ a { color: var(--teal); }
   <div class="screen" id="screenTickets">
     <div class="topbar">
       <div style="flex: 1;">
-        <h1 class="h1" style="font-size: 26px;">Dokumente</h1>
+        <h1 class="h1">Dokumente</h1>
         <div class="topbar-sub">Alles offline gespeichert</div>
       </div>
       <button class="icon-btn" id="addTicketTop"><span class="ic" data-icon="plus"></span></button>
@@ -443,7 +657,7 @@ a { color: var(--teal); }
     <div class="upload-box" id="addTicketBox">
       <div class="ic" data-icon="plus" style="margin-bottom: 6px; color: var(--teal);"></div>
       <div class="subtitle" style="color: var(--text);">Ticket hinzufügen</div>
-      <div style="font-size: 12px; color: var(--faint); margin-top: 4px;">Foto oder PDF – bleibt auf dem Gerät</div>
+      <div class="hint-line">Foto oder PDF – bleibt auf dem Gerät</div>
       <input type="file" id="ticketInput" accept="image/*,application/pdf" capture="environment" style="display: none;">
     </div>
   </div>
@@ -453,7 +667,7 @@ a { color: var(--teal); }
     <div class="topbar">
       <button class="icon-btn" id="mapBackBtn"><span class="ic" data-icon="chevL"></span></button>
       <div style="flex: 1;">
-        <h1 class="h1" style="font-size: 24px;">Karte</h1>
+        <h1 class="h1">Karte</h1>
         <div class="topbar-sub">Deine Route</div>
       </div>
       <button class="icon-btn" id="geoBtn" title="Live-Position anzeigen (GPS, bleibt auf dem Gerät)"><span class="ic" data-icon="send"></span></button>
@@ -467,96 +681,78 @@ a { color: var(--teal); }
   <div class="screen" id="screenTools">
     <div class="topbar">
       <div style="flex: 1;">
-        <h1 class="h1" style="font-size: 26px;">Mehr</h1>
+        <h1 class="h1">Mehr</h1>
         <div class="topbar-sub">Werkzeuge & Einstellungen</div>
       </div>
+    </div>
+
+    <!-- Ausgaben: steht zuoberst, weil es das am haeufigsten
+         benutzte Werkzeug vor Ort ist. Betrag tippen, Kategorie
+         tippen, gebucht. Kein Bestaetigen, kein Dialog. -->
+    <div class="card" id="spendCard">
+      <div class="spend-head">
+        <div class="card-label">Ausgaben</div>
+        <div class="spend-total" id="spendTotal">0.00 CHF</div>
+      </div>
+      <div class="spend-input-row">
+        <input type="text" inputmode="decimal" id="spendAmount" placeholder="0" class="spend-input" autocomplete="off">
+        <div class="spend-cur">
+          <div class="spend-cur-unit">THB</div>
+          <div class="spend-cur-chf" id="spendChf">0.00 CHF</div>
+        </div>
+      </div>
+      <div class="cat-grid" id="catGrid"></div>
+      <div class="spend-last" id="spendLast"></div>
     </div>
 
     <!-- Umrechner -->
     <div class="card">
       <div class="card-label">Umrechner</div>
-      <div style="display: flex; gap: 8px; align-items: center; margin-top: 12px;">
-        <input type="number" id="thbInput" placeholder="THB" class="input-field" style="flex: 1; margin: 0;">
-        <button class="exchange-btn">⇄</button>
-        <input type="number" id="chfInput" placeholder="CHF" class="input-field" style="flex: 1; margin: 0;">
+      <div class="conv-row">
+        <input type="text" inputmode="decimal" id="thbInput" placeholder="THB" class="input-field">
+        <button class="exchange-btn" id="convSwap" title="Richtung wechseln"><span class="ic" data-icon="swap" data-size="18"></span></button>
+        <input type="text" inputmode="decimal" id="chfInput" placeholder="CHF" class="input-field">
       </div>
-      <div class="badge-label">1 CHF = 40 THB (aufgerundet)</div>
-    </div>
-
-    <!-- In der Nähe -->
-    <div class="card">
-      <div class="card-label">In der Nähe</div>
-      <div class="row-3" id="nearbyGrid">
-        <div style="text-align: center; padding: 12px; background: var(--bg2); border-radius: 12px;">
-          <div class="ic" data-icon="ticket" style="color: var(--teal);"></div>
-          <div style="font-size: 12px; font-weight: 500; margin-top: 4px;">7-Eleven</div>
-          <div style="font-size: 10px; color: var(--faint);">450 m</div>
-        </div>
-        <div style="text-align: center; padding: 12px; background: var(--bg2); border-radius: 12px;">
-          <div class="ic" data-icon="car" style="color: var(--teal);"></div>
-          <div style="font-size: 12px; font-weight: 500; margin-top: 4px;">SkyTrain</div>
-          <div style="font-size: 10px; color: var(--faint);">280 m</div>
-        </div>
-        <div style="text-align: center; padding: 12px; background: var(--bg2); border-radius: 12px;">
-          <div class="ic" data-icon="pin" style="color: var(--teal);"></div>
-          <div style="font-size: 12px; font-weight: 500; margin-top: 4px;">Bankomat</div>
-          <div style="font-size: 10px; color: var(--faint);">190 m</div>
-        </div>
-      </div>
+      <div class="badge-label">1 CHF = 40 THB, immer zu deinen Ungunsten gerundet</div>
     </div>
 
     <!-- Übersetzer -->
     <div class="card">
-      <div class="card-label">Übersetzer <span style="text-transform: none; letter-spacing: 0;">(öffnet Browser)</span></div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px;">
-        <button class="btn btn-secondary" onclick="window.open('https://translate.google.com/?sl=de&tl=en', '_blank')">DE – ENG</button>
-        <button class="btn btn-secondary" onclick="window.open('https://translate.google.com/?sl=de&tl=th', '_blank')">DE – Thai</button>
+      <div class="card-label">Übersetzer</div>
+      <div class="row-2">
+        <button class="btn btn-secondary" id="trDeEn"><span class="ic" data-icon="translate" data-size="17"></span>DE – ENG</button>
+        <button class="btn btn-secondary" id="trDeTh"><span class="ic" data-icon="translate" data-size="17"></span>DE – Thai</button>
       </div>
-    </div>
-
-    <!-- Ausgaben -->
-    <div class="card">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-        <div class="card-label">Ausgaben erfasst</div>
-        <div style="font-size: 18px; font-weight: 650; color: var(--teal);" id="spendTotal">0 CHF</div>
-      </div>
-      <div style="display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; font-size: 12px;">
-        <div class="pill active" data-cat="Transport">Transport</div>
-        <div class="pill" data-cat="Schiff">Schiff</div>
-        <div class="pill" data-cat="Taxi">Taxi</div>
-        <div class="pill" data-cat="Flug">Flug</div>
-        <div class="pill" data-cat="Essen">Essen</div>
-        <div class="pill" data-cat="Massage">Massage</div>
-        <div class="pill" data-cat="Aktivität">Aktivität</div>
-        <div class="pill" data-cat="Konsum">Konsum</div>
-      </div>
-      <div class="row" style="margin-top: 0;">
-        <input type="number" id="spendAmount" placeholder="THB" class="input-field" style="flex: 1; margin: 0;">
-        <button class="btn" id="spendBtn" style="padding: 10px 18px;"><span class="ic" data-icon="plus" data-size="16"></span></button>
-      </div>
+      <div class="badge-label">Öffnet Google Translate im Browser. Braucht Netz.</div>
     </div>
 
     <!-- Notfall -->
-    <div class="card" style="border-color: rgba(224, 93, 93, 0.4);">
-      <div class="card-label" style="color: var(--red);">Notfall</div>
+    <div class="card card-notfall">
+      <div class="card-label card-label-red"><span class="ic" data-icon="siren" data-size="15"></span>Notfall</div>
       <div class="row">
-        <button class="btn btn-danger btn-inline" onclick="window.location='tel:1155'">Polizei 1155</button>
-        <button class="btn btn-danger btn-inline" onclick="window.location='tel:1669'">Ambulanz 1669</button>
+        <button class="btn btn-danger btn-inline" id="notPolizei">Polizei 1155</button>
+        <button class="btn btn-danger btn-inline" id="notAmbulanz">Ambulanz 1669</button>
       </div>
-      <div class="badge-label">
-        <a href="javascript:void(0)" onclick="alert('Schweizer Botschaft Bangkok: +66 2 674 6900\nNotruf 191\nFeuerwehr 199')" style="text-decoration: none; font-weight: 500; color: #f1a0a0;">Alle Nummern anzeigen →</a>
-      </div>
+      <div class="notfall-liste" id="notfallListe"></div>
     </div>
 
-    <!-- Daten Import -->
+    <!-- Datensicherung -->
     <div class="card">
-      <div class="card-label">Daten verwalten</div>
-      <div class="row" style="margin-top: 12px;">
-        <button class="btn btn-secondary btn-inline" id="importBtn">Importieren</button>
-        <button class="btn btn-secondary btn-inline" id="exportBtn">Exportieren</button>
+      <div class="card-label">Datensicherung</div>
+      <div class="badge-label" style="margin-top: 10px;">Reiseplan und Ausgaben sind zwei getrennte Sicherungen. Ein Import des Reiseplans rührt die Ausgaben nicht an.</div>
+      <div class="grp-head">Reiseplan</div>
+      <div class="row" style="margin-top: 0;">
+        <button class="btn btn-secondary btn-inline" id="importBtn"><span class="ic" data-icon="down" data-size="16"></span>Importieren</button>
+        <button class="btn btn-secondary btn-inline" id="exportBtn"><span class="ic" data-icon="up" data-size="16"></span>Sichern</button>
+      </div>
+      <div class="grp-head">Ausgaben</div>
+      <div class="row" style="margin-top: 0;">
+        <button class="btn btn-secondary btn-inline" id="importSpendBtn"><span class="ic" data-icon="down" data-size="16"></span>Importieren</button>
+        <button class="btn btn-secondary btn-inline" id="exportSpendBtn"><span class="ic" data-icon="up" data-size="16"></span>Sichern</button>
       </div>
       <div class="badge-label">Alle Daten bleiben lokal auf diesem Gerät.</div>
       <input type="file" id="importInput" accept=".json" style="display: none;">
+      <input type="file" id="importSpendInput" accept=".json" style="display: none;">
     </div>
   </div>
 
@@ -575,7 +771,7 @@ a { color: var(--teal); }
       <span class="nav-label">Dokumente</span>
     </button>
     <button class="nav-btn" data-screen="screenTools">
-      <span class="ic" data-icon="user"></span>
+      <span class="ic" data-icon="grid"></span>
       <span class="nav-label">Mehr</span>
     </button>
   </div>
@@ -610,18 +806,34 @@ const ICONS = {
   map: '<path d="M9 4l6 2 5.4-1.8a.5.5 0 0 1 .6.5V18l-6 2-6-2-5.4 1.8a.5.5 0 0 1-.6-.5V6l6-2z"/><path d="M9 4v14M15 6v14"/>',
   camera: '<path d="M4 8a2 2 0 0 1 2-2h2l1.5-2h5L16 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z"/><circle cx="12" cy="13" r="3.5"/>',
   down: '<path d="M12 3v12m-4.5-4L12 15.5 16.5 11"/><path d="M4 20h16"/>',
-  up: '<path d="M12 15V3.5M7.5 7.5L12 3l4.5 4.5"/><path d="M4 20h16"/>'
+  up: '<path d="M12 15V3.5M7.5 7.5L12 3l4.5 4.5"/><path d="M4 20h16"/>',
+  grid: '<rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>',
+  wallet: '<path d="M3.5 7.6A2.6 2.6 0 0 1 6.1 5h10.4a1 1 0 0 1 1 1v2"/><path d="M3.5 7.6v9.9A2.5 2.5 0 0 0 6 20h13a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 19 9H6a2.5 2.5 0 0 1-2.5-1.4"/><circle cx="16.6" cy="14.5" r="1.15" fill="currentColor" stroke="none"/>',
+  translate: '<path d="M3 6.4h8.6"/><path d="M7.3 4.3v2.1"/><path d="M9.6 6.4c0 4.2-2.8 7.4-6.6 8.7"/><path d="M5.4 11.2c1.3 2.1 3.2 3.6 5.4 4.3"/><path d="M12.4 20.2 16.6 9.6l4.2 10.6"/><path d="M13.8 16.8h5.6"/>',
+  cloudSun: '<path d="M7.4 5.1V3.2M3.9 8.6H2M4.9 6 3.6 4.7M9.9 6l1.3-1.3"/><path d="M4.8 11.3a3.4 3.4 0 1 1 5.3-3.9"/><path d="M9.6 20h7.9a3.75 3.75 0 0 0 .3-7.5 5.4 5.4 0 0 0-10.4 1.2A3.2 3.2 0 0 0 9.6 20z"/>',
+  cloudRain: '<path d="M7.4 15.4h9.2a4.05 4.05 0 0 0 .3-8.1 5.75 5.75 0 0 0-11 1.3 3.5 3.5 0 0 0 1.5 6.8z"/><path d="M9.2 18.2 8.4 20.5M12.9 18.2l-.8 2.3M16.6 18.2l-.8 2.3"/>',
+  thermo: '<path d="M10.1 14.6V6.1a1.9 1.9 0 1 1 3.8 0v8.5a4 4 0 1 1-3.8 0z"/><path d="M12 9.4v5.6"/>',
+  clock: '<circle cx="12" cy="12" r="8.6"/><path d="M12 7.1V12l3.3 2"/>',
+  swap: '<path d="M4 9.2h12.8"/><path d="M13.6 6 16.8 9.2 13.6 12.4"/><path d="M20 14.8H7.2"/><path d="M10.4 11.6 7.2 14.8l3.2 3.2"/>',
+  siren: '<path d="M6.6 16.4v-3.6a5.4 5.4 0 0 1 10.8 0v3.6"/><rect x="4.4" y="16.4" width="15.2" height="3.6" rx="1.6"/><path d="M12 4.6V3M5.3 7.3 4.2 6.2M18.7 7.3l1.1-1.1"/>',
+  cloud: '<path d="M7.4 18.6h9.2a4.3 4.3 0 0 0 .3-8.6 5.9 5.9 0 0 0-11.3 1.3 3.6 3.6 0 0 0 1.8 7.3z"/>',
+  scooter: '<circle cx="5.6" cy="16.8" r="2.9"/><circle cx="18.4" cy="16.8" r="2.9"/><path d="M8.5 16.8h7"/><path d="M18.4 16.8V9.2A1.6 1.6 0 0 0 16.8 7.6h-1.7"/><path d="M18.4 9.2h-6.7L8.5 14.2H5.6"/>',
+  trash: '<path d="M4.6 6.6h14.8"/><path d="M9.4 6.6V5.2a1.3 1.3 0 0 1 1.3-1.3h2.6a1.3 1.3 0 0 1 1.3 1.3v1.4"/><path d="M6.3 6.6v12.1a1.4 1.4 0 0 0 1.4 1.4h8.6a1.4 1.4 0 0 0 1.4-1.4V6.6"/><path d="M10.2 10.3v6.2M13.8 10.3v6.2"/>'
 };
+/* Strichstaerke 1.75 auf dem 24er-Raster, runde Enden und Ecken.
+   Das ist die Phosphor-Regular-Anmutung. Die Pfade sind hier selbst
+   gezeichnet und nicht die Original-Dateien von Phosphor: Die App
+   darf keinen Webfont und kein CDN laden, jedes Icon muss inline im
+   Dokument stehen. */
 function icon(name, size) {
   size = size || 22;
-  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || ICONS.pin) + '</svg>';
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || ICONS.pin) + '</svg>';
 }
 document.querySelectorAll('[data-icon]').forEach(el => {
   el.innerHTML = icon(el.dataset.icon, el.dataset.size ? parseInt(el.dataset.size) : undefined);
 });
 
 let appData = null;
-let selectedCategory = 'Transport';
 let dayScreenReturn = 'screenPlan';
 let mapScreenReturn = 'screenPlan';
 let currentHotelName = '';
@@ -760,6 +972,12 @@ function loadUIFromAppData() {
     if (hotel.foto) { fotoEl.src = hotel.foto; fotoEl.style.display = ''; }
     else { fotoEl.style.display = 'none'; fotoEl.removeAttribute('src'); }
 
+    /* Wetter fuer die heutige Station. Ohne Koordinaten kein Wetter,
+       geraten wird nichts. */
+    const gpsRoh = String(hotel.gps || '').split(',').map(Number);
+    if (gpsRoh.length === 2 && !isNaN(gpsRoh[0]) && !isNaN(gpsRoh[1])) wetterLaden(gpsRoh[0], gpsRoh[1]);
+    else wxZeigen(null);
+
     const callBtn = document.getElementById('hotelCall');
     callBtn.onclick = () => window.location = 'tel:' + hotel.tel;
     if (!hotel.tel) callBtn.disabled = true;
@@ -800,6 +1018,7 @@ function loadUIFromAppData() {
 
   renderDayList();
   renderTickets();
+  renderNotfall();
 }
 
 /* ---------- Reiseplan ---------- */
@@ -953,10 +1172,10 @@ function renderTickets() {
         '<div class="card-row">' +
           '<div class="badge-ic" style="color: ' + icColor + ';">' + icon(stIc, 20) + '</div>' +
           '<div style="flex: 1; min-width: 0;">' +
-            '<div class="card-title" style="font-size: 15px;">' + esc(t.titel) + '</div>' +
+            '<div class="card-title card-title-sm">' + esc(t.titel) + '</div>' +
             '<div class="card-sub">' + esc(t.info) + '</div>' +
-            (t.status === 'fehlt' ? '<div style="font-size: 12px; color: var(--red); font-weight: 550; margin-top: 4px;">Fehlt noch</div>' :
-             t.status === 'foto_noetig' ? '<div style="font-size: 12px; color: var(--gold); font-weight: 550; margin-top: 4px;">Foto nötig</div>' : '') +
+            (t.status === 'fehlt' ? '<div class="status-line status-red">Fehlt noch</div>' :
+             t.status === 'foto_noetig' ? '<div class="status-line status-gold">Foto nötig</div>' : '') +
           '</div>' +
         '</div>';
       list.appendChild(card);
@@ -1158,39 +1377,266 @@ function stopGeo() {
   setGeoStatus('');
 }
 
+/* ---------- Wetter ----------
+   Die einzige Netzverbindung dieser App. Bedingungen stehen in
+   CLAUDE.md, Abschnitt "Praezisierung connect-src":
+   ein Dienst, nur auf eine Nachkommastelle gerundete Koordinaten,
+   sonst nichts, und die App bleibt ohne ihn voll benutzbar. */
+const WX_HOST = 'https://api.open-meteo.com/v1/forecast';
+const WX_KEY = 'reisebegleiter_wetter';
+const WX_FRISCH = 3 * 60 * 60 * 1000;    /* juenger als 3 h: kein neuer Abruf */
+
+/* Klimamittel fuer Dezember und Januar, Tagesmaximum und Tagesminimum
+   in Grad Celsius, nach Region. NAEHERUNGSWERTE, gerundet auf ganze
+   Grad, vor der Reise gegen eine Klimatabelle pruefen. Sie erscheinen
+   nur dann, wenn weder Netz noch Zwischenspeicher etwas hergeben. */
+const KLIMA = {
+  zentral:  { name: 'Zentralthailand', 12: [32, 22], 1: [33, 22], text: 'trocken' },
+  golf:     { name: 'Golfkueste',      12: [29, 24], 1: [29, 23], text: 'wechselhaft' },
+  andaman:  { name: 'Andamanenkueste', 12: [31, 23], 1: [32, 23], text: 'trocken' }
+};
+function klimaRegion(lat, lon) {
+  if (lat >= 12) return KLIMA.zentral;
+  return lon >= 99.5 ? KLIMA.golf : KLIMA.andaman;
+}
+/* Rundung auf eine Nachkommastelle, rund elf Kilometer Unschaerfe.
+   Diese Funktion ist der Datenschutz an dieser Stelle. Nicht entfernen. */
+function wxRund(n) { return Math.round(n * 10) / 10; }
+
+const WMO = [
+  { codes: [0],                      ic: 'sun',       txt: 'klar' },
+  { codes: [1, 2],                   ic: 'cloudSun',  txt: 'leicht bewoelkt' },
+  { codes: [3],                      ic: 'cloud',     txt: 'bedeckt' },
+  { codes: [45, 48],                 ic: 'cloud',     txt: 'Nebel' },
+  { codes: [51, 53, 55, 56, 57],     ic: 'cloudRain', txt: 'Niesel' },
+  { codes: [61, 63, 65, 66, 67],     ic: 'cloudRain', txt: 'Regen' },
+  { codes: [80, 81, 82],             ic: 'cloudRain', txt: 'Regenschauer' },
+  { codes: [95, 96, 99],             ic: 'warn',      txt: 'Gewitter' }
+];
+function wmoInfo(code) {
+  const hit = WMO.find(w => w.codes.indexOf(code) !== -1);
+  return hit || { ic: 'cloud', txt: 'wechselhaft' };
+}
+
+function wxCacheLesen() {
+  try { return JSON.parse(localStorage.getItem(WX_KEY) || '{}'); } catch(e) { return {}; }
+}
+function wxCacheSchreiben(obj) {
+  try { localStorage.setItem(WX_KEY, JSON.stringify(obj)); } catch(e) { /* Speicher voll: Wetter ist verzichtbar */ }
+}
+function wxStempel(ts) {
+  const d = new Date(ts), jetzt = new Date();
+  const uhr = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  const tage = Math.floor((new Date(jetzt.getFullYear(), jetzt.getMonth(), jetzt.getDate()) - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
+  if (tage === 0) return 'Stand ' + uhr;
+  if (tage === 1) return 'Stand gestern ' + uhr;
+  return 'Stand ' + d.getDate() + '.' + (d.getMonth() + 1) + '.';
+}
+function wxZeigen(o) {
+  const card = document.getElementById('wxCard');
+  if (!card) return;
+  card.style.display = o ? '' : 'none';
+  if (!o) return;
+  card.classList.toggle('wx-mittel', !!o.mittel);
+  document.getElementById('wxIcon').innerHTML = icon(o.ic, 30);
+  document.getElementById('wxTemp').textContent = o.temp;
+  document.getElementById('wxDesc').textContent = o.desc;
+  document.getElementById('wxRange').textContent = o.range || '';
+  document.getElementById('wxStamp').textContent = o.stamp || '';
+}
+function wxAusEintrag(e) {
+  const w = wmoInfo(e.code);
+  return {
+    ic: w.ic,
+    temp: Math.round(e.temp) + '°',
+    desc: w.txt,
+    range: (e.max !== null && e.min !== null) ? Math.round(e.max) + '° / ' + Math.round(e.min) + '°' : '',
+    stamp: wxStempel(e.ts)
+  };
+}
+function wxAusKlima(lat, lon) {
+  const monat = new Date().getMonth() + 1;
+  const r = klimaRegion(lat, lon);
+  const werte = r[monat] || r[1];
+  return {
+    mittel: true,
+    ic: 'thermo',
+    temp: werte[0] + '°',
+    desc: r.name + ', Mittelwert',
+    range: werte[0] + '° / ' + werte[1] + '°',
+    stamp: 'ohne Netz'
+  };
+}
+async function wetterLaden(lat, lon) {
+  if (typeof lat !== 'number' || typeof lon !== 'number' || isNaN(lat) || isNaN(lon)) {
+    wxZeigen(null);
+    return;
+  }
+  const la = wxRund(lat), lo = wxRund(lon);
+  const schluessel = la + ',' + lo;
+  const cache = wxCacheLesen();
+  const alt = cache[schluessel];
+
+  if (alt) wxZeigen(wxAusEintrag(alt));
+  else wxZeigen(wxAusKlima(la, lo));
+
+  if (alt && Date.now() - alt.ts < WX_FRISCH) return;
+  if (!navigator.onLine) return;
+
+  /* Der Request enthaelt ausschliesslich die gerundeten Koordinaten
+     und die gewuenschten Wetterfelder. Keine Kennung, kein Datum,
+     kein Ort, nichts aus den Reisedaten. */
+  const url = WX_HOST + '?latitude=' + la + '&longitude=' + lo +
+    '&current=temperature_2m,weather_code' +
+    '&daily=temperature_2m_max,temperature_2m_min' +
+    '&timezone=auto&forecast_days=1';
+  const abbruch = new AbortController();
+  const wecker = setTimeout(() => abbruch.abort(), 8000);
+  try {
+    const resp = await fetch(url, { signal: abbruch.signal, cache: 'no-store', referrerPolicy: 'no-referrer' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const j = await resp.json();
+    const c = j.current || {}, d = j.daily || {};
+    const eintrag = {
+      ts: Date.now(),
+      temp: Number(c.temperature_2m),
+      code: Number(c.weather_code),
+      max: d.temperature_2m_max ? Number(d.temperature_2m_max[0]) : null,
+      min: d.temperature_2m_min ? Number(d.temperature_2m_min[0]) : null
+    };
+    if (isNaN(eintrag.temp)) throw new Error('keine Temperatur');
+    cache[schluessel] = eintrag;
+    wxCacheSchreiben(cache);
+    wxZeigen(wxAusEintrag(eintrag));
+  } catch(e) {
+    /* Kein Netz, Dienst weg, zu langsam: der bereits gezeigte
+       Zwischenspeicher oder das Klimamittel bleibt einfach stehen. */
+  } finally {
+    clearTimeout(wecker);
+  }
+}
+
 /* ---------- Umrechner ---------- */
+function zahl(v) { return parseFloat(String(v || '').replace(',', '.').replace(/[^0-9.]/g, '')) || 0; }
 document.getElementById('thbInput').addEventListener('input', function() {
-  const thb = parseFloat(this.value) || 0;
-  const chf = Math.ceil(thb / 40 * 100) / 100;
+  const chf = Math.ceil(zahl(this.value) / KURS * 100) / 100;
   document.getElementById('chfInput').value = chf > 0 ? chf.toFixed(2) : '';
 });
 document.getElementById('chfInput').addEventListener('input', function() {
-  const chf = parseFloat(this.value) || 0;
-  const thb = Math.ceil(chf * 40);
+  const thb = Math.ceil(zahl(this.value) * KURS);
   document.getElementById('thbInput').value = thb > 0 ? thb : '';
 });
+document.getElementById('convSwap').addEventListener('click', function() {
+  document.getElementById('thbInput').value = '';
+  document.getElementById('chfInput').value = '';
+  document.getElementById('thbInput').focus();
+});
 
-/* ---------- Ausgaben ---------- */
-document.querySelectorAll('.pill').forEach(pill => {
-  pill.addEventListener('click', function() {
-    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-    this.classList.add('active');
-    selectedCategory = this.dataset.cat;
-  });
-});
-document.getElementById('spendBtn').addEventListener('click', function() {
-  const amount = document.getElementById('spendAmount').value;
-  if (!amount) return;
-  if (!appData.ausgaben) appData.ausgaben = [];
-  appData.ausgaben.push({ betrag: parseFloat(amount), kategorie: selectedCategory });
-  updateSpendTotal();
-  document.getElementById('spendAmount').value = '';
-  localStorage.setItem('reisebegleiter_data', JSON.stringify(appData));
-});
+/* ---------- Ausgaben ----------
+   Eigener Speicherplatz, getrennt von den Reisedaten. Ein Import
+   des Reiseplans darf erfasste Ausgaben nie ueberschreiben. */
+const KURS = 40;                                  /* 1 CHF = 40 THB, bewusst zu deinen Ungunsten */
+const SPEND_KEY = 'reisebegleiter_ausgaben';
+const KATEGORIEN = [
+  { name: 'Essen',      ic: 'utensils' },
+  { name: 'Transport',  ic: 'car' },
+  { name: 'Unterkunft', ic: 'bed' },
+  { name: 'Aktivität',  ic: 'palm' },
+  { name: 'Roller',     ic: 'scooter' },
+  { name: 'Sonstiges',  ic: 'wallet' }
+];
+let ausgaben = [];
+
+function ausgabenLaden() {
+  try { ausgaben = JSON.parse(localStorage.getItem(SPEND_KEY) || '[]'); } catch(e) { ausgaben = []; }
+  if (!Array.isArray(ausgaben)) ausgaben = [];
+  /* Einmalige Umsiedlung aus der alten Ablage in den Reisedaten */
+  if (appData && Array.isArray(appData.ausgaben) && appData.ausgaben.length && !ausgaben.length) {
+    ausgaben = appData.ausgaben.map(e => ({
+      betrag: Number(e.betrag) || 0,
+      kategorie: e.kategorie || 'Sonstiges',
+      ts: e.ts || Date.now()
+    }));
+    ausgabenSpeichern();
+  }
+  if (appData) delete appData.ausgaben;
+}
+function ausgabenSpeichern() {
+  try { localStorage.setItem(SPEND_KEY, JSON.stringify(ausgaben)); }
+  catch(e) { alert('Ausgabe konnte nicht gespeichert werden, der Speicher ist voll.'); }
+}
+function chfAus(thb) { return Math.ceil(thb / KURS * 100) / 100; }
 function updateSpendTotal() {
-  const total = (appData.ausgaben || []).reduce((s, e) => s + e.betrag, 0);
-  const chf = Math.ceil(total / 40 * 100) / 100;
-  document.getElementById('spendTotal').textContent = chf.toFixed(2) + ' CHF';
+  const total = ausgaben.reduce((s, e) => s + (Number(e.betrag) || 0), 0);
+  document.getElementById('spendTotal').textContent = chfAus(total).toFixed(2) + ' CHF';
+}
+function renderCatGrid() {
+  const grid = document.getElementById('catGrid');
+  grid.innerHTML = '';
+  KATEGORIEN.forEach(k => {
+    const b = document.createElement('button');
+    b.className = 'cat-btn';
+    b.type = 'button';
+    b.innerHTML = '<span class="ic">' + icon(k.ic, 22) + '</span>' + esc(k.name);
+    b.addEventListener('click', () => buchen(k.name, b));
+    grid.appendChild(b);
+  });
+}
+function buchen(kategorie, btn) {
+  const feld = document.getElementById('spendAmount');
+  const betrag = zahl(feld.value);
+  if (betrag <= 0) { feld.focus(); return; }
+  ausgaben.push({ betrag: betrag, kategorie: kategorie, ts: Date.now() });
+  ausgabenSpeichern();
+  updateSpendTotal();
+  feld.value = '';
+  document.getElementById('spendChf').textContent = '0.00 CHF';
+  zeigeLetzte();
+  if (btn) { btn.classList.add('gebucht'); setTimeout(() => btn.classList.remove('gebucht'), 450); }
+  if (navigator.vibrate) navigator.vibrate(18);
+}
+function zeigeLetzte() {
+  const box = document.getElementById('spendLast');
+  const letzte = ausgaben[ausgaben.length - 1];
+  if (!letzte) { box.classList.remove('on'); box.innerHTML = ''; return; }
+  box.innerHTML =
+    '<div class="spend-last-text">Zuletzt: ' + Math.round(letzte.betrag) + ' THB · ' + esc(letzte.kategorie) + '</div>' +
+    '<button class="spend-undo" type="button" id="spendUndo">Rückgängig</button>';
+  box.classList.add('on');
+  document.getElementById('spendUndo').addEventListener('click', () => {
+    ausgaben.pop();
+    ausgabenSpeichern();
+    updateSpendTotal();
+    zeigeLetzte();
+  });
+}
+document.getElementById('spendAmount').addEventListener('input', function() {
+  const betrag = zahl(this.value);
+  document.getElementById('spendChf').textContent = chfAus(betrag).toFixed(2) + ' CHF';
+});
+
+/* ---------- Uebersetzer ----------
+   Braucht Netz. Ein eingebauter Uebersetzer laesst sich in einer
+   PWA nicht offline betreiben, deshalb der ehrliche Umweg. */
+document.getElementById('trDeEn').addEventListener('click', () => window.open('https://translate.google.com/?sl=de&tl=en', '_blank'));
+document.getElementById('trDeTh').addEventListener('click', () => window.open('https://translate.google.com/?sl=de&tl=th', '_blank'));
+
+/* ---------- Notfall ---------- */
+document.getElementById('notPolizei').addEventListener('click', () => window.location = 'tel:1155');
+document.getElementById('notAmbulanz').addEventListener('click', () => window.location = 'tel:1669');
+function renderNotfall() {
+  const box = document.getElementById('notfallListe');
+  const n = (appData && appData.notfall) || {};
+  const zeilen = [
+    { label: 'Notruf allgemein', nr: n.notruf || '191' },
+    { label: 'Feuerwehr', nr: n.feuerwehr || '199' },
+    { label: 'Schweizer Botschaft Bangkok', nr: n.botschaft || '' }
+  ].filter(z => z.nr);
+  box.innerHTML = zeilen.map(z =>
+    '<a class="notfall-zeile" href="tel:' + esc(String(z.nr).replace(/\s/g, '')) + '">' +
+      '<span>' + esc(z.label) + '</span><span class="notfall-nr">' + esc(z.nr) + '</span>' +
+    '</a>'
+  ).join('');
 }
 
 /* ---------- Hotel-Foto (bleibt lokal auf dem Gerät) ---------- */
@@ -1242,7 +1688,26 @@ document.getElementById('ticketInput').addEventListener('change', function(e) {
   reader.readAsDataURL(file);
 });
 
-/* ---------- Import/Export ---------- */
+/* ---------- Import/Export ----------
+   Zwei getrennte Sicherungen. Der Reiseplan kennt keine Ausgaben,
+   die Ausgaben kennen keinen Reiseplan. Ein Import der Route kann
+   damit erfasste Ausgaben nicht mehr ueberschreiben. */
+function dateiSchreiben(obj, name) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name + '-' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function jsonLesen(text) {
+  let t = String(text || '').replace(/^﻿/, '').trim();
+  const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) t = fence[1].trim();
+  return JSON.parse(t);
+}
+
 document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importInput').click());
 document.getElementById('importInput').addEventListener('change', function(e) {
   const file = e.target.files[0];
@@ -1284,6 +1749,10 @@ document.getElementById('importInput').addEventListener('change', function(e) {
     }
 
     if (!d.reise) d.reise = {};
+    /* Ausgaben aus einer Reiseplan-Datei werden bewusst verworfen.
+       Sie haben ihre eigene Sicherung. */
+    const hatteAusgaben = Array.isArray(d.ausgaben) && d.ausgaben.length > 0;
+    delete d.ausgaben;
     appData = d;
     try {
       localStorage.setItem('reisebegleiter_data', JSON.stringify(appData));
@@ -1299,19 +1768,58 @@ document.getElementById('importInput').addEventListener('change', function(e) {
       return;
     }
     showScreen('screenToday');
-    alert('Reisedaten importiert! ' + appData.tage.length + ' Tage geladen.');
+    alert('Reiseplan importiert: ' + appData.tage.length + ' Tage.\n' +
+      'Deine ' + ausgaben.length + ' erfassten Ausgaben sind unverändert geblieben.' +
+      (hatteAusgaben ? '\n\nHinweis: In der Datei standen auch Ausgaben. Die wurden nicht übernommen – dafür gibt es die eigene Sicherung "Ausgaben".' : ''));
   };
   reader.readAsText(file);
+  this.value = '';
 });
 document.getElementById('exportBtn').addEventListener('click', function() {
-  const json = JSON.stringify(appData, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'reisedaten-backup-' + new Date().toISOString().split('T')[0] + '.json';
-  a.click();
-  URL.revokeObjectURL(url);
+  const kopie = JSON.parse(JSON.stringify(appData || {}));
+  delete kopie.ausgaben;
+  dateiSchreiben(kopie, 'reiseplan-sicherung');
+});
+
+document.getElementById('exportSpendBtn').addEventListener('click', function() {
+  dateiSchreiben({ typ: 'reisebegleiter-ausgaben', version: 1, ausgaben: ausgaben }, 'ausgaben-sicherung');
+});
+document.getElementById('importSpendBtn').addEventListener('click', () => document.getElementById('importSpendInput').click());
+document.getElementById('importSpendInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    let d;
+    try { d = jsonLesen(ev.target.result); }
+    catch(err) { alert('Die Datei ist keine gültige JSON-Datei.\n\n' + err.message); return; }
+
+    const liste = Array.isArray(d) ? d : (Array.isArray(d.ausgaben) ? d.ausgaben : null);
+    if (!liste) {
+      alert('In dieser Datei stehen keine Ausgaben.\n\nErwartet wird eine Liste "ausgaben". Für den Reiseplan gibt es den Knopf darüber.');
+      return;
+    }
+    const sauber = liste
+      .map(x => ({ betrag: Number(x && x.betrag) || 0, kategorie: (x && x.kategorie) || 'Sonstiges', ts: (x && x.ts) || Date.now() }))
+      .filter(x => x.betrag > 0);
+    if (!sauber.length) { alert('Die Datei enthält keine brauchbaren Einträge.'); return; }
+
+    if (ausgaben.length) {
+      const ersetzen = confirm(
+        'Es sind bereits ' + ausgaben.length + ' Ausgaben erfasst.\n\n' +
+        'OK: durch die ' + sauber.length + ' Einträge aus der Datei ersetzen.\n' +
+        'Abbrechen: die ' + sauber.length + ' Einträge zusätzlich anhängen.');
+      ausgaben = ersetzen ? sauber : ausgaben.concat(sauber);
+    } else {
+      ausgaben = sauber;
+    }
+    ausgabenSpeichern();
+    updateSpendTotal();
+    zeigeLetzte();
+    alert('Ausgaben übernommen: ' + ausgaben.length + ' Einträge. Der Reiseplan blieb unverändert.');
+  };
+  reader.readAsText(file);
+  this.value = '';
 });
 
 /* ---------- Offline-Anzeige ---------- */
@@ -1325,21 +1833,36 @@ if ('serviceWorker' in navigator) {
 }
 
 /* ---------- Start ---------- */
+renderCatGrid();
 const saved = localStorage.getItem('reisebegleiter_data');
 if (saved) {
   try {
     appData = JSON.parse(saved);
+    ausgabenLaden();
     loadUIFromAppData();
-    updateSpendTotal();
   } catch(e) {
+    ausgabenLaden();
     loadDemoData();
   }
 } else {
+  ausgabenLaden();
   loadDemoData();
 }
-if (new URLSearchParams(location.search).get('screen') === 'tickets') {
-  showScreen('screenTickets');
+updateSpendTotal();
+zeigeLetzte();
+
+/* PWA-Schnellzugriff: langes Druecken aufs App-Icon fuehrt direkt
+   hierher. Die Ausgabe-Eingabe bekommt sofort den Fokus, damit die
+   Zahlentastatur ohne weiteren Tipp offen ist. */
+const start = new URLSearchParams(location.search).get('screen');
+if (start === 'tickets') showScreen('screenTickets');
+if (start === 'ausgabe') {
+  showScreen('screenTools');
+  const feld = document.getElementById('spendAmount');
+  feld.scrollIntoView({ block: 'center' });
+  setTimeout(() => feld.focus(), 120);
 }
+if (start === 'plan') showScreen('screenPlan');
 applyHeroAsset();
 </script>
 </body>

@@ -18,27 +18,40 @@
   ],
   "shortcuts": [
     {
+      "name": "Ausgabe erfassen",
+      "short_name": "Ausgabe",
+      "description": "Betrag tippen, Kategorie tippen, fertig",
+      "url": "./index.html?screen=ausgabe",
+      "icons": [
+        {
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwNCIgZmlsbD0iIzBlMWIxZSIvPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDk2IDk2KSBzY2FsZSgxMy4zMzMpIiBmaWxsPSJub25lIiBzdHJva2U9IiMyZmQ5YzAiIHN0cm9rZS13aWR0aD0iMS43NSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMy41IDcuNkEyLjYgMi42IDAgMCAxIDYuMSA1aDEwLjRhMSAxIDAgMCAxIDEgMXYyIi8+PHBhdGggZD0iTTMuNSA3LjZ2OS45QTIuNSAyLjUgMCAwIDAgNiAyMGgxM2ExLjUgMS41IDAgMCAwIDEuNS0xLjV2LThBMS41IDEuNSAwIDAgMCAxOSA5SDZhMi41IDIuNSAwIDAgMS0yLjUtMS40Ii8+PC9nPjwvc3ZnPg==",
+          "sizes": "512x512",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
       "name": "Heute",
       "short_name": "Heute",
       "description": "Was läuft heute?",
       "url": "./index.html",
       "icons": [
         {
-          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwNCIgZmlsbD0iIzBlMWIxZSIvPjxjaXJjbGUgY3g9IjM1MiIgY3k9IjE1MCIgcj0iNDAiIGZpbGw9IiNlNmEyM2MiLz48cGF0aCBkPSJNMjQ0IDM5NmM4LTcyIDIwLTEyNCA1Mi0xNzIiIHN0cm9rZT0iIzJmZDljMCIgc3Ryb2tlLXdpZHRoPSIyMCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTI5NiAyMjRjLTQwLTI2LTc4LTI0LTEwOC0yTTI5NiAyMjRjLTQtNDggMjItNzYgNjItODRNMjk2IDIyNGM0NC0yMCA4NC04IDEwNiAyNiIgc3Ryb2tlPSIjMmZkOWMwIiBzdHJva2Utd2lkdGg9IjE4IiBzdHJva2UtbGluZWNhcD0icm91bmQiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMTIwIDQyMGMyNC0xNCA0OC0xNCA3MiAwczQ4IDE0IDcyIDAgNDgtMTQgNzIgMCA0OCAxNCA3MiAwIiBzdHJva2U9IiMxYTVmNTgiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgZmlsbD0ibm9uZSIvPjwvc3ZnPgo=",
-          "sizes": "192x192",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwNCIgZmlsbD0iIzBlMWIxZSIvPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDk2IDk2KSBzY2FsZSgxMy4zMzMpIiBmaWxsPSJub25lIiBzdHJva2U9IiMyZmQ5YzAiIHN0cm9rZS13aWR0aD0iMS43NSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI0Ii8+PHBhdGggZD0iTTEyIDJ2Mk0xMiAyMHYyTTIgMTJoMk0yMCAxMmgyTTQuOSA0LjlsMS40IDEuNE0xNy43IDE3LjdsMS40IDEuNE0xOS4xIDQuOWwtMS40IDEuNE02LjMgMTcuN2wtMS40IDEuNCIvPjwvZz48L3N2Zz4=",
+          "sizes": "512x512",
           "type": "image/svg+xml"
         }
       ]
     },
     {
-      "name": "Tickets",
-      "short_name": "Tickets",
-      "description": "Alle Dokumente",
+      "name": "Dokumente",
+      "short_name": "Dokumente",
+      "description": "Tickets, Pass, Versicherung",
       "url": "./index.html?screen=tickets",
       "icons": [
         {
-          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwNCIgZmlsbD0iIzBlMWIxZSIvPjxjaXJjbGUgY3g9IjM1MiIgY3k9IjE1MCIgcj0iNDAiIGZpbGw9IiNlNmEyM2MiLz48cGF0aCBkPSJNMjQ0IDM5NmM4LTcyIDIwLTEyNCA1Mi0xNzIiIHN0cm9rZT0iIzJmZDljMCIgc3Ryb2tlLXdpZHRoPSIyMCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTI5NiAyMjRjLTQwLTI2LTc4LTI0LTEwOC0yTTI5NiAyMjRjLTQtNDggMjItNzYgNjItODRNMjk2IDIyNGM0NC0yMCA4NC04IDEwNiAyNiIgc3Ryb2tlPSIjMmZkOWMwIiBzdHJva2Utd2lkdGg9IjE4IiBzdHJva2UtbGluZWNhcD0icm91bmQiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMTIwIDQyMGMyNC0xNCA0OC0xNCA3MiAwczQ4IDE0IDcyIDAgNDgtMTQgNzIgMCA0OCAxNCA3MiAwIiBzdHJva2U9IiMxYTVmNTgiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgZmlsbD0ibm9uZSIvPjwvc3ZnPgo=",
-          "sizes": "192x192",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwNCIgZmlsbD0iIzBlMWIxZSIvPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDk2IDk2KSBzY2FsZSgxMy4zMzMpIiBmaWxsPSJub25lIiBzdHJva2U9IiMyZmQ5YzAiIHN0cm9rZS13aWR0aD0iMS43NSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSI1IiB5PSIzIiB3aWR0aD0iMTQiIGhlaWdodD0iMTgiIHJ4PSIyIi8+PHBhdGggZD0iTTkgOGg2TTkgMTJoNk05IDE2aDQiLz48L2c+PC9zdmc+",
+          "sizes": "512x512",
           "type": "image/svg+xml"
         }
       ]
