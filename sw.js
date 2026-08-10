@@ -1,9 +1,12 @@
-const CACHE_NAME = 'reisebegleiter-v4';
+const CACHE_NAME = 'reisebegleiter-v5';
 const urlsToCache = [
   './',
   './index.html',
   './manifest.webmanifest',
   './demo-daten.json',
+  './assets/icon-192.png',
+  './assets/icon-512.png',
+  './assets/icon-maskable-512.png',
   './assets/hero.jpg',
   './assets/tile-flug.jpg',
   './assets/tile-boot.jpg',
