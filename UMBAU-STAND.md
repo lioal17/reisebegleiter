@@ -104,21 +104,48 @@ zu reden, ohne ihn zu sehen.
 
 ---
 
-## Assets, die noch fehlen
+## Assets: am 10.08.2026 eingebaut
 
-Werden vom Nutzer aus ChatGPT nachgeliefert, blockieren nichts.
-Reihenfolge nach Nutzen:
+Quelle war `C:\Users\remar\Desktop\Rreiseapp\Bilder`, alle Bilder
+1254 x 1254. Skaliert und komprimiert wurde lokal mit PowerShell und
+System.Drawing, **nicht** mit dem Python-Skript aus ChatGPT.
 
-1. App-Icon 1024px (existiert bereits, muss nur heruntergeladen werden).
-   Ableitungen und ein korrektes maskable Icon werden hier erzeugt,
-   nicht in ChatGPT: Das dortige Skript skaliert das fertige Icon
-   inklusive seiner abgerundeten Kachel, was in der Android-Maske eine
-   sichtbare Kante ergibt
-2. Flugtickets, 3. Hotel Voucher, 4. Boot Tickets,
-5. Reisepass, 6. Versicherung, 7. Visum
+| Datei | Inhalt | Groesse |
+|---|---|---|
+| `assets/icon-192.png` | App-Icon | 43 KB |
+| `assets/icon-512.png` | App-Icon | 317 KB |
+| `assets/icon-maskable-512.png` | App-Icon, Android-Maske | 186 KB |
+| `assets/hero.jpg` | Bungalow im Breitformat, Heute-Screen | 37 KB |
+| `assets/tile-flug.jpg` | Flugzeug, blau | 15 KB |
+| `assets/tile-boot.jpg` | Longtail-Boot, tuerkis | 15 KB |
+| `assets/tile-hotel.jpg` | Bungalow, warm | 18 KB |
+| `assets/tile-pass.jpg` | Reisepass, rotbraun | 13 KB |
+| `assets/tile-schutz.jpg` | Schutzschild, violett | 10 KB |
 
-Je 600 x 600 PNG, im oberen Drittel ruhig und dunkel, damit weisse
-Schrift darauf lesbar bleibt.
+**Zwei Dateien fehlen weiterhin, beide folgenlos:**
+`assets/tile-visa.jpg` (Motiv noch nicht erzeugt) und
+`assets/tile-default.jpg`. Die App faellt ueber `withAsset()` auf den
+Farbverlauf zurueck, und `cache.add()` faengt Fehlschlaege ab.
+
+**Drei Dinge, die beim Einbau aufgefallen sind:**
+
+1. Das Manifest verwies auf **SVG-Data-URIs**. Chrome auf Android
+   nimmt SVG-Icons fuer den Startbildschirm nur unzuverlaessig an,
+   deshalb jetzt echte PNG.
+2. Das maskable Icon aus ChatGPT waere falsch geworden: Das Skript
+   skaliert das fertige Icon **inklusive seiner abgerundeten Kachel**
+   und setzt es auf einen Grund. In der Android-Maske ergibt das eine
+   zweite, sichtbare Kante. Richtig ist nur das Motiv auf
+   vollflaechigem Grund, hier `#001014`, die gemessene Kachelfarbe.
+3. Der schwarze Rand des Quellbilds wurde weggeschnitten. Gemessen,
+   nicht geschaetzt: die Kachel liegt bei 111 bis 1142.
+
+**Ansehen:** `node .server.js` im Repo starten, dann
+`http://localhost:8123` im Browser. Ueber `file://` laeuft der
+Service Worker nicht. Der Server lauscht auf `0.0.0.0`, du kommst
+also auch vom Handy im gleichen WLAN darauf. **Aber:** Ueber eine
+LAN-Adresse ohne HTTPS startet der Service Worker nicht, das Aussehen
+kannst du dort pruefen, den Offline-Betrieb nicht.
 
 ---
 
