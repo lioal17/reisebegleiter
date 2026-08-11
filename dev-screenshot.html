@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8"><title>Screenshot-Gerüst</title>
+<style>
+  html,body { margin:0; padding:0; background:#fff; }
+  iframe { display:block; width:390px; height:844px; border:0; }
+  .stop { font:14px/1.5 system-ui,sans-serif; padding:24px; max-width:40em; }
+</style>
+</head><body><script>
+/* Werkzeug zum Pruefen des Aussehens, kein Teil der App.
+   Zweck: exakt 390 x 844 CSS-Pixel erzwingen, unabhaengig von der
+   Fenstergroesse und der Windows-Skalierung, und CSS-Uebergaenge
+   abschalten.
+
+   Warum die Uebergaenge weg muessen: Chromes --virtual-time-budget
+   friert die Animationsuhr ein, waehrend die virtuelle Zeit
+   vorspult. Farbuebergaenge laufen dann nie los, und die
+   Navigationsleiste bleibt im Bild auf dem Stand vor dem Wechsel
+   stehen. Das Bild luegt, nicht die App.
+
+   Aufruf:
+     dev-screenshot.html#screenPlan
+     dev-screenshot.html?saat=1#screenTools
+     dev-screenshot.html?saat=1&klick=%23histOeffnen#screenTools
+
+   SICHERUNG: "saat=1" ueberschreibt die erfassten Ausgaben mit
+   Testdaten. Deshalb laeuft diese Seite nur auf localhost. Auf einem
+   echten Geraet waeren sonst mit einem Klick alle Ausgaben der Reise
+   weg. */
+const LOKAL = ['localhost', '127.0.0.1', '::1', ''].indexOf(location.hostname) !== -1;
+
+if (!LOKAL) {
+  document.addEventListener('DOMContentLoaded', () => {
+    document.body.innerHTML = '<div class="stop"><h1>Nur lokal</h1>' +
+      '<p>Diese Seite ist ein Entwicklungswerkzeug und laeuft ausschliesslich ' +
+      'auf <code>localhost</code>. Sie kann erfasste Ausgaben mit Testdaten ' +
+      'ueberschreiben, deshalb ist sie hier gesperrt.</p>' +
+      '<p><a href="index.html">Zur App</a></p></div>';
+  });
+} else {
+  /* Die Saat muss vor dem Laden des Rahmens stehen: "ausgaben" ist im
+     App-Skript mit let deklariert und damit keine Fenster-Eigenschaft,
+     von aussen also nicht setzbar. Erreichbar ist nur der
+     localStorage, und den liest die App beim Start. Gleiche Herkunft,
+     also derselbe Speicher. */
+  if (/(^|[?&])saat=1/.test(location.search)) {
+    const t = Date.now(), tag = 86400000;
+    localStorage.setItem('reisebegleiter_ausgaben', JSON.stringify([
+      { betrag: 320, kategorie: 'Essen',       notiz: '',              ts: t - 3600000 },
+      { betrag: 45,  kategorie: 'Konsum',      notiz: 'Souvenir',      ts: t - 7200000 },
+      { betrag: 120, kategorie: 'Aktivitäten', notiz: 'Jetski',        ts: t - 9000000 },
+      { betrag: 60,  kategorie: 'Transport',   notiz: 'Grab zum Pier', ts: t - tag },
+      { betrag: 250, kategorie: 'Roller',      notiz: 'Miete 2 Tage',  ts: t - tag - 3600000 },
+      { betrag: 90,  kategorie: 'Essen',       notiz: 'Strandbar',     ts: t - tag - 7200000 },
+      { betrag: 400, kategorie: 'Sonstiges',   notiz: 'Wäsche',        ts: t - 2 * tag }
+    ]));
+  } else {
+    localStorage.removeItem('reisebegleiter_ausgaben');
+  }
+
+  const rahmen = document.createElement('iframe');
+  rahmen.src = 'index.html';
+  document.addEventListener('DOMContentLoaded', () => document.body.appendChild(rahmen));
+
+  setTimeout(() => {
+    const w = rahmen.contentWindow, d = w.document;
+    const s = d.createElement('style');
+    s.textContent = '*,*::before,*::after{transition:none!important;animation:none!important}';
+    d.head.appendChild(s);
+    const ziel = location.hash.slice(1);
+    if (ziel && typeof w.showScreen === 'function') w.showScreen(ziel);
+    const k = location.search.match(/klick=([^&]+)/);
+    if (k) {
+      const el = d.querySelector(decodeURIComponent(k[1]));
+      if (el) el.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    }
+  }, 2200);
+}
+</script></body></html>

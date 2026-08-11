@@ -280,6 +280,70 @@ und Henkelbogen unter der Oeffnung.
 
 ---
 
+## Zweites Feedback: 11.08.2026, dritter Block
+
+### Kategorien ohne Unterpunkte
+
+Alle sechs Kategorien haben **keine Untermenues mehr**. Was genau
+gekauft wurde, steht im Notizfeld: "Jetski", "Souvenir", "Grab zum
+Pier". Am Reiseende gibt es damit sechs Summen, und die Notizen
+sagen daneben, wofuer das Geld weggegangen ist.
+
+Bereits gesetzte Unterpunkte gehen nicht verloren, sie wandern bei
+der naechsten Ladung vorne in die Notiz.
+
+### Enter schliesst die Eingabe ab
+
+Lios Befund war "das Speichern funktioniert nicht". **Es war nicht
+kaputt, es war nie gebaut.** Im ganzen Code stand kein einziger
+Enter-Handler, gespeichert wurde nur ueber den Knopf.
+
+Jetzt: Enter im Betragsfeld wie im Notizfeld bucht und schliesst.
+Im Notizfeld kostet das die zweite Zeile, dafuer gibt es
+Umschalt plus Enter. Bewusst: eine Ausgabennotiz ist ein Stichwort,
+kein Absatz.
+
+### Reihenfolge unter Mehr
+
+Umrechner, Ausgaben, Verlauf, Notizen, Uebersetzer, Notfall,
+Datensicherung.
+
+**Notizen stand nicht auf Lios Liste.** Weil er sie eine Nachricht
+vorher ausdruecklich bestellt hat, gehe ich von einem Vergessen aus
+und habe sie stehen lassen, hinter dem Verlauf.
+
+- Ausgaben zeigt die Summe in **CHF und THB**.
+- **Verlauf ist eine Schublade.** Auf dem Screen steht nur eine
+  Zeile mit Anzahl und letzter Buchung. Der ganze Verlauf oeffnet
+  sich im Blatt, mit Tagesueberschriften und Tagessummen. Eine
+  Liste, die mit jedem Reisetag waechst, haette sonst nach zwei
+  Wochen alles darunter aus dem Bild geschoben.
+- Bearbeiten aus dem Verlauf kehrt danach in den Verlauf zurueck.
+
+### Hintergrund auf allen vier Reitern
+
+Wie bestellt. Karten, Ortsgruppen, Kachel-Panels und Eingabefelder
+sind Milchglas, damit das Bild durchkommt. Die 0.88 Deckkraft der
+Karten bleibt die Untergrenze.
+
+### Drei Fehler nebenbei gefunden
+
+1. **Die Schublade lag unter der Navigationsleiste.** `z-index` 51
+   gegen 100. Die untersten Zeilen eines langen Verlaufs
+   verschwanden dahinter, und man konnte bei offener Schublade
+   wegnavigieren. Blatt und Hintergrund liegen jetzt auf 110/111.
+2. **"Zuletzt" zeigte die falsche Buchung.** `zeigeLetzte()` nahm
+   das letzte Element des Arrays statt das juengste nach
+   Zeitstempel. Nach einem Import oder einer Korrektur laufen die
+   beiden auseinander.
+3. **"Rueckgaengig" war eine Falle.** Der Knopf stand nach jedem
+   App-Start da und hing an einem beliebigen alten Eintrag. Ein
+   Fehltipp haette etwas von vorgestern geloescht. Jetzt erscheint
+   er nur nach einer Buchung in derselben Sitzung und entfernt
+   genau diesen Eintrag, ueber die Kennung, nicht ueber den Index.
+
+---
+
 ## Screenshots pruefen: das Rezept
 
 Teuer erarbeitet, deshalb hier festgehalten.
@@ -291,12 +355,36 @@ Teuer erarbeitet, deshalb hier festgehalten.
    aus, obwohl es das nicht ist.
 3. `--force-device-scale-factor=1 --window-size=390,844`
 
+4. **Ueber `dev-screenshot.html` gehen, nicht direkt auf
+   `index.html`.** Das Geruest erzwingt 390 x 844 im iframe und
+   schaltet CSS-Uebergaenge ab.
+5. **Jedes Mal ein frisches Profil.** Sonst liefert der Service
+   Worker aus dem alten Cache und die Aenderung ist unsichtbar.
+
 ```
+rm -rf profil
 chrome.exe --headless=old --disable-gpu --hide-scrollbars \
   --force-device-scale-factor=1 --window-size=390,844 \
-  --virtual-time-budget=6000 --screenshot=heute.png \
-  http://localhost:8123/
+  --virtual-time-budget=8000 --user-data-dir=profil \
+  --screenshot=heute.png \
+  "http://localhost:8123/dev-screenshot.html#screenPlan"
 ```
+
+Mit Testbuchungen: `?saat=1`. Einen Knopf mitklicken:
+`?saat=1&klick=%23histOeffnen`.
+
+**`saat=1` ueberschreibt die erfassten Ausgaben.** Deshalb laeuft
+`dev-screenshot.html` nur auf localhost und sperrt sich anderswo
+selbst.
+
+### Warum Uebergaenge abgeschaltet werden muessen
+
+Chromes `--virtual-time-budget` friert die Animationsuhr ein,
+waehrend die virtuelle Zeit vorspult. `.nav-btn` hat
+`transition: color 0.2s`. Der Farbwechsel laeuft deshalb nie los,
+und im Bild leuchtet die alte Schaltflaeche weiter. Sieht aus wie
+ein Fehler in der Navigation, ist aber keiner: eine Messung der
+Klassen im DOM zeigte den richtigen Zustand.
 
 **Erst messen, dann urteilen.** Der erste Screenshot sah aus, als
 laufe der Inhalt rechts aus dem Bild. Eine Messung von

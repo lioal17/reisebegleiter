@@ -174,24 +174,36 @@ h1, h2, h3 { font-size: inherit; font-weight: inherit; }
 }
 #app { position: relative; z-index: 1; }
 
-/* Karten auf Heute liegen ueber dem Foto. Milchglas statt voller
-   Deckkraft, sonst sieht man vom Bild nichts. 0.88 ist die Grenze:
-   darunter leidet Kleintext bei Sonnenlicht, und genau das war der
-   Grund fuer die Kontrastkorrektur am 09.08. */
-body.foto-an #screenToday .card {
+/* Karten liegen ueber dem Foto. Milchglas statt voller Deckkraft,
+   sonst sieht man vom Bild nichts. 0.88 ist die Grenze: darunter
+   leidet Kleintext bei Sonnenlicht, und genau das war der Grund
+   fuer die Kontrastkorrektur am 09.08. */
+body.foto-an .card,
+body.foto-an .ort-card,
+body.foto-an .doc-panel {
   background: rgba(21, 29, 30, 0.88);
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
 }
-body.foto-an #screenToday .wx {
+body.foto-an .wx,
+body.foto-an .sheet {
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
 }
-body.foto-an #screenToday .uhr {
+body.foto-an .uhr,
+body.foto-an .spend-input-row,
+body.foto-an .input-field,
+body.foto-an .cat-btn,
+body.foto-an .sheet-feld,
+body.foto-an .chip-wahl {
   background: rgba(8, 18, 22, 0.55);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
+/* Der aufgeklappte Ortstag und die Kachel-Eintraege liegen bereits
+   in einer Milchglaskarte. Ein zweiter Weichzeichner darin macht
+   den Text unruhig. */
+body.foto-an .ort-tage, body.foto-an .doc-eintrag { backdrop-filter: none; }
 /* Die Palmen-Verzierung ist Ersatz fuer ein fehlendes Bild.
    Liegt eines vor, ist sie nur noch Unruhe. */
 body.foto-an .palm-deco, body.foto-an .hero-bg { display: none; }
@@ -566,6 +578,19 @@ body.foto-an .palm-deco, body.foto-an .hero-bg { display: none; }
   font-size: var(--fs-h2); font-weight: var(--fw-bold);
   color: var(--teal); letter-spacing: var(--ls-tight);
 }
+.spend-summe { text-align: right; }
+.spend-total-thb { font-size: var(--fs-sub); color: var(--muted); }
+
+/* Eine Karte, die sich wie ein Knopf verhaelt. Braucht die
+   Zuruecksetzung der Browser-Vorgaben, sonst erbt sie Systemschrift
+   und eine eigene Rahmenfarbe. */
+.card-knopf {
+  display: block; width: 100%; text-align: left;
+  font-family: inherit; font-size: var(--fs-body); color: var(--text);
+  cursor: pointer; -webkit-appearance: none; appearance: none;
+}
+.card-knopf:active { background: var(--card2); }
+
 .spend-input-row {
   display: flex; align-items: center; gap: var(--sp-m);
   margin: var(--sp-m) 0;
@@ -650,22 +675,19 @@ body.foto-an .palm-deco, body.foto-an .hero-bg { display: none; }
 .hist-rechts { flex: 0 0 auto; text-align: right; }
 .hist-thb { font-size: var(--fs-body); font-weight: var(--fw-bold); }
 .hist-chf { font-size: var(--fs-sub); color: var(--teal); }
-.hist-mehr {
-  width: 100%; margin-top: var(--sp-m);
-  background: none; border: none; color: var(--teal);
-  font-family: inherit; font-size: var(--fs-sub); font-weight: var(--fw-semi);
-  cursor: pointer; padding: var(--sp-s);
-}
 
 /* Blatt von unten, fuer Details und Bearbeiten */
+/* Ueber der Navigationsleiste, die auf z-index 100 liegt. Sonst
+   verschwinden die untersten Zeilen einer langen Liste dahinter,
+   und man kann bei offener Schublade wegnavigieren. */
 .sheet-bg {
-  position: fixed; inset: 0; z-index: 50;
+  position: fixed; inset: 0; z-index: 110;
   background: rgba(4, 10, 12, 0.72);
   opacity: 0; pointer-events: none; transition: opacity 0.2s;
 }
 .sheet-bg.auf { opacity: 1; pointer-events: auto; }
 .sheet {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 51;
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 111;
   max-width: var(--maxw); margin: 0 auto;
   background: var(--card); border-top: 1px solid var(--line);
   border-radius: var(--r-lg) var(--r-lg) 0 0;
@@ -681,6 +703,12 @@ body.foto-an .palm-deco, body.foto-an .hero-bg { display: none; }
   letter-spacing: var(--ls-tight); margin-bottom: var(--sp-xs);
 }
 .sheet-sub { font-size: var(--fs-sub); color: var(--muted); margin-bottom: var(--sp-l); }
+.sheet-kopf-reihe {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--sp-s);
+}
+.sheet-kopf-reihe .sheet-sub { margin-bottom: var(--sp-s); }
+.hist-tag-reihe { display: flex; justify-content: space-between; gap: var(--sp-s); }
 .sheet-label {
   font-size: var(--fs-mini); color: var(--muted); font-weight: var(--fw-bold);
   text-transform: uppercase; letter-spacing: var(--ls-caps);
@@ -761,8 +789,9 @@ a { color: var(--teal); }
 </head>
 <body>
 <!-- Vollbild-Hintergrund, liegt hinter der App und scrollt nicht mit.
-     Nur auf Heute sichtbar: auf den anderen Reitern ist der Inhalt
-     dicht, dort waere ein Foto dahinter nur Unruhe. -->
+     Auf allen vier Reitern sichtbar. Die Karten darueber sind
+     Milchglas, damit das Bild durchkommt, ohne dass der Text
+     leidet. -->
 <div class="bg-foto" id="bgFoto"></div>
 
 <div id="app">
@@ -921,13 +950,27 @@ a { color: var(--teal); }
       </div>
     </div>
 
-    <!-- Ausgaben: steht zuoberst, weil es das am haeufigsten
-         benutzte Werkzeug vor Ort ist. Betrag tippen, Kategorie
-         tippen, gebucht. Kein Bestaetigen, kein Dialog. -->
+    <!-- Umrechner -->
+    <div class="card">
+      <div class="card-label">Umrechner</div>
+      <div class="conv-row">
+        <input type="text" inputmode="decimal" id="thbInput" placeholder="THB" class="input-field">
+        <button class="exchange-btn" id="convSwap" title="Richtung wechseln"><span class="ic" data-icon="swap" data-size="18"></span></button>
+        <input type="text" inputmode="decimal" id="chfInput" placeholder="CHF" class="input-field">
+      </div>
+      <div class="badge-label">1 CHF = 40 THB, immer zu deinen Ungunsten gerundet</div>
+    </div>
+
+    <!-- Ausgaben: Betrag tippen, Kategorie tippen, gebucht.
+         Kein Bestaetigen, kein Dialog. Der Stift auf jeder Kachel
+         oeffnet den Weg mit Notiz. -->
     <div class="card" id="spendCard">
       <div class="spend-head">
         <div class="card-label">Ausgaben</div>
-        <div class="spend-total" id="spendTotal">0.00 CHF</div>
+        <div class="spend-summe">
+          <div class="spend-total" id="spendTotal">0.00 CHF</div>
+          <div class="spend-total-thb" id="spendTotalThb">0 THB</div>
+        </div>
       </div>
       <div class="spend-input-row">
         <input type="text" inputmode="decimal" id="spendAmount" placeholder="0" class="spend-input" autocomplete="off">
@@ -940,32 +983,26 @@ a { color: var(--teal); }
       <div class="spend-last" id="spendLast"></div>
     </div>
 
-    <!-- Ausgabenhistorie: nachtraeglich korrigierbar, sonst wird
-         eine falsch getippte Zahl zur dauerhaften Luege. -->
-    <div class="card">
-      <div class="spend-head">
-        <div class="card-label">Verlauf</div>
-        <div class="badge-label" id="histAnzahl"></div>
+    <!-- Verlauf: nur eine Zeile mit Zusammenfassung, der ganze
+         Verlauf oeffnet sich im Blatt. Sonst schiebt eine lange
+         Liste alles andere unter den Bildrand. -->
+    <button class="card card-knopf" id="histOeffnen" type="button">
+      <div class="card-row">
+        <div class="badge-ic"><span class="ic" data-icon="clock"></span></div>
+        <div style="flex: 1; min-width: 0; text-align: left;">
+          <div class="card-label">Verlauf</div>
+          <div class="card-title card-title-sm" id="histAnzahl">Noch nichts erfasst</div>
+          <div class="card-sub" id="histLetzte"></div>
+        </div>
+        <div class="chevron ic" data-icon="chevR"></div>
       </div>
-      <div id="histListe"></div>
-    </div>
+    </button>
 
     <!-- Notizen -->
     <div class="card">
       <div class="card-label">Notizen</div>
       <textarea class="sheet-feld" id="notizFeld" rows="5" placeholder="Was am Bankomat zu drücken ist, wann das Taxi kommt, was die Rezeption gesagt hat …"></textarea>
       <div class="badge-label" id="notizStatus">Bleibt auf diesem Gerät. Keine PINs, keine Kartennummern.</div>
-    </div>
-
-    <!-- Umrechner -->
-    <div class="card">
-      <div class="card-label">Umrechner</div>
-      <div class="conv-row">
-        <input type="text" inputmode="decimal" id="thbInput" placeholder="THB" class="input-field">
-        <button class="exchange-btn" id="convSwap" title="Richtung wechseln"><span class="ic" data-icon="swap" data-size="18"></span></button>
-        <input type="text" inputmode="decimal" id="chfInput" placeholder="CHF" class="input-field">
-      </div>
-      <div class="badge-label">1 CHF = 40 THB, immer zu deinen Ungunsten gerundet</div>
     </div>
 
     <!-- Übersetzer -->
@@ -1271,13 +1308,12 @@ function applyHeroAsset() {
   });
 }
 
-/* Das Foto gehoert zu Heute, nicht zur App. Auf den anderen
-   Reitern blendet es aus, damit der Inhalt dort ruhig bleibt. */
+/* Das Foto liegt hinter allen Reitern. Es scrollt nicht mit, also
+   bleibt es beim Wechsel stehen und flackert nicht. */
 function hintergrundUmschalten() {
   const el = document.getElementById('bgFoto');
   if (!el) return;
-  const heuteAktiv = document.getElementById('screenToday').classList.contains('active');
-  el.classList.toggle('on', heuteAktiv && document.body.classList.contains('foto-an'));
+  el.classList.toggle('on', document.body.classList.contains('foto-an'));
 }
 
 /* ---------- Heute ---------- */
@@ -2159,18 +2195,21 @@ const SPEND_KEY = 'reisebegleiter_ausgaben';
    Uebernachtungen sind vor der Reise bezahlt. Buchst du unterwegs
    doch eine Nacht dazu, gehoert sie unter Sonstiges.
 
-   Die Unterpunkte sind freiwillig. Ohne sie ist eine Buchung
-   vollstaendig, mit ihnen genauer. */
+   Keine Unterkategorien. Was genau gekauft wurde, steht im
+   Notizfeld. Damit bleibt die Auswertung am Reiseende einfach:
+   sechs Summen, und die Notizen sagen daneben, wofuer das Geld
+   weggegangen ist. Eine feste Unterliste haette dagegen fuer jeden
+   Sonderfall eine Ergaenzung gebraucht. */
 const KATEGORIEN = [
-  { name: 'Essen',       ic: 'utensils', unter: ['Frühstück', 'Mittagessen', 'Abendessen', 'Snack', 'Getränk'] },
-  { name: 'Transport',   ic: 'car',      unter: ['Grab', 'Taxi', 'Boot', 'Bus', 'Zug', 'Flug'] },
-  { name: 'Konsum',      ic: 'bag',      unter: ['Einkaufen', 'Mitbringsel', 'Gras', 'Apotheke', 'Drogerie'] },
-  { name: 'Aktivitäten', ic: 'palm',     unter: ['Tauchen', 'Jetski', 'Miete', 'Eintritt', 'Tour', 'Massage'] },
-  { name: 'Roller',      ic: 'scooter',  unter: ['Miete', 'Benzin', 'Reparatur', 'Parkgebühr'] },
-  { name: 'Sonstiges',   ic: 'wallet',   unter: [] }
+  { name: 'Essen',       ic: 'utensils' },
+  { name: 'Transport',   ic: 'car'      },
+  { name: 'Konsum',      ic: 'bag'      },
+  { name: 'Aktivitäten', ic: 'palm'     },
+  { name: 'Roller',      ic: 'scooter'  },
+  { name: 'Sonstiges',   ic: 'wallet'   }
 ];
 function katInfo(name) {
-  return KATEGORIEN.find(k => k.name === name) || { name: name, ic: 'wallet', unter: [] };
+  return KATEGORIEN.find(k => k.name === name) || { name: name, ic: 'wallet' };
 }
 let ausgaben = [];
 
@@ -2182,6 +2221,13 @@ function katMigration(e) {
   if (e.kategorie === 'Unterkunft') {
     e.kategorie = 'Sonstiges';
     e.notiz = e.notiz ? 'Unterkunft · ' + e.notiz : 'Unterkunft';
+  }
+  /* Unterkategorien gibt es nicht mehr. Ein bereits gesetzter
+     Unterpunkt wandert vorne in die Notiz, statt still zu
+     verschwinden. */
+  if (e.unter) {
+    e.notiz = e.notiz ? e.unter + ' · ' + e.notiz : e.unter;
+    e.unter = '';
   }
   return e;
 }
@@ -2218,6 +2264,7 @@ function chfAus(thb) { return Math.ceil(thb / KURS * 100) / 100; }
 function updateSpendTotal() {
   const total = ausgaben.reduce((s, e) => s + (Number(e.betrag) || 0), 0);
   document.getElementById('spendTotal').textContent = chfAus(total).toFixed(2) + ' CHF';
+  document.getElementById('spendTotalThb').textContent = Math.round(total).toLocaleString('de-CH') + ' THB';
 }
 function renderCatGrid() {
   const grid = document.getElementById('catGrid');
@@ -2239,10 +2286,11 @@ function renderCatGrid() {
       ausgabeBlatt({
         titel: 'Ausgabe erfassen',
         betrag: zahl(document.getElementById('spendAmount').value) || 0,
-        kategorie: k.name, unter: '', notiz: '',
+        kategorie: k.name, notiz: '',
         knopf: 'Buchen',
         speichern: obj => {
           ausgaben.push(obj);
+          letzteBuchung = obj;
           ausgabenSpeichern();
           feldLeeren();
           ausgabenNeuZeichnen();
@@ -2268,7 +2316,9 @@ function buchen(kategorie, btn) {
   const feld = document.getElementById('spendAmount');
   const betrag = zahl(feld.value);
   if (betrag <= 0) { feld.focus(); return; }
-  ausgaben.push({ betrag: betrag, kategorie: kategorie, unter: '', notiz: '', ts: Date.now() });
+  const eintrag = { betrag: betrag, kategorie: kategorie, notiz: '', ts: Date.now() };
+  ausgaben.push(eintrag);
+  letzteBuchung = eintrag;
   ausgabenSpeichern();
   feldLeeren();
   ausgabenNeuZeichnen();
@@ -2276,23 +2326,37 @@ function buchen(kategorie, btn) {
   if (navigator.vibrate) navigator.vibrate(18);
 }
 function ausgabeText(e) {
-  const teile = [];
-  if (e.unter) teile.push(e.unter);
-  if (e.notiz) teile.push(e.notiz);
-  return teile.join(' · ');
+  return String(e.notiz || '').trim();
 }
+
+/* "Rueckgaengig" gilt nur fuer die Buchung, die gerade in dieser
+   Sitzung gemacht wurde. Vorher hing der Knopf nach jedem App-Start
+   an einem beliebigen alten Eintrag, und ein Fehltipp loeschte
+   etwas von vorgestern. Wer aelteres korrigieren will, geht ueber
+   den Verlauf, dort steht vorher, was verschwindet. */
+let letzteBuchung = null;
+
 function zeigeLetzte() {
   const box = document.getElementById('spendLast');
-  const letzte = ausgaben[ausgaben.length - 1];
-  if (!letzte) { box.classList.remove('on'); box.innerHTML = ''; return; }
-  const zusatz = ausgabeText(letzte);
+  if (!letzteBuchung || ausgaben.indexOf(letzteBuchung) === -1) {
+    letzteBuchung = null;
+    box.classList.remove('on');
+    box.innerHTML = '';
+    return;
+  }
+  const zusatz = ausgabeText(letzteBuchung);
   box.innerHTML =
-    '<div class="spend-last-text">Zuletzt: ' + Math.round(letzte.betrag) + ' THB · ' +
-      esc(letzte.kategorie) + (zusatz ? ' · ' + esc(zusatz) : '') + '</div>' +
+    '<div class="spend-last-text">Gebucht: ' + Math.round(letzteBuchung.betrag) + ' THB · ' +
+      esc(letzteBuchung.kategorie) + (zusatz ? ' · ' + esc(zusatz) : '') + '</div>' +
     '<button class="spend-undo" type="button" id="spendUndo">Rückgängig</button>';
   box.classList.add('on');
   document.getElementById('spendUndo').addEventListener('click', () => {
-    ausgaben.pop();
+    /* Ueber die Kennung entfernen, nicht ueber den Index: der kann
+       sich verschoben haben, wenn zwischendurch etwas geloescht
+       wurde. */
+    const i = ausgaben.indexOf(letzteBuchung);
+    if (i !== -1) ausgaben.splice(i, 1);
+    letzteBuchung = null;
     ausgabenSpeichern();
     ausgabenNeuZeichnen();
   });
@@ -2303,11 +2367,13 @@ document.getElementById('spendAmount').addEventListener('input', function() {
 });
 
 /* ---------- Ausgabenhistorie ----------
+   Auf dem Screen steht nur eine Zusammenfassung, der ganze Verlauf
+   oeffnet sich im Blatt. Eine Liste, die mit jedem Reisetag waechst,
+   haette sonst nach zwei Wochen alles darunter aus dem Bild
+   geschoben.
+
    Nach Tagen gruppiert, neueste zuerst. Ein Tipp auf einen Eintrag
    oeffnet ihn zum Korrigieren oder Loeschen. */
-let histAlle = false;
-const HIST_KURZ = 12;
-
 function tagStempel(ts) {
   const d = new Date(ts);
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -2323,36 +2389,76 @@ function uhrzeit(ts) {
   const d = new Date(ts);
   return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
 }
-function renderHistorie() {
-  const box = document.getElementById('histListe');
-  const zaehler = document.getElementById('histAnzahl');
-  if (!box) return;
-  box.innerHTML = '';
-
-  /* Nicht am Original sortieren: der Index in ausgaben ist die
-     Identitaet eines Eintrags, die darf sich nicht verschieben. */
+/* Nicht am Original sortieren: der Index in ausgaben ist die
+   Identitaet eines Eintrags, die darf sich nicht verschieben. */
+function ausgabenSortiert() {
   const mitIndex = ausgaben.map((e, i) => ({ e: e, i: i }));
   mitIndex.sort((a, b) => (b.e.ts || 0) - (a.e.ts || 0));
+  return mitIndex;
+}
 
-  zaehler.textContent = mitIndex.length
-    ? mitIndex.length + (mitIndex.length === 1 ? ' Buchung' : ' Buchungen')
-    : '';
+/* Die Zeile auf dem Screen. Mehr steht dort nicht. */
+function renderHistorie() {
+  const zaehler = document.getElementById('histAnzahl');
+  const letzteZeile = document.getElementById('histLetzte');
+  if (!zaehler) return;
+  const n = ausgaben.length;
+  zaehler.textContent = n
+    ? n + (n === 1 ? ' Buchung' : ' Buchungen')
+    : 'Noch nichts erfasst';
+  const letzte = ausgabenSortiert()[0];
+  if (!letzte) { letzteZeile.textContent = ''; return; }
+  const zusatz = ausgabeText(letzte.e);
+  letzteZeile.textContent = 'Zuletzt ' + Math.round(letzte.e.betrag) + ' THB · ' +
+    letzte.e.kategorie + (zusatz ? ' · ' + zusatz : '');
+}
 
+function verlaufBlatt() {
+  const sheet = document.getElementById('sheet');
+  sheet.innerHTML = '';
+
+  const kopf = document.createElement('div');
+  kopf.className = 'sheet-kopf-reihe';
+  const summe = ausgaben.reduce((s, e) => s + (Number(e.betrag) || 0), 0);
+  kopf.innerHTML =
+    '<div>' +
+      '<div class="sheet-titel">Verlauf</div>' +
+      '<div class="sheet-sub">' + ausgaben.length +
+        (ausgaben.length === 1 ? ' Buchung · ' : ' Buchungen · ') +
+        Math.round(summe).toLocaleString('de-CH') + ' THB · ' +
+        chfAus(summe).toFixed(2) + ' CHF</div>' +
+    '</div>';
+  const zu = document.createElement('button');
+  zu.className = 'doc-panel-zu';
+  zu.type = 'button';
+  zu.textContent = 'Schliessen';
+  zu.addEventListener('click', sheetSchliessen);
+  kopf.appendChild(zu);
+  sheet.appendChild(kopf);
+
+  const mitIndex = ausgabenSortiert();
   if (!mitIndex.length) {
-    box.innerHTML = '<div class="hist-leer">Noch nichts erfasst.</div>';
-    return;
+    const leer = document.createElement('div');
+    leer.className = 'hist-leer';
+    leer.textContent = 'Noch nichts erfasst.';
+    sheet.appendChild(leer);
   }
 
-  const zeigen = histAlle ? mitIndex : mitIndex.slice(0, HIST_KURZ);
+  /* Je Tag eine Ueberschrift mit Tagessumme. Beim Nachrechnen am
+     Abend ist das die Zahl, die man sucht. */
   let letzterTag = '';
-  zeigen.forEach(x => {
+  mitIndex.forEach(x => {
     const tag = tagStempel(x.e.ts);
     if (tag !== letzterTag) {
       letzterTag = tag;
-      const kopf = document.createElement('div');
-      kopf.className = 'hist-tag';
-      kopf.textContent = tagTitel(x.e.ts);
-      box.appendChild(kopf);
+      const tagesSumme = mitIndex
+        .filter(y => tagStempel(y.e.ts) === tag)
+        .reduce((s, y) => s + (Number(y.e.betrag) || 0), 0);
+      const k = document.createElement('div');
+      k.className = 'hist-tag hist-tag-reihe';
+      k.innerHTML = '<span>' + esc(tagTitel(x.e.ts)) + '</span>' +
+        '<span>' + Math.round(tagesSumme) + ' THB</span>';
+      sheet.appendChild(k);
     }
     const k = katInfo(x.e.kategorie);
     const zusatz = ausgabeText(x.e);
@@ -2369,18 +2475,13 @@ function renderHistorie() {
         '<div class="hist-chf">' + chfAus(x.e.betrag).toFixed(2) + ' CHF</div>' +
       '</div>';
     zeile.addEventListener('click', () => ausgabeBearbeiten(x.i));
-    box.appendChild(zeile);
+    sheet.appendChild(zeile);
   });
 
-  if (mitIndex.length > HIST_KURZ) {
-    const mehr = document.createElement('button');
-    mehr.className = 'hist-mehr';
-    mehr.type = 'button';
-    mehr.textContent = histAlle ? 'Weniger anzeigen' : 'Alle ' + mitIndex.length + ' anzeigen';
-    mehr.addEventListener('click', () => { histAlle = !histAlle; renderHistorie(); });
-    box.appendChild(mehr);
-  }
+  document.getElementById('sheetBg').classList.add('auf');
+  requestAnimationFrame(() => { sheet.classList.add('auf'); sheet.scrollTop = 0; });
 }
+document.getElementById('histOeffnen').addEventListener('click', verlaufBlatt);
 
 function ausgabeBearbeiten(idx) {
   const e = ausgaben[idx];
@@ -2388,7 +2489,7 @@ function ausgabeBearbeiten(idx) {
   ausgabeBlatt({
     titel: 'Ausgabe bearbeiten',
     sub: uhrzeit(e.ts) + ' · ' + tagTitel(e.ts),
-    betrag: e.betrag, kategorie: e.kategorie, unter: e.unter || '', notiz: e.notiz || '',
+    betrag: e.betrag, kategorie: e.kategorie, notiz: e.notiz || '',
     knopf: 'Speichern',
     speichern: obj => {
       /* Zeitstempel bleibt der der Buchung, sonst springt der
@@ -2402,7 +2503,10 @@ function ausgabeBearbeiten(idx) {
       ausgaben.splice(idx, 1);
       ausgabenSpeichern();
       ausgabenNeuZeichnen();
-    }
+    },
+    /* Bearbeitet wird immer aus dem Verlauf heraus. Nach dem
+       Speichern gehoert man dorthin zurueck, nicht auf den Screen. */
+    danach: () => setTimeout(verlaufBlatt, 260)
   });
 }
 
@@ -2417,7 +2521,6 @@ document.addEventListener('keydown', ev => { if (ev.key === 'Escape') sheetSchli
 function ausgabeBlatt(o) {
   const sheet = document.getElementById('sheet');
   let kategorie = o.kategorie || 'Sonstiges';
-  let unter = o.unter || '';
   sheet.innerHTML = '';
 
   const kopf = document.createElement('div');
@@ -2464,54 +2567,20 @@ function ausgabeBlatt(o) {
   katReihe.className = 'chip-reihe';
   sheet.appendChild(katReihe);
 
-  /* Unterpunkt */
-  const unterLabel = document.createElement('div');
-  unterLabel.className = 'sheet-label';
-  unterLabel.textContent = 'Genauer, freiwillig';
-  sheet.appendChild(unterLabel);
-  const unterReihe = document.createElement('div');
-  unterReihe.className = 'chip-reihe';
-  sheet.appendChild(unterReihe);
-
-  function unterZeichnen() {
-    unterReihe.innerHTML = '';
-    const liste = katInfo(kategorie).unter;
-    if (!liste.length) {
-      unterLabel.style.display = 'none';
-      unterReihe.style.display = 'none';
-      return;
-    }
-    unterLabel.style.display = '';
-    unterReihe.style.display = '';
-    liste.forEach(u => {
-      const c = document.createElement('button');
-      c.className = 'chip-wahl' + (unter === u ? ' an' : '');
-      c.type = 'button';
-      c.textContent = u;
-      c.addEventListener('click', () => {
-        unter = unter === u ? '' : u;   /* nochmals tippen hebt auf */
-        unterZeichnen();
-      });
-      unterReihe.appendChild(c);
-    });
-  }
   KATEGORIEN.forEach(k => {
     const c = document.createElement('button');
     c.className = 'chip-wahl' + (kategorie === k.name ? ' an' : '');
     c.type = 'button';
     c.textContent = k.name;
     c.addEventListener('click', () => {
-      if (kategorie === k.name) return;
       kategorie = k.name;
-      unter = '';
       katReihe.querySelectorAll('.chip-wahl').forEach(x => x.classList.toggle('an', x.textContent === kategorie));
-      unterZeichnen();
     });
     katReihe.appendChild(c);
   });
-  unterZeichnen();
 
-  /* Notiz */
+  /* Notiz. Hier steht, wofuer das Geld weggegangen ist: "Jetski",
+     "Souvenir", "Grab zum Flughafen". Deshalb keine Unterkategorien. */
   const notizLabel = document.createElement('div');
   notizLabel.className = 'sheet-label';
   notizLabel.textContent = 'Notiz, freiwillig';
@@ -2519,7 +2588,7 @@ function ausgabeBlatt(o) {
   const notizFeld = document.createElement('textarea');
   notizFeld.className = 'sheet-feld';
   notizFeld.rows = 2;
-  notizFeld.placeholder = 'z.B. mit Nina, Strandbar';
+  notizFeld.placeholder = 'z.B. Jetski, Souvenir, Grab zum Flughafen';
   notizFeld.value = o.notiz || '';
   sheet.appendChild(notizFeld);
 
@@ -2535,6 +2604,7 @@ function ausgabeBlatt(o) {
       if (!confirm('Diese Buchung löschen?')) return;
       o.loeschen();
       sheetSchliessen();
+      if (o.danach) o.danach();
     });
     aktionen.appendChild(l);
   } else {
@@ -2545,25 +2615,40 @@ function ausgabeBlatt(o) {
     a.addEventListener('click', sheetSchliessen);
     aktionen.appendChild(a);
   }
-  const ok = document.createElement('button');
-  ok.className = 'btn';
-  ok.type = 'button';
-  ok.textContent = o.knopf || 'Speichern';
-  ok.addEventListener('click', () => {
+  function abschliessen() {
     const betrag = zahl(betragFeld.value);
-    if (betrag <= 0) { betragFeld.focus(); return; }
+    if (betrag <= 0) { betragFeld.focus(); return false; }
     o.speichern({
       betrag: betrag,
       kategorie: kategorie,
-      unter: unter,
       notiz: notizFeld.value.trim(),
       ts: Date.now()
     });
     sheetSchliessen();
     if (navigator.vibrate) navigator.vibrate(18);
-  });
+    if (o.danach) o.danach();
+    return true;
+  }
+
+  const ok = document.createElement('button');
+  ok.className = 'btn';
+  ok.type = 'button';
+  ok.textContent = o.knopf || 'Speichern';
+  ok.addEventListener('click', abschliessen);
   aktionen.appendChild(ok);
   sheet.appendChild(aktionen);
+
+  /* Enter schliesst die Eingabe ab, im Betragsfeld wie im
+     Notizfeld. Im Notizfeld kostet das die Moeglichkeit, eine
+     zweite Zeile zu tippen. Bewusst: eine Ausgabennotiz ist ein
+     Stichwort, kein Absatz. Wer doch umbrechen will, nimmt
+     Umschalt plus Enter. */
+  betragFeld.addEventListener('keydown', ev => {
+    if (ev.key === 'Enter') { ev.preventDefault(); abschliessen(); }
+  });
+  notizFeld.addEventListener('keydown', ev => {
+    if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); abschliessen(); }
+  });
 
   document.getElementById('sheetBg').classList.add('auf');
   requestAnimationFrame(() => sheet.classList.add('auf'));
