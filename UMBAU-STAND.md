@@ -230,14 +230,91 @@ korrigiert und loescht eine Ausgabe. Null Konsolenfehler.
 bleiben soll, braucht das Projekt eine Entscheidung ueber
 `node_modules`, und die will ich nicht nebenbei treffen.
 
-### Offen, bewusst nicht gemacht
+---
 
-- **Das Design.** Lio hat neue Bilder erstellt, sie liegen noch
-  nicht im Repo. Das ist der naechste Block.
-- `assets/tile-visa.jpg`.
+## Bilder und Hintergrund: 11.08.2026, zweiter Block
+
+Quelle wieder `C:\Users\remar\Desktop\Rreiseapp\Bilder`.
+
+| Datei | Inhalt | Groesse |
+|---|---|---|
+| `assets/tile-visa.jpg` | Dokument mit Siegel, gold | 15 KB |
+| `assets/bg-mobile.jpg` | Vollbild-Hintergrund, 1024 x 1535 | 71 KB |
+
+**Damit sind alle sechs Kacheln bebildert.** `tile-default.jpg` wird
+nicht mehr gebraucht, seit die Kacheln fest sind.
+
+**Wichtig fuer den naechsten Einbau:** Das Visa-Bild hatte **keinen
+schwarzen Rand**, anders als die Bilder vom 10.08. Der Beschnitt
+111 bis 1142 waere hier falsch gewesen und haette ins Motiv
+geschnitten. Immer messen, nie das alte Rezept uebernehmen.
+
+### Wie der Hintergrund eingebaut ist
+
+- Feste Ebene `#bgFoto` hinter der App, scrollt nicht mit.
+- **Nur auf Heute sichtbar.** Auf den anderen Reitern ist der Inhalt
+  dicht, dort waere ein Foto dahinter nur Unruhe.
+- Karten auf Heute sind Milchglas: `rgba(21,29,30,0.88)` plus
+  `backdrop-filter: blur(14px)`. **0.88 ist die Untergrenze.**
+  Darunter leidet Kleintext bei Sonnenlicht, und genau das war der
+  Grund fuer die Kontrastkorrektur am 09.08.
+- Der Schleier ist unten bewusst schwach. Die Navigationsleiste hat
+  mit 0.92 und Weichzeichner ihren eigenen Schutz, ein zweiter
+  Schleier dort daempft nur den Sonnenuntergang weg.
+- `hero.jpg` bleibt als Rueckfall, falls `bg-mobile.jpg` fehlt.
+  Fehlen beide, laeuft die App wie vorher ohne jedes Bild.
+
+**Was der Hintergrund nicht leistet:** Auf Heute liegen vier Karten.
+Sie verdecken die Bildmitte. Sichtbar bleiben der dunkle Himmel oben
+und Strand plus Palmen unten. Wer mehr vom Bild sehen will, muss
+entweder Karten von Heute entfernen oder die Deckkraft unter 0.88
+druecken. Das Zweite geht auf Kosten der Lesbarkeit im Freien und
+ist deshalb nicht gemacht.
+
+### Konsum-Symbol nachgezeichnet
+
+Die erste Fassung las sich als **Papierkorb**: Der Henkel lag
+innerhalb des Beutels. Bei einem Knopf, der Geld bucht, ist das die
+denkbar falscheste Assoziation. Jetzt mit durchgezogener Oberkante
+und Henkelbogen unter der Oeffnung.
+
+---
+
+## Screenshots pruefen: das Rezept
+
+Teuer erarbeitet, deshalb hier festgehalten.
+
+1. `node .server.js` starten.
+2. **`--headless=old` verwenden.** Der neue Headless-Modus
+   ignoriert `--window-size` unter Windows und liefert einen
+   Viewport von rund 500 px. Damit sieht jedes Handy-Layout kaputt
+   aus, obwohl es das nicht ist.
+3. `--force-device-scale-factor=1 --window-size=390,844`
+
+```
+chrome.exe --headless=old --disable-gpu --hide-scrollbars \
+  --force-device-scale-factor=1 --window-size=390,844 \
+  --virtual-time-budget=6000 --screenshot=heute.png \
+  http://localhost:8123/
+```
+
+**Erst messen, dann urteilen.** Der erste Screenshot sah aus, als
+laufe der Inhalt rechts aus dem Bild. Eine Messung von
+`scrollWidth` und den Element-Rechtecken bei 390 px zeigte: kein
+Ueberlauf, alle vier Nav-Knoepfe passen, beide Uhren passen. Der
+Fehler lag im Screenshot-Werkzeug, nicht in der App.
+
+---
+
+## Offen
+
 - Zeitzonen stehen bisher nur in `reise.zeitzone`. Fuer eine Reise
   ueber mehrere Laender braucht jeder Tag ein eigenes `tz`. Der Code
   liest das bereits, die Daten haben es noch nicht.
+- Aussehen des Werkzeug-Screens: existiert jetzt, aber ungeprueft
+  am echten Geraet.
+- Ob der Hintergrund auch auf den anderen drei Reitern soll. Ist
+  eine Zeile, bewusst noch nicht gemacht.
 
 ---
 
