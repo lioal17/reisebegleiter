@@ -149,6 +149,98 @@ kannst du dort pruefen, den Offline-Betrieb nicht.
 
 ---
 
+## Umbau nach Lios erstem Feedback: 11.08.2026
+
+Reihenfolge bewusst gewaehlt: **Struktur zuerst, Design danach.**
+Grund: Reiseplan und Dokumente aendern das Layout ohnehin komplett,
+zuerst gestalten hiesse zweimal gestalten.
+
+### Heute
+
+- Knoepfe erscheinen nur, wenn sie etwas tun koennen. Vorher war
+  "Anrufen" nur ausgegraut und "Karte" gar nicht geprueft.
+- **Behobener Fehler:** `callBtn.disabled = true` wurde nie wieder
+  zurueckgesetzt. Nach einem Tag ohne Nummer blieb der Knopf auch
+  bei Hotels mit Nummer tot.
+- Der Nachtflug wird als solcher erkannt und heisst "Heute Nacht
+  unterwegs", mit Flugzeug-Symbol statt Bett. Erkennungszeichen:
+  Transfer am selben Tag, dazu weder Koordinaten noch Nummer.
+- "Foto" heisst jetzt "Hotelfoto" und verschwindet an Flugtagen.
+  Lio hatte den Knopf fuer einen QR-Scanner gehalten, zu Recht.
+- **Wetter am Ziel statt am Start.** Hat der heutige Tag keine
+  Koordinaten, wird der naechste Tag genommen, der welche hat.
+  Damit ist die Karte am Abreisetag nicht mehr leer.
+- **Zwei Uhren**, Zuhause und Ziel. Beide ueber `Intl` aus einer
+  benannten Zeitzone, nicht ueber die Geraeteuhr. Sonst zeigt die
+  Heimatuhr vor Ort thailaendische Zeit. Laeuft offline.
+- Begruessung jetzt wirklich ohne Namen, wie am 09.08. entschieden.
+  Der Code hing noch am alten Stand.
+
+### Reiseplan
+
+Statt einer Zeile pro Tag eine Karte pro Ort. Antippen klappt die
+Tage auf. Gruppiert wird nach **Zielort plus Hotel**, nicht nach dem
+ganzen Ortstext.
+
+**Warum das wichtig ist:** Erst gruppierte ich nach dem vollen Text.
+Ergebnis waren 17 Gruppen statt 10, weil "Bangkok → Chiang Mai" und
+"Chiang Mai" bei identischem Hotel getrennt blieben. Der Rauchtest
+hat das aufgedeckt, nicht das Auge.
+
+### Dokumente
+
+Sechs feste Kacheln, spaltenweise gefuellt: links Hotels, Boote und
+Faehren, Fluege. Rechts Einreise und Visa, Reisepass, Versicherung.
+Sie entstehen nicht mehr aus den vorhandenen Dokumenten, sondern
+stehen immer da. Leere Kacheln sagen "noch nichts".
+
+- Kachel antippen oeffnet den Inhalt unter dem Raster, die aktive
+  Kachel ist markiert. In einem zweispaltigen Raster gibt es kein
+  "direkt darunter", ohne die Spaltenordnung zu zerreissen.
+- **Hotels sind der Sonderfall:** Sie kommen aus `tage[].hotel`,
+  nicht aus `tickets`. Jede Unterkunft einmal, mit Zeitraum,
+  Adresse, Anrufen, WhatsApp und Route nach Google Maps.
+- Dokumente, die in keine Kachel passen, stehen unter "Nicht
+  zugeordnet" statt stillschweigend zu verschwinden.
+- `tile-default.jpg` wird nicht mehr gebraucht. **Es fehlt nur noch
+  `assets/tile-visa.jpg`.**
+
+### Mehr
+
+- Kategorien neu: Essen, Transport, **Konsum**, Aktivitaeten,
+  Roller, Sonstiges. Unterkunft faellt weg. Konsum ist Einkaufen,
+  Mitbringsel und Genussmittel in einem Topf.
+- **Der schnelle Weg bleibt zwei Tipps.** Betrag, Kachel, gebucht.
+  Ein Stift auf jeder Kachel oeffnet ein Blatt mit Unterpunkten und
+  Notizfeld. Kein langes Druecken: versteckte Gesten findet niemand.
+- **Verlauf** mit Bearbeiten und Loeschen, nach Tagen gruppiert.
+- **Notizfeld**, eigener Speicherplatz, sichert beim Tippen. Fester
+  Hinweis: keine PINs, keine Kartennummern. Damit bleibt Entscheid 8
+  in Kraft.
+- Alte Buchungen werden migriert: "Aktivitaet" wird "Aktivitaeten",
+  "Unterkunft" wird "Sonstiges" mit dem alten Namen als Notiz.
+
+### Getestet
+
+`jsdom`-Rauchtest ausserhalb des Repos, kein `node_modules` im
+Projekt. Laedt die Seite, klickt sich durch alle vier Reiter, bucht,
+korrigiert und loescht eine Ausgabe. Null Konsolenfehler.
+
+**Der Test ist nicht committet.** Er lag in `%TEMP%\rbtest`. Wenn er
+bleiben soll, braucht das Projekt eine Entscheidung ueber
+`node_modules`, und die will ich nicht nebenbei treffen.
+
+### Offen, bewusst nicht gemacht
+
+- **Das Design.** Lio hat neue Bilder erstellt, sie liegen noch
+  nicht im Repo. Das ist der naechste Block.
+- `assets/tile-visa.jpg`.
+- Zeitzonen stehen bisher nur in `reise.zeitzone`. Fuer eine Reise
+  ueber mehrere Laender braucht jeder Tag ein eigenes `tz`. Der Code
+  liest das bereits, die Daten haben es noch nicht.
+
+---
+
 ## Erst im November
 
 Zehn Transfers mit Zeiten und Preisen, Koordinaten und Telefonnummern

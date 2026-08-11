@@ -5,7 +5,10 @@
     "start": "2026-12-20",
     "ende": "2027-01-16",
     "tage": 28,
-    "stationen": 9
+    "stationen": 9,
+    "heimatOrt": "Zürich",
+    "heimatZeitzone": "Europe/Zurich",
+    "zeitzone": "Asia/Bangkok"
   },
   "tage": [
     {

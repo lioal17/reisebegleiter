@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reisebegleiter-v5';
+const CACHE_NAME = 'reisebegleiter-v6';
 const urlsToCache = [
   './',
   './index.html',
@@ -13,8 +13,7 @@ const urlsToCache = [
   './assets/tile-hotel.jpg',
   './assets/tile-pass.jpg',
   './assets/tile-schutz.jpg',
-  './assets/tile-visa.jpg',
-  './assets/tile-default.jpg'
+  './assets/tile-visa.jpg'
 ];
 
 self.addEventListener('install', event => {

@@ -304,38 +304,72 @@ h1, h2, h3 { font-size: inherit; font-weight: inherit; }
 .wx-stamp { font-size: var(--fs-mini); color: var(--muted); margin-top: 2px; }
 .wx.wx-mittel .wx-ic { color: var(--muted); }
 
+/* Zwei Uhren auf Heute */
+.uhren { display: flex; gap: var(--sp-s); margin-top: var(--sp-m); }
+.uhr {
+  flex: 1; min-width: 0;
+  background: rgba(8, 18, 22, 0.5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 9px 12px;
+}
+.uhr-ort {
+  font-size: var(--fs-mini); color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.uhr-zeit {
+  font-size: var(--fs-h2); font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-tight); line-height: var(--lh-tight);
+}
+.uhr-tag { font-size: var(--fs-mini); color: var(--faint); }
+
 /* Reiseplan */
 .day-list { display: flex; flex-direction: column; gap: 10px; }
-.day-item {
-  display: flex; gap: 12px;
-  padding: 14px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  cursor: pointer;
-  transition: background 0.2s;
+/* Reiseplan: Ortsgruppen
+   Eine Karte pro Ort, nicht pro Tag. Wer drei Naechte am selben Ort
+   ist, sieht eine Zeile statt drei. Antippen klappt die Tage auf. */
+.ort-card {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--r); overflow: hidden;
 }
-.day-item:active { background: var(--card2); }
-.day-item.today {
-  background: linear-gradient(135deg, #103c38, #16554d);
+.ort-card.jetzt {
   border-color: rgba(47, 217, 192, 0.45);
   box-shadow: 0 0 24px rgba(47, 217, 192, 0.12);
 }
-.day-left { flex: 0 0 52px; }
-.day-dow { font-size: var(--fs-mini); color: var(--muted); }
-.day-item.today .day-dow { color: rgba(234, 244, 242, 0.72); }
-.day-date { font-size: var(--fs-title); font-weight: var(--fw-bold); letter-spacing: var(--ls-tight); }
-.day-main { flex: 1; min-width: 0; }
-.day-location { font-size: var(--fs-body); font-weight: var(--fw-semi); }
-.day-hotel { font-size: var(--fs-sub); color: var(--muted); }
-.day-item.today .day-hotel { color: rgba(234, 244, 242, 0.75); }
-.day-chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  margin-top: 6px; padding: 3px 9px;
-  border-radius: 12px; font-size: var(--fs-mini); font-weight: var(--fw-med);
-  background: var(--gold-bg); color: var(--gold);
+.ort-top {
+  display: flex; gap: 12px; align-items: center;
+  padding: 14px; cursor: pointer; min-height: var(--touch-min);
+  transition: background 0.2s;
 }
-.day-chip.teal { background: rgba(0, 0, 0, 0.25); color: var(--teal); }
+.ort-top:active { background: var(--card2); }
+.ort-naechte {
+  flex: 0 0 44px; height: 44px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  border-radius: var(--r-sm);
+  background: var(--teal-bg); color: var(--teal);
+}
+.ort-naechte-zahl { font-size: var(--fs-title); font-weight: var(--fw-bold); line-height: 1; }
+.ort-naechte-wort { font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+.ort-mitte { flex: 1; min-width: 0; }
+.ort-name { font-size: var(--fs-title); font-weight: var(--fw-bold); letter-spacing: var(--ls-tight); }
+.ort-spanne { font-size: var(--fs-sub); color: var(--muted); margin-top: 2px; }
+.ort-hotel { font-size: var(--fs-sub); color: var(--muted); }
+.ort-chev { color: var(--muted); transition: transform 0.2s; flex: 0 0 auto; }
+.ort-card.offen .ort-chev { transform: rotate(90deg); }
+.ort-tage { display: none; padding: 0 14px 6px 14px; }
+.ort-card.offen .ort-tage { display: block; }
+.ort-tag {
+  display: flex; gap: 12px; align-items: center;
+  padding: 12px 0; border-top: 1px solid var(--divider-soft);
+  cursor: pointer; min-height: var(--touch-min);
+}
+.ort-tag-datum { flex: 0 0 62px; }
+.ort-tag-dow { font-size: var(--fs-mini); color: var(--muted); }
+.ort-tag-tag { font-size: var(--fs-body); font-weight: var(--fw-semi); }
+.ort-tag-main { flex: 1; min-width: 0; }
+.ort-tag-titel { font-size: var(--fs-body); }
+.ort-tag-heute { color: var(--teal); font-weight: var(--fw-semi); }
 
 /* Tagesplan Timeline */
 .tl { display: flex; flex-direction: column; gap: 10px; }
@@ -361,7 +395,17 @@ h1, h2, h3 { font-size: inherit; font-weight: inherit; }
    Zwei Schichten: Farbverlauf plus Icon ist die Grundlage und
    funktioniert ohne jedes Bild. Ein Bild aus assets/ legt sich
    optional darueber, das Icon blendet dann aus. */
-.doc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap-card); margin-bottom: 18px; }
+/* Spaltenweise gefuellt, nicht zeilenweise: links Hotels, Boote,
+   Fluege. Rechts Einreise, Pass, Versicherung. Genau sechs, feste
+   Reihenfolge. Eine leere Kachel bleibt stehen und sagt, dass dort
+   noch nichts liegt. Das ist der Sinn, man sieht was fehlt. */
+.doc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: repeat(3, auto);
+  grid-auto-flow: column;
+  gap: var(--gap-card); margin-bottom: var(--sp-m);
+}
 .doc-tile {
   position: relative; overflow: hidden;
   border-radius: var(--r);
@@ -407,7 +451,35 @@ h1, h2, h3 { font-size: inherit; font-weight: inherit; }
 .tile-pass { background-image: linear-gradient(145deg, #431c22, #7d343f); }
 .tile-schutz { background-image: linear-gradient(145deg, #2c204e, #55429a); }
 .tile-visa { background-image: linear-gradient(145deg, #514019, #927d34); }
-.tile-default { background-image: linear-gradient(145deg, #1b2d32, #31545e); }
+.doc-tile.leer { opacity: 0.55; }
+.doc-tile.aktiv {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 2px var(--teal), 0 0 24px rgba(32, 201, 193, 0.2);
+}
+
+/* Aufgeklappter Inhalt einer Kachel.
+   Er steht unter dem Raster, nicht in der Kachel: In einem
+   zweispaltigen Raster gibt es kein "direkt darunter", ohne die
+   Spaltenordnung zu zerreissen. Die aktive Kachel ist markiert. */
+.doc-panel {
+  border: 1px solid var(--line); border-radius: var(--r);
+  background: var(--card); padding: var(--pad-card);
+  margin-bottom: var(--sp-m);
+}
+.doc-panel-kopf {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: var(--sp-s); margin-bottom: var(--sp-s);
+}
+.doc-panel-titel { font-size: var(--fs-title); font-weight: var(--fw-bold); }
+.doc-panel-zu {
+  background: none; border: none; color: var(--muted);
+  font-size: var(--fs-sub); cursor: pointer; padding: var(--sp-xs);
+}
+.doc-eintrag { padding: var(--sp-m) 0; border-top: 1px solid var(--divider-soft); }
+.doc-eintrag:first-of-type { border-top: none; padding-top: var(--sp-xs); }
+.doc-eintrag-titel { font-size: var(--fs-body); font-weight: var(--fw-semi); }
+.doc-eintrag-zeile { font-size: var(--fs-sub); color: var(--muted); margin-top: 2px; }
+.doc-leer-text { font-size: var(--fs-sub); color: var(--muted); }
 .grp-head {
   font-size: var(--fs-mini); color: var(--muted); font-weight: var(--fw-bold);
   margin: var(--sp-l) 0 var(--sp-s); text-transform: uppercase; letter-spacing: var(--ls-caps);
@@ -467,6 +539,7 @@ h1, h2, h3 { font-size: inherit; font-weight: inherit; }
 .spend-cur-chf { font-size: var(--fs-sub); color: var(--teal); }
 .cat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-s); }
 .cat-btn {
+  position: relative;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 5px; min-height: 66px;
   background: var(--bg2); border: 1px solid var(--line);
@@ -491,6 +564,100 @@ h1, h2, h3 { font-size: inherit; font-weight: inherit; }
   color: var(--teal); font-family: inherit; font-size: var(--fs-sub);
   font-weight: var(--fw-semi); cursor: pointer; padding: 6px 4px;
 }
+
+/* Stift auf der Kategorie-Kachel.
+   Der schnelle Weg bleibt schnell: Betrag tippen, Kachel tippen,
+   gebucht. Wer die Buchung genauer haben will, tippt den Stift.
+   Kein langes Druecken, denn versteckte Gesten findet niemand. */
+.cat-stift {
+  position: absolute; top: 0; right: 0;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; padding: 0;
+  color: var(--faint); cursor: pointer;
+}
+.cat-stift:active { color: var(--teal); }
+
+/* Ausgabenhistorie */
+.hist-leer { font-size: var(--fs-sub); color: var(--muted); padding: var(--sp-s) 0; }
+.hist-tag {
+  font-size: var(--fs-mini); color: var(--muted); font-weight: var(--fw-bold);
+  text-transform: uppercase; letter-spacing: var(--ls-caps);
+  margin: var(--sp-m) 0 var(--sp-xs);
+}
+.hist-eintrag {
+  display: flex; gap: var(--sp-m); align-items: center;
+  padding: 11px 0; border-top: 1px solid var(--divider-soft);
+  cursor: pointer; min-height: var(--touch-min);
+}
+.hist-ic {
+  width: 34px; height: 34px; flex: 0 0 34px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-sm); background: var(--bg2); color: var(--teal);
+}
+.hist-main { flex: 1; min-width: 0; }
+.hist-titel { font-size: var(--fs-body); font-weight: var(--fw-semi); }
+.hist-sub {
+  font-size: var(--fs-sub); color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.hist-rechts { flex: 0 0 auto; text-align: right; }
+.hist-thb { font-size: var(--fs-body); font-weight: var(--fw-bold); }
+.hist-chf { font-size: var(--fs-sub); color: var(--teal); }
+.hist-mehr {
+  width: 100%; margin-top: var(--sp-m);
+  background: none; border: none; color: var(--teal);
+  font-family: inherit; font-size: var(--fs-sub); font-weight: var(--fw-semi);
+  cursor: pointer; padding: var(--sp-s);
+}
+
+/* Blatt von unten, fuer Details und Bearbeiten */
+.sheet-bg {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(4, 10, 12, 0.72);
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.sheet-bg.auf { opacity: 1; pointer-events: auto; }
+.sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 51;
+  max-width: var(--maxw); margin: 0 auto;
+  background: var(--card); border-top: 1px solid var(--line);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  padding: var(--pad-card-lg);
+  padding-bottom: calc(var(--pad-card-lg) + env(safe-area-inset-bottom, 0px));
+  max-height: 84vh; overflow-y: auto;
+  transform: translateY(102%); transition: transform 0.22s ease-out;
+  pointer-events: none;
+}
+.sheet.auf { transform: translateY(0); pointer-events: auto; }
+.sheet-titel {
+  font-size: var(--fs-h2); font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-tight); margin-bottom: var(--sp-xs);
+}
+.sheet-sub { font-size: var(--fs-sub); color: var(--muted); margin-bottom: var(--sp-l); }
+.sheet-label {
+  font-size: var(--fs-mini); color: var(--muted); font-weight: var(--fw-bold);
+  text-transform: uppercase; letter-spacing: var(--ls-caps);
+  margin: var(--sp-l) 0 var(--sp-s);
+}
+.chip-reihe { display: flex; flex-wrap: wrap; gap: var(--sp-s); }
+.chip-wahl {
+  background: var(--bg2); border: 1px solid var(--line);
+  color: var(--text); font-family: inherit; font-size: var(--fs-sub);
+  padding: 9px 14px; border-radius: 999px; cursor: pointer;
+  min-height: 38px;
+}
+.chip-wahl.an { border-color: var(--teal); background: var(--teal-bg); color: var(--teal); }
+.sheet-feld {
+  width: 100%; margin-top: var(--sp-s);
+  background: var(--bg2); border: 1px solid var(--line);
+  border-radius: var(--r-btn); color: var(--text);
+  font-family: inherit; font-size: var(--fs-input);
+  padding: 12px 14px; resize: vertical;
+}
+.sheet-feld:focus { outline: none; border-color: var(--teal); }
+.sheet-aktionen { display: flex; gap: var(--sp-s); margin-top: var(--sp-xl); }
+.sheet-aktionen .btn { flex: 1; }
 
 /* Werkzeuge: Umrechner, Uebersetzer, Notfall */
 .conv-row { display: flex; gap: var(--sp-s); align-items: center; margin-top: var(--sp-m); }
@@ -559,6 +726,22 @@ a { color: var(--teal); }
       <h1 class="h1">Heute</h1>
       <div class="sub" id="todayDate">–</div>
       <div class="loc-pill"><span class="ic" data-icon="pin" data-size="15"></span><span id="todayLocText">–</span></div>
+
+      <!-- Zwei Uhren. Beide rechnen über eine feste Zeitzone, nicht
+           über die Geräteuhr. Dadurch stimmen sie zu Hause wie vor
+           Ort, und die Logik gilt für jedes Reiseland. -->
+      <div class="uhren" id="uhrenZeile" style="display: none;">
+        <div class="uhr">
+          <div class="uhr-ort" id="uhrHeimOrt">Zuhause</div>
+          <div class="uhr-zeit" id="uhrHeimZeit">–</div>
+          <div class="uhr-tag" id="uhrHeimTag"></div>
+        </div>
+        <div class="uhr">
+          <div class="uhr-ort" id="uhrZielOrt">Ziel</div>
+          <div class="uhr-zeit" id="uhrZielZeit">–</div>
+          <div class="uhr-tag" id="uhrZielTag"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Wetter: Beiwerk, nie Voraussetzung. Faellt der Dienst aus,
@@ -578,16 +761,16 @@ a { color: var(--teal); }
     <div class="card card-teal" id="todayNight">
       <img id="hotelFoto" alt="Hotel-Foto" style="display: none; width: 100%; max-height: 150px; object-fit: cover; border-radius: 12px; margin-bottom: 12px;">
       <div class="card-row">
-        <div class="badge-ic"><span class="ic" data-icon="bed"></span></div>
+        <div class="badge-ic" id="hotelIcon"><span class="ic" data-icon="bed"></span></div>
         <div style="flex: 1; min-width: 0;">
-          <div class="card-label">Heute Nacht</div>
+          <div class="card-label" id="hotelLabel">Heute Nacht</div>
           <div class="card-title" id="hotelName">–</div>
           <div class="card-sub" id="hotelAddr" style="display: none;"></div>
           <div class="card-sub" id="hotelCheckin">–</div>
           <div class="row" id="hotelBtnRow">
             <button class="btn btn-inline" id="hotelCall"><span class="ic" data-icon="phone" data-size="16"></span>Anrufen</button>
             <button class="btn btn-inline" id="hotelMap"><span class="ic" data-icon="map" data-size="16"></span>Karte</button>
-            <button class="btn btn-inline" id="hotelPhotoBtn" title="Eigenes Foto speichern (bleibt auf dem Gerät)"><span class="ic" data-icon="camera" data-size="16"></span>Foto</button>
+            <button class="btn btn-inline" id="hotelPhotoBtn" title="Eigenes Foto der Unterkunft speichern, bleibt auf dem Gerät"><span class="ic" data-icon="camera" data-size="16"></span>Hotelfoto</button>
           </div>
         </div>
         <div class="chevron ic" data-icon="chevR"></div>
@@ -653,6 +836,7 @@ a { color: var(--teal); }
       <button class="icon-btn" id="addTicketTop"><span class="ic" data-icon="plus"></span></button>
     </div>
     <div class="doc-grid" id="docTiles"></div>
+    <div id="docPanel"></div>
     <div id="ticketsList"></div>
     <div class="upload-box" id="addTicketBox">
       <div class="ic" data-icon="plus" style="margin-bottom: 6px; color: var(--teal);"></div>
@@ -705,6 +889,23 @@ a { color: var(--teal); }
       <div class="spend-last" id="spendLast"></div>
     </div>
 
+    <!-- Ausgabenhistorie: nachtraeglich korrigierbar, sonst wird
+         eine falsch getippte Zahl zur dauerhaften Luege. -->
+    <div class="card">
+      <div class="spend-head">
+        <div class="card-label">Verlauf</div>
+        <div class="badge-label" id="histAnzahl"></div>
+      </div>
+      <div id="histListe"></div>
+    </div>
+
+    <!-- Notizen -->
+    <div class="card">
+      <div class="card-label">Notizen</div>
+      <textarea class="sheet-feld" id="notizFeld" rows="5" placeholder="Was am Bankomat zu drücken ist, wann das Taxi kommt, was die Rezeption gesagt hat …"></textarea>
+      <div class="badge-label" id="notizStatus">Bleibt auf diesem Gerät. Keine PINs, keine Kartennummern.</div>
+    </div>
+
     <!-- Umrechner -->
     <div class="card">
       <div class="card-label">Umrechner</div>
@@ -755,6 +956,10 @@ a { color: var(--teal); }
       <input type="file" id="importSpendInput" accept=".json" style="display: none;">
     </div>
   </div>
+
+  <!-- Blatt von unten: Ausgabe genauer erfassen oder korrigieren -->
+  <div class="sheet-bg" id="sheetBg"></div>
+  <div class="sheet" id="sheet"></div>
 
   <!-- NAV -->
   <div class="nav">
@@ -818,7 +1023,10 @@ const ICONS = {
   siren: '<path d="M6.6 16.4v-3.6a5.4 5.4 0 0 1 10.8 0v3.6"/><rect x="4.4" y="16.4" width="15.2" height="3.6" rx="1.6"/><path d="M12 4.6V3M5.3 7.3 4.2 6.2M18.7 7.3l1.1-1.1"/>',
   cloud: '<path d="M7.4 18.6h9.2a4.3 4.3 0 0 0 .3-8.6 5.9 5.9 0 0 0-11.3 1.3 3.6 3.6 0 0 0 1.8 7.3z"/>',
   scooter: '<circle cx="5.6" cy="16.8" r="2.9"/><circle cx="18.4" cy="16.8" r="2.9"/><path d="M8.5 16.8h7"/><path d="M18.4 16.8V9.2A1.6 1.6 0 0 0 16.8 7.6h-1.7"/><path d="M18.4 9.2h-6.7L8.5 14.2H5.6"/>',
-  trash: '<path d="M4.6 6.6h14.8"/><path d="M9.4 6.6V5.2a1.3 1.3 0 0 1 1.3-1.3h2.6a1.3 1.3 0 0 1 1.3 1.3v1.4"/><path d="M6.3 6.6v12.1a1.4 1.4 0 0 0 1.4 1.4h8.6a1.4 1.4 0 0 0 1.4-1.4V6.6"/><path d="M10.2 10.3v6.2M13.8 10.3v6.2"/>'
+  trash: '<path d="M4.6 6.6h14.8"/><path d="M9.4 6.6V5.2a1.3 1.3 0 0 1 1.3-1.3h2.6a1.3 1.3 0 0 1 1.3 1.3v1.4"/><path d="M6.3 6.6v12.1a1.4 1.4 0 0 0 1.4 1.4h8.6a1.4 1.4 0 0 0 1.4-1.4V6.6"/><path d="M10.2 10.3v6.2M13.8 10.3v6.2"/>',
+  bag: '<path d="M5.4 7.8h13.2l-1 11.1a1.5 1.5 0 0 1-1.5 1.4H7.9a1.5 1.5 0 0 1-1.5-1.4z"/><path d="M8.9 10.2V7.1a3.1 3.1 0 0 1 6.2 0v3.1"/>',
+  pencil: '<path d="M14.6 5.4l4 4"/><path d="M16.1 3.9a2.1 2.1 0 0 1 3 3L8.6 17.4l-4.2 1.2 1.2-4.2z"/>',
+  note: '<path d="M5.4 5.4a1.6 1.6 0 0 1 1.6-1.6h7.4l4.2 4.2v9.6a1.6 1.6 0 0 1-1.6 1.6H7a1.6 1.6 0 0 1-1.6-1.6z"/><path d="M14.4 3.8v4.2h4.2"/><path d="M8.6 12.4h6.8M8.6 15.6h4.6"/>'
 };
 /* Strichstaerke 1.75 auf dem 24er-Raster, runde Enden und Ecken.
    Das ist die Phosphor-Regular-Anmutung. Die Pfade sind hier selbst
@@ -876,7 +1084,7 @@ async function loadDemoData() {
 
 function getDemoDataFallback() {
   return {
-    reise: { titel: 'Thailand Demo-Reise (fiktiv)', start: '2026-12-20', ende: '2027-01-16' },
+    reise: { titel: 'Thailand Demo-Reise (fiktiv)', start: '2026-12-20', ende: '2027-01-16', heimatOrt: 'Zürich', heimatZeitzone: 'Europe/Zurich', zeitzone: 'Asia/Bangkok' },
     tage: [
       { datum: '2026-12-20', wochentag: 'So', ort: 'Zürich → Bangkok', hotel: { name: 'Nachtflug ZB 415', adresse: 'Zürich (ZRH) → Bangkok (BKK)', tel: '', whatsapp: '', checkin: '17:30', gps: '' }, transfer: null, hinweise: [], programm: [] },
       { datum: '2026-12-21', wochentag: 'Mo', ort: 'Bangkok', hotel: { name: 'Flussblick Boutique Hotel', adresse: 'Uferweg 12, Bangkok (Demo-Adresse)', tel: '+66 2 000 11 22', whatsapp: '+66800001122', checkin: '14:00', gps: '13.7512,100.5083' }, transfer: null, hinweise: [], programm: [] },
@@ -915,16 +1123,70 @@ function transferIconName(typ) {
   if (t.includes('bus') || t.includes('taxi') || t.includes('auto') || t.includes('transfer')) return 'car';
   return 'car';
 }
+/* Ohne Namen. Die oberste Zeile ist der teuerste Platz im Bild,
+   der eigene Name steht dort umsonst. */
 function greeting() {
   const h = new Date().getHours();
-  const name = appData && appData.reise && appData.reise.name ? ', ' + appData.reise.name : '';
-  if (h < 11) return 'Guten Morgen' + name + ' 👋';
-  if (h < 18) return 'Hallo' + name + ' 👋';
-  return 'Guten Abend' + name + ' 👋';
+  if (h < 11) return 'Guten Morgen 👋';
+  if (h < 18) return 'Hallo 👋';
+  return 'Guten Abend 👋';
 }
 
 /* Optionale Bild-Assets aus dem Repo (assets/…) – rein lokal, mit Fallback */
 const assetCache = {};
+/* ---------- Zwei Uhren ----------
+   Beide Zeiten kommen aus einer benannten Zeitzone, nicht aus der
+   Geraeteuhr. Sonst zeigt die Heimatuhr in Thailand thailaendische
+   Zeit an, also genau das, was sie nicht soll.
+
+   Die Zielzone steht pro Tag in "tz", ersatzweise in
+   reise.zeitzone. Damit gilt dieselbe Logik fuer Vietnam, ohne
+   eine Zeile Code zu aendern. Intl rechnet lokal, ohne Netz. */
+const HEIMAT_STD = 'Europe/Zurich';
+
+function zoneOk(tz) {
+  if (!tz) return false;
+  try { new Intl.DateTimeFormat('de-CH', { timeZone: tz }); return true; }
+  catch(e) { return false; }
+}
+function zoneZeit(tz) {
+  return new Intl.DateTimeFormat('de-CH', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
+}
+function zoneTag(tz) {
+  return new Intl.DateTimeFormat('de-CH', { timeZone: tz, weekday: 'short', day: 'numeric', month: 'short' }).format(new Date());
+}
+function zoneName(tz) {
+  return String(tz).split('/').pop().replace(/_/g, ' ');
+}
+function zielZone(tag) {
+  const reise = (appData && appData.reise) || {};
+  const kandidaten = [tag && tag.tz, reise.zeitzone, reise.zielZeitzone];
+  return kandidaten.find(zoneOk) || '';
+}
+let uhrenTag = null;
+function uhrenZeichnen(tag) {
+  if (tag !== undefined) uhrenTag = tag;
+  const zeile = document.getElementById('uhrenZeile');
+  if (!zeile) return;
+  const reise = (appData && appData.reise) || {};
+  const heim = zoneOk(reise.heimatZeitzone) ? reise.heimatZeitzone : HEIMAT_STD;
+  const ziel = zielZone(uhrenTag);
+
+  /* Ohne Zielzone, oder wenn beide Uhren dasselbe zeigen, sind zwei
+     Uhren nur Platzverbrauch. */
+  if (!ziel || zoneZeit(heim) === zoneZeit(ziel)) {
+    zeile.style.display = 'none';
+    return;
+  }
+  zeile.style.display = '';
+  document.getElementById('uhrHeimOrt').textContent = reise.heimatOrt || zoneName(heim);
+  document.getElementById('uhrHeimZeit').textContent = zoneZeit(heim);
+  document.getElementById('uhrHeimTag').textContent = zoneTag(heim);
+  document.getElementById('uhrZielOrt').textContent = zoneName(ziel);
+  document.getElementById('uhrZielZeit').textContent = zoneZeit(ziel);
+  document.getElementById('uhrZielTag').textContent = zoneTag(ziel);
+}
+
 function withAsset(url, cb) {
   if (url in assetCache) { if (assetCache[url]) cb(); return; }
   const probe = new Image();
@@ -963,33 +1225,77 @@ function loadUIFromAppData() {
 
     const hotel = todayData.hotel || {};
     currentHotelName = hotel.name || '';
+
+    /* Ist der Eintrag im Hotel-Feld ueberhaupt eine Unterkunft?
+       Der Nachtflug steht dort, weil er die Unterkunft dieser Nacht
+       ist. Anrufen, Karte und Hotelfoto ergeben dafuer keinen Sinn.
+       Erkennungszeichen: ein Transfer am selben Tag, dazu weder
+       Koordinaten noch Telefonnummer. */
+    const echteUnterkunft = !(todayData.transfer && !String(hotel.gps || '').trim() && !String(hotel.tel || '').trim());
+
+    document.getElementById('hotelLabel').textContent = echteUnterkunft ? 'Heute Nacht' : 'Heute Nacht unterwegs';
+    document.getElementById('hotelIcon').innerHTML = icon(echteUnterkunft ? 'bed' : transferIconName(todayData.transfer && todayData.transfer.typ), 20);
     document.getElementById('hotelName').textContent = hotel.name || '–';
     const addrEl = document.getElementById('hotelAddr');
     addrEl.textContent = hotel.adresse || '';
     addrEl.style.display = hotel.adresse ? '' : 'none';
-    document.getElementById('hotelCheckin').textContent = hotel.checkin ? 'Check-in ab ' + hotel.checkin : '';
+    const checkinEl = document.getElementById('hotelCheckin');
+    checkinEl.textContent = (echteUnterkunft && hotel.checkin) ? 'Check-in ab ' + hotel.checkin : '';
+    checkinEl.style.display = checkinEl.textContent ? '' : 'none';
     const fotoEl = document.getElementById('hotelFoto');
-    if (hotel.foto) { fotoEl.src = hotel.foto; fotoEl.style.display = ''; }
+    if (echteUnterkunft && hotel.foto) { fotoEl.src = hotel.foto; fotoEl.style.display = ''; }
     else { fotoEl.style.display = 'none'; fotoEl.removeAttribute('src'); }
 
-    /* Wetter fuer die heutige Station. Ohne Koordinaten kein Wetter,
-       geraten wird nichts. */
-    const gpsRoh = String(hotel.gps || '').split(',').map(Number);
-    if (gpsRoh.length === 2 && !isNaN(gpsRoh[0]) && !isNaN(gpsRoh[1])) wetterLaden(gpsRoh[0], gpsRoh[1]);
+    /* Wetter. Am Abreisetag interessiert das Wetter am Ziel, nicht
+       am Startort. Hat der heutige Tag keine Koordinaten, wird der
+       naechste Tag genommen, der welche hat. Geraten wird nichts:
+       gibt es gar keine, bleibt die Karte weg. */
+    const gpsVon = t => {
+      const p = String((t && t.hotel && t.hotel.gps) || '').split(',').map(Number);
+      return (p.length === 2 && !isNaN(p[0]) && !isNaN(p[1])) ? p : null;
+    };
+    let wetterTag = todayData;
+    let gpsRoh = gpsVon(todayData);
+    if (!gpsRoh) {
+      const ab = tage.indexOf(todayData);
+      for (let i = ab + 1; i < tage.length; i++) {
+        const g = gpsVon(tage[i]);
+        if (g) { gpsRoh = g; wetterTag = tage[i]; break; }
+      }
+    }
+    if (gpsRoh) wetterLaden(gpsRoh[0], gpsRoh[1]);
     else wxZeigen(null);
 
-    const callBtn = document.getElementById('hotelCall');
-    callBtn.onclick = () => window.location = 'tel:' + hotel.tel;
-    if (!hotel.tel) callBtn.disabled = true;
+    uhrenZeichnen(wetterTag);
 
-    if (hotel.whatsapp && !document.getElementById('waBtn')) {
-      const row = document.getElementById('hotelBtnRow');
-      const waBtn = document.createElement('button');
+    /* Knoepfe erscheinen nur, wenn sie etwas tun koennen. Ein
+       ausgegrauter Knopf kostet denselben Platz wie ein echter. */
+    const callBtn = document.getElementById('hotelCall');
+    const mapBtn = document.getElementById('hotelMap');
+    const fotoBtn = document.getElementById('hotelPhotoBtn');
+    const zeigeAnruf = echteUnterkunft && !!hotel.tel;
+    callBtn.style.display = zeigeAnruf ? '' : 'none';
+    callBtn.disabled = !zeigeAnruf;
+    callBtn.onclick = () => { window.location = 'tel:' + hotel.tel; };
+
+    const zeigeKarte = echteUnterkunft && !!gpsVon(todayData);
+    mapBtn.style.display = zeigeKarte ? '' : 'none';
+    fotoBtn.style.display = echteUnterkunft ? '' : 'none';
+
+    let waBtn = document.getElementById('waBtn');
+    const zeigeWa = echteUnterkunft && !!hotel.whatsapp;
+    if (zeigeWa && !waBtn) {
+      waBtn = document.createElement('button');
       waBtn.className = 'btn btn-inline';
       waBtn.id = 'waBtn';
-      waBtn.innerHTML = icon('chat', 16) + 'WhatsApp';
-      waBtn.onclick = () => window.location = 'https://wa.me/' + hotel.whatsapp.replace(/[^0-9]/g, '');
-      row.insertBefore(waBtn, document.getElementById('hotelMap'));
+      document.getElementById('hotelBtnRow').insertBefore(waBtn, mapBtn);
+    }
+    if (waBtn) {
+      waBtn.style.display = zeigeWa ? '' : 'none';
+      if (zeigeWa) {
+        waBtn.innerHTML = icon('chat', 16) + 'WhatsApp';
+        waBtn.onclick = () => { window.location = 'https://wa.me/' + hotel.whatsapp.replace(/[^0-9]/g, ''); };
+      }
     }
 
     if (todayData.transfer) {
@@ -1017,35 +1323,122 @@ function loadUIFromAppData() {
   document.getElementById('planStats').textContent = nTage + ' Tage · ' + nStationen + ' Stationen';
 
   renderDayList();
-  renderTickets();
+  renderDokumente();
   renderNotfall();
 }
 
 /* ---------- Reiseplan ---------- */
+/* Aufeinanderfolgende Tage am selben Ort mit derselben Unterkunft
+   werden zu einer Gruppe. Wechselt Ort oder Hotel, beginnt eine neue.
+   Der Nachtflug bildet dadurch von selbst eine eigene Gruppe, denn er
+   ist die Unterkunft dieser Nacht. */
+/* Der Zielort ist das, was nach dem Pfeil steht. "Bangkok →
+   Chiang Mai" gehoert zu Chiang Mai, sonst zerfaellt jede Reise in
+   doppelt so viele Gruppen wie sie Stationen hat: einmal der
+   Anreisetag, einmal der Rest. */
+function zielOrt(ort) {
+  return String(ort || '').split('→').pop().trim();
+}
+function ortsGruppen() {
+  const tage = appData.tage || [];
+  const gruppen = [];
+  tage.forEach((day, idx) => {
+    const ziel = zielOrt(day.ort);
+    const hotel = (day.hotel && day.hotel.name || '').trim();
+    const letzte = gruppen[gruppen.length - 1];
+    if (letzte && letzte.ziel === ziel && letzte.hotel === hotel) {
+      letzte.tage.push({ day: day, idx: idx });
+    } else {
+      /* Eine Nacht im Flugzeug traegt den vollen Text, damit im
+         Kopf nicht "Bangkok" steht, wo man gar nicht ist. */
+      const unterwegs = !!day.transfer &&
+        !String((day.hotel && day.hotel.gps) || '').trim() &&
+        !String((day.hotel && day.hotel.tel) || '').trim();
+      gruppen.push({
+        ziel: ziel,
+        ort: unterwegs ? String(day.ort || '').trim() : ziel,
+        hotel: hotel,
+        tage: [{ day: day, idx: idx }]
+      });
+    }
+  });
+  return gruppen;
+}
+
+/* Merkt sich, welche Gruppen offen sind, damit ein Neuzeichnen
+   die Ansicht nicht wieder zuklappt. */
+let offeneOrte = {};
+
 function renderDayList() {
   const list = document.getElementById('dayList');
   list.innerHTML = '';
   if (!appData.tage) return;
-  const today = new Date().toISOString().split('T')[0];
+  const heute = new Date().toISOString().split('T')[0];
 
-  appData.tage.forEach((day, idx) => {
-    const isToday = day.datum === today;
-    const div = document.createElement('div');
-    div.className = 'day-item' + (isToday ? ' today' : '');
-    const chipCls = isToday ? 'day-chip teal' : 'day-chip';
-    div.innerHTML =
-      '<div class="day-left">' +
-        '<div class="day-dow">' + esc(day.wochentag) + '</div>' +
-        '<div class="day-date">' + formatDateShort(day.datum) + '</div>' +
+  ortsGruppen().forEach((g, gi) => {
+    const schluessel = gi + '|' + g.ort + '|' + g.hotel;
+    const istJetzt = g.tage.some(t => t.day.datum === heute);
+    const ersterTag = g.tage[0].day;
+    const letzterTag = g.tage[g.tage.length - 1].day;
+    const anzahl = g.tage.length;
+
+    /* Beim ersten Zeichnen ist die laufende Station offen, der Rest zu. */
+    if (offeneOrte[schluessel] === undefined) offeneOrte[schluessel] = istJetzt;
+
+    const spanne = anzahl === 1
+      ? esc(ersterTag.wochentag || '') + ' ' + formatDateShort(ersterTag.datum)
+      : esc(ersterTag.wochentag || '') + ' ' + formatDateShort(ersterTag.datum) +
+        ' bis ' + esc(letzterTag.wochentag || '') + ' ' + formatDateShort(letzterTag.datum);
+
+    const card = document.createElement('div');
+    card.className = 'ort-card' + (istJetzt ? ' jetzt' : '') + (offeneOrte[schluessel] ? ' offen' : '');
+
+    const top = document.createElement('div');
+    top.className = 'ort-top';
+    top.innerHTML =
+      '<div class="ort-naechte">' +
+        '<div class="ort-naechte-zahl">' + anzahl + '</div>' +
+        '<div class="ort-naechte-wort">' + (anzahl === 1 ? 'Nacht' : 'Nächte') + '</div>' +
       '</div>' +
-      '<div class="day-main">' +
-        '<div class="day-location">' + esc(day.ort) + (isToday ? ' · Heute' : '') + '</div>' +
-        '<div class="day-hotel">' + esc(day.hotel && day.hotel.name || '') + '</div>' +
-        (day.transfer ? '<span class="' + chipCls + '">' + icon(transferIconName(day.transfer.typ), 13) + esc(day.transfer.typ + ' ' + day.transfer.zeit) + '</span>' : '') +
+      '<div class="ort-mitte">' +
+        '<div class="ort-name">' + esc(g.ort) + (istJetzt ? ' · Jetzt' : '') + '</div>' +
+        '<div class="ort-spanne">' + spanne + '</div>' +
+        (g.hotel ? '<div class="ort-hotel">' + esc(g.hotel) + '</div>' : '') +
       '</div>' +
-      '<div class="day-arrow chevron ic">' + icon('chevR', 18) + '</div>';
-    div.addEventListener('click', () => openDay(idx));
-    list.appendChild(div);
+      '<div class="ort-chev ic">' + icon('chevR', 18) + '</div>';
+    top.addEventListener('click', () => {
+      offeneOrte[schluessel] = !offeneOrte[schluessel];
+      card.classList.toggle('offen', offeneOrte[schluessel]);
+    });
+    card.appendChild(top);
+
+    const box = document.createElement('div');
+    box.className = 'ort-tage';
+    g.tage.forEach(t => {
+      const day = t.day;
+      const istHeute = day.datum === heute;
+      const zeile = document.createElement('div');
+      zeile.className = 'ort-tag';
+      const punkte = [];
+      if (day.transfer) punkte.push(day.transfer.typ + ' ' + day.transfer.zeit);
+      const anzProgramm = (day.programm || []).length;
+      if (anzProgramm) punkte.push(anzProgramm + (anzProgramm === 1 ? ' Programmpunkt' : ' Programmpunkte'));
+      if (!punkte.length) punkte.push('Kein Programm eingetragen');
+      zeile.innerHTML =
+        '<div class="ort-tag-datum">' +
+          '<div class="ort-tag-dow">' + esc(day.wochentag || '') + '</div>' +
+          '<div class="ort-tag-tag' + (istHeute ? ' ort-tag-heute' : '') + '">' + formatDateShort(day.datum) + '</div>' +
+        '</div>' +
+        '<div class="ort-tag-main">' +
+          '<div class="ort-tag-titel">' + esc(punkte[0]) + '</div>' +
+          (punkte[1] ? '<div class="ort-hotel">' + esc(punkte[1]) + '</div>' : '') +
+        '</div>' +
+        '<div class="ort-chev ic">' + icon('chevR', 16) + '</div>';
+      zeile.addEventListener('click', () => openDay(t.idx));
+      box.appendChild(zeile);
+    });
+    card.appendChild(box);
+    list.appendChild(card);
   });
 }
 
@@ -1108,79 +1501,225 @@ function openDay(idx) {
   showScreen('screenDay', 'screenPlan');
 }
 
-/* ---------- Dokumente ---------- */
-function tileStyle(gruppe) {
+/* ---------- Dokumente ----------
+   Sechs feste Kacheln in fester Reihenfolge, spaltenweise gelesen.
+   Sie entstehen nicht mehr aus den vorhandenen Dokumenten, sondern
+   stehen immer da. Eine leere Kachel ist eine Aussage: dort liegt
+   noch nichts.
+
+   Die Hotels-Kachel ist der Sonderfall. Sie speist sich aus
+   tage[].hotel, nicht aus tickets, denn Adresse, Telefon und
+   Koordinaten stehen in den Reisedaten. Deshalb erscheint dort
+   jede Unterkunft einmal, nicht einmal pro Nacht. */
+const DOC_KAT = [
+  { id: 'hotel',  name: 'Hotels',            cls: 'tile-hotel',  ic: 'palm' },
+  { id: 'boot',   name: 'Boote und Fähren',  cls: 'tile-boot',   ic: 'ship' },
+  { id: 'flug',   name: 'Flüge',             cls: 'tile-flug',   ic: 'plane' },
+  { id: 'visa',   name: 'Einreise und Visa', cls: 'tile-visa',   ic: 'doc' },
+  { id: 'pass',   name: 'Reisepass',         cls: 'tile-pass',   ic: 'pass' },
+  { id: 'schutz', name: 'Versicherung',      cls: 'tile-schutz', ic: 'shield' }
+];
+let offeneKachel = null;
+
+/* Die Reihenfolge der Pruefungen ist Absicht: "einreise" muss vor
+   "pass" stehen, sonst zieht die Pass-Kachel einen Eintrag namens
+   "Einreisepapiere" an sich. */
+function ticketKat(gruppe) {
   const g = (gruppe || '').toLowerCase();
-  if (g.includes('flug') || g.includes('flüg') || g.includes('flight')) return { cls: 'tile-flug', ic: 'plane' };
-  if (g.includes('boot') || g.includes('fähre') || g.includes('schiff')) return { cls: 'tile-boot', ic: 'ship' };
-  if (g.includes('hotel') || g.includes('unterkunft')) return { cls: 'tile-hotel', ic: 'palm' };
-  if (g.includes('pass')) return { cls: 'tile-pass', ic: 'pass' };
-  if (g.includes('versicher')) return { cls: 'tile-schutz', ic: 'shield' };
-  if (g.includes('visa') || g.includes('einreise')) return { cls: 'tile-visa', ic: 'doc' };
-  return { cls: 'tile-default', ic: 'ticket' };
+  if (g.includes('flug') || g.includes('flüg') || g.includes('flight')) return 'flug';
+  if (g.includes('boot') || g.includes('fähre') || g.includes('faehre') || g.includes('schiff')) return 'boot';
+  if (g.includes('hotel') || g.includes('unterkunft')) return 'hotel';
+  if (g.includes('visa') || g.includes('einreise')) return 'visa';
+  if (g.includes('pass')) return 'pass';
+  if (g.includes('versicher')) return 'schutz';
+  return null;
 }
-function groupAnchorId(grp) {
-  return 'grp-' + grp.toLowerCase().replace(/[^a-z0-9äöü]+/g, '-');
+
+function mapsUrl(h) {
+  const gps = String(h.gps || '').trim();
+  const ziel = gps || String(h.adresse || '').trim();
+  if (!ziel) return '';
+  return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ziel);
 }
-function renderTickets() {
-  const list = document.getElementById('ticketsList');
-  const tiles = document.getElementById('docTiles');
-  list.innerHTML = '';
-  tiles.innerHTML = '';
-  if (!appData.tickets) return;
 
-  const groups = {};
-  appData.tickets.forEach(t => {
-    if (!groups[t.gruppe]) groups[t.gruppe] = [];
-    groups[t.gruppe].push(t);
-  });
+/* Jede Unterkunft einmal, in Reihenfolge der Reise, mit allen
+   Zeitraeumen. Wer zweimal ins selbe Hotel zurueckkehrt, sieht
+   einen Eintrag mit zwei Zeilen.
 
-  Object.entries(groups).forEach(([grp, tickets]) => {
-    const st = tileStyle(grp);
-    const tile = document.createElement('div');
-    tile.className = 'doc-tile ' + st.cls;
-    tile.innerHTML =
-      '<div class="t-name">' + esc(grp) + '</div>' +
-      '<div class="t-count">' + tickets.length + ' ' + (tickets.length === 1 ? 'Dokument' : 'Dokumente') + '</div>' +
-      '<div class="art">' + icon(st.ic, 96) + '</div>';
-    tile.addEventListener('click', () => {
-      const el = document.getElementById(groupAnchorId(grp));
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+   Der Nachtflug steht in den Daten im Hotel-Feld, weil er die
+   Unterkunft dieser Nacht ist. Als Hotel taugt er nicht: keine
+   Koordinaten, keine Nummer, dafuer ein Transfer am selben Tag.
+   Genau daran wird er erkannt und uebersprungen. */
+function hotelListe() {
+  const raus = [];
+  ortsGruppen().forEach(g => {
+    if (!g.hotel) return;
+    const tag = g.tage[0].day;
+    const h = tag.hotel || {};
+    if (tag.transfer && !String(h.gps || '').trim() && !String(h.tel || '').trim()) return;
+    const von = tag.datum;
+    const bis = g.tage[g.tage.length - 1].day.datum;
+    const schon = raus.find(x => x.name === g.hotel);
+    if (schon) { schon.spannen.push([von, bis]); return; }
+    raus.push({
+      name: g.hotel, adresse: h.adresse || '', tel: h.tel || '',
+      whatsapp: h.whatsapp || '', gps: h.gps || '', spannen: [[von, bis]]
     });
-    withAsset('assets/' + st.cls + '.jpg', () => {
-      tile.style.backgroundImage = 'linear-gradient(160deg, rgba(8,18,22,0.1), rgba(8,18,22,0.55)), url("assets/' + st.cls + '.jpg")';
+  });
+  return raus;
+}
+
+function docInhalt(katId) {
+  if (katId === 'hotel') return hotelListe();
+  return (appData.tickets || []).filter(t => ticketKat(t.gruppe) === katId);
+}
+
+function renderDocPanel() {
+  const box = document.getElementById('docPanel');
+  box.innerHTML = '';
+  document.querySelectorAll('.doc-tile').forEach(el => {
+    el.classList.toggle('aktiv', el.dataset.kat === offeneKachel);
+  });
+  if (!offeneKachel) return;
+  const kat = DOC_KAT.find(k => k.id === offeneKachel);
+  if (!kat) return;
+
+  const panel = document.createElement('div');
+  panel.className = 'doc-panel';
+  const kopf = document.createElement('div');
+  kopf.className = 'doc-panel-kopf';
+  kopf.innerHTML = '<div class="doc-panel-titel">' + esc(kat.name) + '</div>';
+  const zu = document.createElement('button');
+  zu.className = 'doc-panel-zu';
+  zu.type = 'button';
+  zu.textContent = 'Schliessen';
+  zu.addEventListener('click', () => { offeneKachel = null; renderDocPanel(); });
+  kopf.appendChild(zu);
+  panel.appendChild(kopf);
+
+  const inhalt = docInhalt(kat.id);
+  if (!inhalt.length) {
+    const leer = document.createElement('div');
+    leer.className = 'doc-leer-text';
+    leer.textContent = 'Hier liegt noch nichts. Über "Ticket hinzufügen" kommt ein Foto oder PDF dazu.';
+    panel.appendChild(leer);
+  } else if (kat.id === 'hotel') {
+    inhalt.forEach(h => panel.appendChild(hotelEintrag(h)));
+  } else {
+    inhalt.forEach(t => panel.appendChild(ticketEintrag(t)));
+  }
+  box.appendChild(panel);
+
+  /* Tippt man die unterste Kachel an, liegt das Aufgeklappte auf
+     dem Handy unter dem Bildrand. Ohne diesen Sprung sieht es aus,
+     als haette der Tipp nichts bewirkt. */
+  if (panel.scrollIntoView) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function hotelEintrag(h) {
+  const div = document.createElement('div');
+  div.className = 'doc-eintrag';
+  const zeitraum = h.spannen.map(s =>
+    s[0] === s[1] ? formatDateShort(s[0]) : formatDateShort(s[0]) + ' bis ' + formatDateShort(s[1])
+  ).join(' · ');
+  div.innerHTML =
+    '<div class="doc-eintrag-titel">' + esc(h.name) + '</div>' +
+    '<div class="doc-eintrag-zeile">' + esc(zeitraum) + '</div>' +
+    (h.adresse ? '<div class="doc-eintrag-zeile">' + esc(h.adresse) + '</div>' : '');
+
+  const reihe = document.createElement('div');
+  reihe.className = 'row';
+  if (h.tel) {
+    const b = document.createElement('button');
+    b.className = 'btn btn-inline';
+    b.type = 'button';
+    b.innerHTML = icon('phone', 16) + 'Anrufen';
+    b.addEventListener('click', () => { window.location = 'tel:' + h.tel; });
+    reihe.appendChild(b);
+  }
+  if (h.whatsapp) {
+    const b = document.createElement('button');
+    b.className = 'btn btn-inline';
+    b.type = 'button';
+    b.innerHTML = icon('chat', 16) + 'WhatsApp';
+    b.addEventListener('click', () => { window.location = 'https://wa.me/' + h.whatsapp.replace(/[^0-9]/g, ''); });
+    reihe.appendChild(b);
+  }
+  const url = mapsUrl(h);
+  if (url) {
+    const b = document.createElement('button');
+    b.className = 'btn btn-inline';
+    b.type = 'button';
+    b.innerHTML = icon('map', 16) + 'Route';
+    b.addEventListener('click', () => window.open(url, '_blank'));
+    reihe.appendChild(b);
+  }
+  if (reihe.children.length) div.appendChild(reihe);
+  return div;
+}
+
+function ticketEintrag(t) {
+  const div = document.createElement('div');
+  div.className = 'doc-eintrag';
+  div.innerHTML =
+    '<div class="doc-eintrag-titel">' + esc(t.titel) + '</div>' +
+    (t.info ? '<div class="doc-eintrag-zeile">' + esc(t.info) + '</div>' : '') +
+    (t.status === 'fehlt' ? '<div class="status-line status-red">Fehlt noch</div>' :
+     t.status === 'foto_noetig' ? '<div class="status-line status-gold">Foto nötig</div>' : '');
+  return div;
+}
+
+function renderDokumente() {
+  const tiles = document.getElementById('docTiles');
+  const rest = document.getElementById('ticketsList');
+  tiles.innerHTML = '';
+  rest.innerHTML = '';
+
+  DOC_KAT.forEach(kat => {
+    const anzahl = docInhalt(kat.id).length;
+    const tile = document.createElement('div');
+    tile.className = 'doc-tile ' + kat.cls + (anzahl ? '' : ' leer');
+    tile.dataset.kat = kat.id;
+    const wort = kat.id === 'hotel'
+      ? (anzahl === 1 ? 'Unterkunft' : 'Unterkünfte')
+      : (anzahl === 1 ? 'Dokument' : 'Dokumente');
+    tile.innerHTML =
+      '<div class="t-name">' + esc(kat.name) + '</div>' +
+      '<div class="t-count">' + (anzahl ? anzahl + ' ' + wort : 'noch nichts') + '</div>' +
+      '<div class="art">' + icon(kat.ic, 96) + '</div>';
+    tile.addEventListener('click', () => {
+      offeneKachel = offeneKachel === kat.id ? null : kat.id;
+      renderDocPanel();
+    });
+    withAsset('assets/' + kat.cls + '.jpg', () => {
+      tile.style.backgroundImage = 'linear-gradient(160deg, rgba(8,18,22,0.1), rgba(8,18,22,0.55)), url("assets/' + kat.cls + '.jpg")';
       tile.style.backgroundSize = 'cover';
       tile.style.backgroundPosition = 'center';
       const art = tile.querySelector('.art');
       if (art) art.style.display = 'none';
     });
     tiles.appendChild(tile);
-
-    const grpDiv = document.createElement('div');
-    grpDiv.id = groupAnchorId(grp);
-    grpDiv.innerHTML = '<div class="grp-head">' + esc(grp) + '</div>';
-    list.appendChild(grpDiv);
-
-    tickets.forEach(t => {
-      const card = document.createElement('div');
-      const stIc = t.status === 'vorhanden' ? 'doc' : t.status === 'foto_noetig' ? 'warn' : 'warn';
-      const icColor = t.status === 'vorhanden' ? 'var(--teal)' : t.status === 'foto_noetig' ? 'var(--gold)' : 'var(--red)';
-      card.className = 'card';
-      if (t.status === 'fehlt') card.style.borderColor = 'rgba(224, 93, 93, 0.4)';
-      card.style.marginBottom = '10px';
-      card.innerHTML =
-        '<div class="card-row">' +
-          '<div class="badge-ic" style="color: ' + icColor + ';">' + icon(stIc, 20) + '</div>' +
-          '<div style="flex: 1; min-width: 0;">' +
-            '<div class="card-title card-title-sm">' + esc(t.titel) + '</div>' +
-            '<div class="card-sub">' + esc(t.info) + '</div>' +
-            (t.status === 'fehlt' ? '<div class="status-line status-red">Fehlt noch</div>' :
-             t.status === 'foto_noetig' ? '<div class="status-line status-gold">Foto nötig</div>' : '') +
-          '</div>' +
-        '</div>';
-      list.appendChild(card);
-    });
   });
+
+  /* Dokumente, die in keine der sechs Kacheln passen, verschwinden
+     nicht stillschweigend. Sie stehen darunter, damit auffaellt,
+     dass eine Gruppe falsch benannt ist. */
+  const uebrig = (appData.tickets || []).filter(t => !ticketKat(t.gruppe));
+  if (uebrig.length) {
+    const kopf = document.createElement('div');
+    kopf.className = 'grp-head';
+    kopf.textContent = 'Nicht zugeordnet';
+    rest.appendChild(kopf);
+    uebrig.forEach(t => {
+      const karte = document.createElement('div');
+      karte.className = 'card';
+      karte.style.marginBottom = '10px';
+      karte.appendChild(ticketEintrag(t));
+      rest.appendChild(karte);
+    });
+  }
+
+  renderDocPanel();
 }
 
 /* ---------- Karte (schematisch, offline) ---------- */
@@ -1537,16 +2076,37 @@ document.getElementById('convSwap').addEventListener('click', function() {
    des Reiseplans darf erfasste Ausgaben nie ueberschreiben. */
 const KURS = 40;                                  /* 1 CHF = 40 THB, bewusst zu deinen Ungunsten */
 const SPEND_KEY = 'reisebegleiter_ausgaben';
+/* Sechs Kategorien, mehr nicht: weniger Kacheln heisst schnelleres
+   Tippen und blinde Bedienung. Unterkunft fehlt bewusst, die
+   Uebernachtungen sind vor der Reise bezahlt. Buchst du unterwegs
+   doch eine Nacht dazu, gehoert sie unter Sonstiges.
+
+   Die Unterpunkte sind freiwillig. Ohne sie ist eine Buchung
+   vollstaendig, mit ihnen genauer. */
 const KATEGORIEN = [
-  { name: 'Essen',      ic: 'utensils' },
-  { name: 'Transport',  ic: 'car' },
-  { name: 'Unterkunft', ic: 'bed' },
-  { name: 'Aktivität',  ic: 'palm' },
-  { name: 'Roller',     ic: 'scooter' },
-  { name: 'Sonstiges',  ic: 'wallet' }
+  { name: 'Essen',       ic: 'utensils', unter: ['Frühstück', 'Mittagessen', 'Abendessen', 'Snack', 'Getränk'] },
+  { name: 'Transport',   ic: 'car',      unter: ['Grab', 'Taxi', 'Boot', 'Bus', 'Zug', 'Flug'] },
+  { name: 'Konsum',      ic: 'bag',      unter: ['Einkaufen', 'Mitbringsel', 'Gras', 'Apotheke', 'Drogerie'] },
+  { name: 'Aktivitäten', ic: 'palm',     unter: ['Tauchen', 'Jetski', 'Miete', 'Eintritt', 'Tour', 'Massage'] },
+  { name: 'Roller',      ic: 'scooter',  unter: ['Miete', 'Benzin', 'Reparatur', 'Parkgebühr'] },
+  { name: 'Sonstiges',   ic: 'wallet',   unter: [] }
 ];
+function katInfo(name) {
+  return KATEGORIEN.find(k => k.name === name) || { name: name, ic: 'wallet', unter: [] };
+}
 let ausgaben = [];
 
+/* Alte Buchungen dürfen durch die Kategorie-Änderung nichts
+   verlieren. "Unterkunft" gibt es nicht mehr, der Betrag wandert
+   nach Sonstiges und der alte Name bleibt als Notiz stehen. */
+function katMigration(e) {
+  if (e.kategorie === 'Aktivität') e.kategorie = 'Aktivitäten';
+  if (e.kategorie === 'Unterkunft') {
+    e.kategorie = 'Sonstiges';
+    e.notiz = e.notiz ? 'Unterkunft · ' + e.notiz : 'Unterkunft';
+  }
+  return e;
+}
 function ausgabenLaden() {
   try { ausgaben = JSON.parse(localStorage.getItem(SPEND_KEY) || '[]'); } catch(e) { ausgaben = []; }
   if (!Array.isArray(ausgaben)) ausgaben = [];
@@ -1555,10 +2115,21 @@ function ausgabenLaden() {
     ausgaben = appData.ausgaben.map(e => ({
       betrag: Number(e.betrag) || 0,
       kategorie: e.kategorie || 'Sonstiges',
+      unter: e.unter || '',
+      notiz: e.notiz || '',
       ts: e.ts || Date.now()
     }));
     ausgabenSpeichern();
   }
+  const vorher = JSON.stringify(ausgaben);
+  ausgaben = ausgaben.map(e => katMigration({
+    betrag: Number(e.betrag) || 0,
+    kategorie: e.kategorie || 'Sonstiges',
+    unter: e.unter || '',
+    notiz: e.notiz || '',
+    ts: e.ts || Date.now()
+  }));
+  if (JSON.stringify(ausgaben) !== vorher) ausgabenSpeichern();
   if (appData) delete appData.ausgaben;
 }
 function ausgabenSpeichern() {
@@ -1578,42 +2149,371 @@ function renderCatGrid() {
     b.className = 'cat-btn';
     b.type = 'button';
     b.innerHTML = '<span class="ic">' + icon(k.ic, 22) + '</span>' + esc(k.name);
+
+    const stift = document.createElement('button');
+    stift.className = 'cat-stift';
+    stift.type = 'button';
+    stift.title = esc(k.name) + ' genauer erfassen';
+    stift.setAttribute('aria-label', k.name + ' genauer erfassen');
+    stift.innerHTML = icon('pencil', 14);
+    stift.addEventListener('click', ev => {
+      ev.stopPropagation();
+      ausgabeBlatt({
+        titel: 'Ausgabe erfassen',
+        betrag: zahl(document.getElementById('spendAmount').value) || 0,
+        kategorie: k.name, unter: '', notiz: '',
+        knopf: 'Buchen',
+        speichern: obj => {
+          ausgaben.push(obj);
+          ausgabenSpeichern();
+          feldLeeren();
+          ausgabenNeuZeichnen();
+        }
+      });
+    });
+    b.appendChild(stift);
+
     b.addEventListener('click', () => buchen(k.name, b));
     grid.appendChild(b);
   });
+}
+function feldLeeren() {
+  document.getElementById('spendAmount').value = '';
+  document.getElementById('spendChf').textContent = '0.00 CHF';
+}
+function ausgabenNeuZeichnen() {
+  updateSpendTotal();
+  zeigeLetzte();
+  renderHistorie();
 }
 function buchen(kategorie, btn) {
   const feld = document.getElementById('spendAmount');
   const betrag = zahl(feld.value);
   if (betrag <= 0) { feld.focus(); return; }
-  ausgaben.push({ betrag: betrag, kategorie: kategorie, ts: Date.now() });
+  ausgaben.push({ betrag: betrag, kategorie: kategorie, unter: '', notiz: '', ts: Date.now() });
   ausgabenSpeichern();
-  updateSpendTotal();
-  feld.value = '';
-  document.getElementById('spendChf').textContent = '0.00 CHF';
-  zeigeLetzte();
+  feldLeeren();
+  ausgabenNeuZeichnen();
   if (btn) { btn.classList.add('gebucht'); setTimeout(() => btn.classList.remove('gebucht'), 450); }
   if (navigator.vibrate) navigator.vibrate(18);
+}
+function ausgabeText(e) {
+  const teile = [];
+  if (e.unter) teile.push(e.unter);
+  if (e.notiz) teile.push(e.notiz);
+  return teile.join(' · ');
 }
 function zeigeLetzte() {
   const box = document.getElementById('spendLast');
   const letzte = ausgaben[ausgaben.length - 1];
   if (!letzte) { box.classList.remove('on'); box.innerHTML = ''; return; }
+  const zusatz = ausgabeText(letzte);
   box.innerHTML =
-    '<div class="spend-last-text">Zuletzt: ' + Math.round(letzte.betrag) + ' THB · ' + esc(letzte.kategorie) + '</div>' +
+    '<div class="spend-last-text">Zuletzt: ' + Math.round(letzte.betrag) + ' THB · ' +
+      esc(letzte.kategorie) + (zusatz ? ' · ' + esc(zusatz) : '') + '</div>' +
     '<button class="spend-undo" type="button" id="spendUndo">Rückgängig</button>';
   box.classList.add('on');
   document.getElementById('spendUndo').addEventListener('click', () => {
     ausgaben.pop();
     ausgabenSpeichern();
-    updateSpendTotal();
-    zeigeLetzte();
+    ausgabenNeuZeichnen();
   });
 }
 document.getElementById('spendAmount').addEventListener('input', function() {
   const betrag = zahl(this.value);
   document.getElementById('spendChf').textContent = chfAus(betrag).toFixed(2) + ' CHF';
 });
+
+/* ---------- Ausgabenhistorie ----------
+   Nach Tagen gruppiert, neueste zuerst. Ein Tipp auf einen Eintrag
+   oeffnet ihn zum Korrigieren oder Loeschen. */
+let histAlle = false;
+const HIST_KURZ = 12;
+
+function tagStempel(ts) {
+  const d = new Date(ts);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function tagTitel(ts) {
+  const d = new Date(ts), jetzt = new Date();
+  const diff = Math.floor((new Date(jetzt.getFullYear(), jetzt.getMonth(), jetzt.getDate()) - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
+  if (diff === 0) return 'Heute';
+  if (diff === 1) return 'Gestern';
+  return DOW_FULL[d.getDay()] + ', ' + d.getDate() + '. ' + MONTHS_SHORT[d.getMonth()];
+}
+function uhrzeit(ts) {
+  const d = new Date(ts);
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+function renderHistorie() {
+  const box = document.getElementById('histListe');
+  const zaehler = document.getElementById('histAnzahl');
+  if (!box) return;
+  box.innerHTML = '';
+
+  /* Nicht am Original sortieren: der Index in ausgaben ist die
+     Identitaet eines Eintrags, die darf sich nicht verschieben. */
+  const mitIndex = ausgaben.map((e, i) => ({ e: e, i: i }));
+  mitIndex.sort((a, b) => (b.e.ts || 0) - (a.e.ts || 0));
+
+  zaehler.textContent = mitIndex.length
+    ? mitIndex.length + (mitIndex.length === 1 ? ' Buchung' : ' Buchungen')
+    : '';
+
+  if (!mitIndex.length) {
+    box.innerHTML = '<div class="hist-leer">Noch nichts erfasst.</div>';
+    return;
+  }
+
+  const zeigen = histAlle ? mitIndex : mitIndex.slice(0, HIST_KURZ);
+  let letzterTag = '';
+  zeigen.forEach(x => {
+    const tag = tagStempel(x.e.ts);
+    if (tag !== letzterTag) {
+      letzterTag = tag;
+      const kopf = document.createElement('div');
+      kopf.className = 'hist-tag';
+      kopf.textContent = tagTitel(x.e.ts);
+      box.appendChild(kopf);
+    }
+    const k = katInfo(x.e.kategorie);
+    const zusatz = ausgabeText(x.e);
+    const zeile = document.createElement('div');
+    zeile.className = 'hist-eintrag';
+    zeile.innerHTML =
+      '<div class="hist-ic">' + icon(k.ic, 18) + '</div>' +
+      '<div class="hist-main">' +
+        '<div class="hist-titel">' + esc(x.e.kategorie) + '</div>' +
+        '<div class="hist-sub">' + uhrzeit(x.e.ts) + (zusatz ? ' · ' + esc(zusatz) : '') + '</div>' +
+      '</div>' +
+      '<div class="hist-rechts">' +
+        '<div class="hist-thb">' + Math.round(x.e.betrag) + ' THB</div>' +
+        '<div class="hist-chf">' + chfAus(x.e.betrag).toFixed(2) + ' CHF</div>' +
+      '</div>';
+    zeile.addEventListener('click', () => ausgabeBearbeiten(x.i));
+    box.appendChild(zeile);
+  });
+
+  if (mitIndex.length > HIST_KURZ) {
+    const mehr = document.createElement('button');
+    mehr.className = 'hist-mehr';
+    mehr.type = 'button';
+    mehr.textContent = histAlle ? 'Weniger anzeigen' : 'Alle ' + mitIndex.length + ' anzeigen';
+    mehr.addEventListener('click', () => { histAlle = !histAlle; renderHistorie(); });
+    box.appendChild(mehr);
+  }
+}
+
+function ausgabeBearbeiten(idx) {
+  const e = ausgaben[idx];
+  if (!e) return;
+  ausgabeBlatt({
+    titel: 'Ausgabe bearbeiten',
+    sub: uhrzeit(e.ts) + ' · ' + tagTitel(e.ts),
+    betrag: e.betrag, kategorie: e.kategorie, unter: e.unter || '', notiz: e.notiz || '',
+    knopf: 'Speichern',
+    speichern: obj => {
+      /* Zeitstempel bleibt der der Buchung, sonst springt der
+         Eintrag beim Korrigieren in einen anderen Tag. */
+      obj.ts = e.ts;
+      ausgaben[idx] = obj;
+      ausgabenSpeichern();
+      ausgabenNeuZeichnen();
+    },
+    loeschen: () => {
+      ausgaben.splice(idx, 1);
+      ausgabenSpeichern();
+      ausgabenNeuZeichnen();
+    }
+  });
+}
+
+/* ---------- Blatt von unten ---------- */
+function sheetSchliessen() {
+  document.getElementById('sheet').classList.remove('auf');
+  document.getElementById('sheetBg').classList.remove('auf');
+}
+document.getElementById('sheetBg').addEventListener('click', sheetSchliessen);
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape') sheetSchliessen(); });
+
+function ausgabeBlatt(o) {
+  const sheet = document.getElementById('sheet');
+  let kategorie = o.kategorie || 'Sonstiges';
+  let unter = o.unter || '';
+  sheet.innerHTML = '';
+
+  const kopf = document.createElement('div');
+  kopf.innerHTML =
+    '<div class="sheet-titel">' + esc(o.titel) + '</div>' +
+    (o.sub ? '<div class="sheet-sub">' + esc(o.sub) + '</div>' : '');
+  sheet.appendChild(kopf);
+
+  /* Betrag */
+  const betragLabel = document.createElement('div');
+  betragLabel.className = 'sheet-label';
+  betragLabel.textContent = 'Betrag in THB';
+  sheet.appendChild(betragLabel);
+
+  const betragZeile = document.createElement('div');
+  betragZeile.className = 'spend-input-row';
+  betragZeile.style.margin = '0';
+  const betragFeld = document.createElement('input');
+  betragFeld.type = 'text';
+  betragFeld.inputMode = 'decimal';
+  betragFeld.className = 'spend-input';
+  betragFeld.placeholder = '0';
+  betragFeld.autocomplete = 'off';
+  betragFeld.value = o.betrag > 0 ? String(Math.round(o.betrag)) : '';
+  const betragChf = document.createElement('div');
+  betragChf.className = 'spend-cur';
+  const chfWert = document.createElement('div');
+  chfWert.className = 'spend-cur-chf';
+  const chfSetzen = () => { chfWert.textContent = chfAus(zahl(betragFeld.value)).toFixed(2) + ' CHF'; };
+  chfSetzen();
+  betragChf.innerHTML = '<div class="spend-cur-unit">THB</div>';
+  betragChf.appendChild(chfWert);
+  betragFeld.addEventListener('input', chfSetzen);
+  betragZeile.appendChild(betragFeld);
+  betragZeile.appendChild(betragChf);
+  sheet.appendChild(betragZeile);
+
+  /* Kategorie */
+  const katLabel = document.createElement('div');
+  katLabel.className = 'sheet-label';
+  katLabel.textContent = 'Kategorie';
+  sheet.appendChild(katLabel);
+  const katReihe = document.createElement('div');
+  katReihe.className = 'chip-reihe';
+  sheet.appendChild(katReihe);
+
+  /* Unterpunkt */
+  const unterLabel = document.createElement('div');
+  unterLabel.className = 'sheet-label';
+  unterLabel.textContent = 'Genauer, freiwillig';
+  sheet.appendChild(unterLabel);
+  const unterReihe = document.createElement('div');
+  unterReihe.className = 'chip-reihe';
+  sheet.appendChild(unterReihe);
+
+  function unterZeichnen() {
+    unterReihe.innerHTML = '';
+    const liste = katInfo(kategorie).unter;
+    if (!liste.length) {
+      unterLabel.style.display = 'none';
+      unterReihe.style.display = 'none';
+      return;
+    }
+    unterLabel.style.display = '';
+    unterReihe.style.display = '';
+    liste.forEach(u => {
+      const c = document.createElement('button');
+      c.className = 'chip-wahl' + (unter === u ? ' an' : '');
+      c.type = 'button';
+      c.textContent = u;
+      c.addEventListener('click', () => {
+        unter = unter === u ? '' : u;   /* nochmals tippen hebt auf */
+        unterZeichnen();
+      });
+      unterReihe.appendChild(c);
+    });
+  }
+  KATEGORIEN.forEach(k => {
+    const c = document.createElement('button');
+    c.className = 'chip-wahl' + (kategorie === k.name ? ' an' : '');
+    c.type = 'button';
+    c.textContent = k.name;
+    c.addEventListener('click', () => {
+      if (kategorie === k.name) return;
+      kategorie = k.name;
+      unter = '';
+      katReihe.querySelectorAll('.chip-wahl').forEach(x => x.classList.toggle('an', x.textContent === kategorie));
+      unterZeichnen();
+    });
+    katReihe.appendChild(c);
+  });
+  unterZeichnen();
+
+  /* Notiz */
+  const notizLabel = document.createElement('div');
+  notizLabel.className = 'sheet-label';
+  notizLabel.textContent = 'Notiz, freiwillig';
+  sheet.appendChild(notizLabel);
+  const notizFeld = document.createElement('textarea');
+  notizFeld.className = 'sheet-feld';
+  notizFeld.rows = 2;
+  notizFeld.placeholder = 'z.B. mit Nina, Strandbar';
+  notizFeld.value = o.notiz || '';
+  sheet.appendChild(notizFeld);
+
+  /* Aktionen */
+  const aktionen = document.createElement('div');
+  aktionen.className = 'sheet-aktionen';
+  if (o.loeschen) {
+    const l = document.createElement('button');
+    l.className = 'btn btn-danger';
+    l.type = 'button';
+    l.innerHTML = icon('trash', 16) + 'Löschen';
+    l.addEventListener('click', () => {
+      if (!confirm('Diese Buchung löschen?')) return;
+      o.loeschen();
+      sheetSchliessen();
+    });
+    aktionen.appendChild(l);
+  } else {
+    const a = document.createElement('button');
+    a.className = 'btn btn-secondary';
+    a.type = 'button';
+    a.textContent = 'Abbrechen';
+    a.addEventListener('click', sheetSchliessen);
+    aktionen.appendChild(a);
+  }
+  const ok = document.createElement('button');
+  ok.className = 'btn';
+  ok.type = 'button';
+  ok.textContent = o.knopf || 'Speichern';
+  ok.addEventListener('click', () => {
+    const betrag = zahl(betragFeld.value);
+    if (betrag <= 0) { betragFeld.focus(); return; }
+    o.speichern({
+      betrag: betrag,
+      kategorie: kategorie,
+      unter: unter,
+      notiz: notizFeld.value.trim(),
+      ts: Date.now()
+    });
+    sheetSchliessen();
+    if (navigator.vibrate) navigator.vibrate(18);
+  });
+  aktionen.appendChild(ok);
+  sheet.appendChild(aktionen);
+
+  document.getElementById('sheetBg').classList.add('auf');
+  requestAnimationFrame(() => sheet.classList.add('auf'));
+  if (!(o.betrag > 0)) setTimeout(() => betragFeld.focus(), 240);
+}
+
+/* ---------- Notizen ----------
+   Eigener Speicherplatz, weder in den Reisedaten noch bei den
+   Ausgaben. Wird beim Tippen gesichert, ohne Speichern-Knopf. */
+const NOTIZ_KEY = 'reisebegleiter_notizen';
+let notizTimer = null;
+function notizenLaden() {
+  const feld = document.getElementById('notizFeld');
+  if (!feld) return;
+  try { feld.value = localStorage.getItem(NOTIZ_KEY) || ''; } catch(e) { /* egal */ }
+  feld.addEventListener('input', () => {
+    clearTimeout(notizTimer);
+    notizTimer = setTimeout(() => {
+      try {
+        localStorage.setItem(NOTIZ_KEY, feld.value);
+        const st = document.getElementById('notizStatus');
+        st.textContent = 'Gesichert ' + uhrzeit(Date.now()) + '. Keine PINs, keine Kartennummern.';
+      } catch(e) {
+        document.getElementById('notizStatus').textContent = 'Konnte nicht gesichert werden, der Speicher ist voll.';
+      }
+    }, 600);
+  });
+}
 
 /* ---------- Uebersetzer ----------
    Braucht Netz. Ein eingebauter Uebersetzer laesst sich in einer
@@ -1800,7 +2700,13 @@ document.getElementById('importSpendInput').addEventListener('change', function(
       return;
     }
     const sauber = liste
-      .map(x => ({ betrag: Number(x && x.betrag) || 0, kategorie: (x && x.kategorie) || 'Sonstiges', ts: (x && x.ts) || Date.now() }))
+      .map(x => katMigration({
+        betrag: Number(x && x.betrag) || 0,
+        kategorie: (x && x.kategorie) || 'Sonstiges',
+        unter: (x && x.unter) || '',
+        notiz: (x && x.notiz) || '',
+        ts: (x && x.ts) || Date.now()
+      }))
       .filter(x => x.betrag > 0);
     if (!sauber.length) { alert('Die Datei enthält keine brauchbaren Einträge.'); return; }
 
@@ -1814,8 +2720,7 @@ document.getElementById('importSpendInput').addEventListener('change', function(
       ausgaben = sauber;
     }
     ausgabenSpeichern();
-    updateSpendTotal();
-    zeigeLetzte();
+    ausgabenNeuZeichnen();
     alert('Ausgaben übernommen: ' + ausgaben.length + ' Einträge. Der Reiseplan blieb unverändert.');
   };
   reader.readAsText(file);
@@ -1848,8 +2753,13 @@ if (saved) {
   ausgabenLaden();
   loadDemoData();
 }
-updateSpendTotal();
-zeigeLetzte();
+ausgabenNeuZeichnen();
+notizenLaden();
+
+/* Uhren nachziehen. Alle 30 Sekunden reicht: die Anzeige ist auf
+   Minuten genau, und ein Wecker im Sekundentakt kostet nur Akku. */
+setInterval(() => uhrenZeichnen(), 30000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) uhrenZeichnen(); });
 
 /* PWA-Schnellzugriff: langes Druecken aufs App-Icon fuehrt direkt
    hierher. Die Ausgabe-Eingabe bekommt sofort den Fokus, damit die
