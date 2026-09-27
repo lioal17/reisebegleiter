@@ -1162,15 +1162,36 @@ document.getElementById('geoBtn').addEventListener('click', toggleGeo);
 document.getElementById('dayBackBtn').addEventListener('click', () => showScreen(dayScreenReturn, dayScreenReturn));
 document.getElementById('hotelMap').addEventListener('click', () => { mapScreenReturn = 'screenToday'; renderMap(); showScreen('screenMap', 'screenToday'); });
 
-/* ---------- Daten laden ---------- */
+/* ---------- Daten laden ----------
+   Reihenfolge: echte Reisedaten, dann Demo, dann eingebauter
+   Notnagel. Die echte Datei ist per .gitignore aus dem Repository
+   ausgeschlossen und liegt deshalb nur lokal. Fehlt sie, laeuft die
+   App wie vorher mit der Demo-Reise weiter.
+
+   Erkennungszeichen echter Daten ist der Block "datenstand". Er
+   steht nur in der gepflegten Datei, nie in der Demo. Daran
+   unterscheidet der Start unten einen echten gespeicherten Stand von
+   einem eingefrorenen Demo-Stand. */
+const ECHTE_DATEN = 'reisedaten-thailand.json';
+
+async function ladeDatei(pfad) {
+  const resp = await fetch(pfad, { cache: 'no-store' });
+  if (!resp.ok) throw new Error(pfad + ': HTTP ' + resp.status);
+  return await resp.json();
+}
+
 async function loadDemoData() {
   try {
-    const resp = await fetch('demo-daten.json');
-    appData = await resp.json();
-    console.log('Demo-Daten geladen');
-  } catch(e) {
-    console.error('Demo-Daten nicht gefunden, verwende Fallback', e);
-    appData = getDemoDataFallback();
+    appData = await ladeDatei(ECHTE_DATEN);
+    console.log('Echte Reisedaten geladen:', (appData.reise || {}).titel);
+  } catch(e1) {
+    try {
+      appData = await ladeDatei('demo-daten.json');
+      console.log('Demo-Daten geladen (echte Reisedaten nicht vorhanden)');
+    } catch(e2) {
+      console.error('Keine Datendatei gefunden, verwende Fallback', e2);
+      appData = getDemoDataFallback();
+    }
   }
   loadUIFromAppData();
 }
@@ -2902,17 +2923,29 @@ if ('serviceWorker' in navigator) {
 
 /* ---------- Start ---------- */
 renderCatGrid();
+/* Ein gespeicherter Stand hat Vorrang, aber nur wenn er echt ist.
+   Grund: Der Ticket- und der Hotelfoto-Knopf schreiben den ganzen
+   Datensatz nach localStorage. Wer vor dem Import ein Bild hochlaedt,
+   friert damit die Demo-Reise ein, und eine spaeter gepflegte
+   Datendatei wurde danach nie mehr gelesen. Das ist still passiert,
+   ohne Fehlermeldung, und war der Weg, auf dem eine erfundene Reise
+   bis in den Dezember ueberleben konnte.
+
+   Deshalb: ein gespeicherter Stand ohne "datenstand" gilt als
+   Demo-Rest und wird durch die Datei ersetzt. Erfasste Ausgaben und
+   Notizen liegen unter eigenen Schluesseln und bleiben davon
+   unberuehrt. */
 const saved = localStorage.getItem('reisebegleiter_data');
+let gespeichert = null;
 if (saved) {
-  try {
-    appData = JSON.parse(saved);
-    ausgabenLaden();
-    loadUIFromAppData();
-  } catch(e) {
-    ausgabenLaden();
-    loadDemoData();
-  }
+  try { gespeichert = JSON.parse(saved); } catch(e) { gespeichert = null; }
+}
+if (gespeichert && gespeichert.datenstand) {
+  appData = gespeichert;
+  ausgabenLaden();
+  loadUIFromAppData();
 } else {
+  if (gespeichert) console.log('Gespeicherter Stand ohne Datenstand-Block, wird durch die Datei ersetzt');
   ausgabenLaden();
   loadDemoData();
 }
