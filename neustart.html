@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Neu starten</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #0b1416; color: #e6ecec;
+    font: 16px/1.6 system-ui, sans-serif; }
+  .box { max-width: 34em; margin: 0 auto; padding: 32px 20px; }
+  h1 { font-size: 26px; margin: 0 0 8px; }
+  .sub { color: #B7C0C0; margin: 0 0 24px; }
+  ul { padding-left: 20px; }
+  li { margin: 6px 0; }
+  .ok { color: #2FD9C0; }
+  .warn { color: #E8B84B; }
+  a.btn { display: inline-block; margin-top: 20px; background: #2FD9C0; color: #06211d;
+    text-decoration: none; padding: 14px 22px; border-radius: 12px; font-weight: 600; }
+  code { background: #152124; padding: 2px 6px; border-radius: 5px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="box">
+<h1>Neu starten</h1>
+<p class="sub">Entfernt den alten Zwischenspeicher der App. Erfasste Ausgaben und Notizen bleiben unangetastet.</p>
+<ul id="log"></ul>
+<div id="fertig"></div>
+</div>
+<script>
+/* Wozu diese Seite da ist.
+
+   Bis Fassung v9 holte der Service Worker alles "Cache zuerst". Ein
+   Browser, der die App einmal geoeffnet hatte, lieferte danach
+   dauerhaft die alte Fassung aus. Eine korrigierte index.html und
+   eine neue Datendatei blieben unsichtbar, ohne Fehlermeldung. Am
+   27.09.2026 stand deshalb die Demo-Reise vom 20.12. auf dem
+   Bildschirm, waehrend die echten Daten vom 12.12. im Ordner lagen
+   und der Server sie auslieferte. Vier Neuladungen haben das nicht
+   behoben: der alte Service Worker bleibt der aktive und bedient
+   weiter aus seinem eigenen Speicher.
+
+   Diese Seite meldet alle Service Worker ab und loescht alle
+   Caches. Sie ruehrt localStorage NICHT an, dort liegen die
+   erfassten Ausgaben und die Notizen. */
+const log = document.getElementById('log');
+function sag(text, art) {
+  const li = document.createElement('li');
+  li.textContent = text;
+  if (art) li.className = art;
+  log.appendChild(li);
+}
+
+(async () => {
+  let sw = 0, weg = 0;
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      sw = regs.length;
+      for (const r of regs) await r.unregister();
+      sag(sw ? sw + ' Service Worker abgemeldet' : 'Kein Service Worker registriert', sw ? 'ok' : null);
+    } else {
+      sag('Dieser Browser kennt keine Service Worker');
+    }
+  } catch (e) {
+    sag('Service Worker liessen sich nicht abmelden: ' + e.message, 'warn');
+  }
+
+  try {
+    if ('caches' in window) {
+      const namen = await caches.keys();
+      weg = namen.length;
+      for (const n of namen) await caches.delete(n);
+      sag(weg ? weg + ' Zwischenspeicher geloescht: ' + namen.join(', ') : 'Kein Zwischenspeicher vorhanden', weg ? 'ok' : null);
+    }
+  } catch (e) {
+    sag('Zwischenspeicher liess sich nicht loeschen: ' + e.message, 'warn');
+  }
+
+  let ausgaben = 0;
+  try { ausgaben = JSON.parse(localStorage.getItem('reisebegleiter_ausgaben') || '[]').length; } catch (e) {}
+  sag('Erfasste Ausgaben unangetastet: ' + ausgaben, 'ok');
+
+  const stand = localStorage.getItem('reisebegleiter_data');
+  if (stand) {
+    let echt = false;
+    try { echt = !!JSON.parse(stand).datenstand; } catch (e) {}
+    sag(echt
+      ? 'Gespeicherter Reiseplan ist die echte Fassung, bleibt stehen'
+      : 'Gespeicherter Reiseplan ist ein Demo-Rest, die App ersetzt ihn beim Start', echt ? 'ok' : 'warn');
+  }
+
+  document.getElementById('fertig').innerHTML =
+    '<p>Fertig. Beim naechsten Oeffnen holt die App Programm und Daten wieder aus dem Netz.</p>' +
+    '<a class="btn" href="index.html">App oeffnen</a>';
+})();
+</script>
+</body>
+</html>
