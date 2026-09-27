@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reisebegleiter-v10';
+const CACHE_NAME = 'reisebegleiter-v11';
 const urlsToCache = [
   './',
   './index.html',

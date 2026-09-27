@@ -280,6 +280,7 @@ body.foto-an .palm-deco, body.foto-an .hero-bg { display: none; }
 .status-line { font-size: var(--fs-mini); font-weight: var(--fw-semi); margin-top: 4px; }
 .status-red { color: var(--red); }
 .status-gold { color: var(--gold); }
+.status-teal { color: var(--teal); }
 .card-sub { font-size: var(--fs-sub); color: var(--muted); }
 .card-teal .card-sub, .card-gold .card-sub { color: rgba(234, 244, 242, 0.75); }
 .chip {
@@ -537,6 +538,47 @@ body.foto-an .palm-deco, body.foto-an .hero-bg { display: none; }
 .doc-eintrag:first-of-type { border-top: none; padding-top: var(--sp-xs); }
 .doc-eintrag-titel { font-size: var(--fs-body); font-weight: var(--fw-semi); }
 .doc-eintrag-zeile { font-size: var(--fs-sub); color: var(--muted); margin-top: 2px; }
+
+/* ---- Hinterlegte Dokumente ---- */
+.dok-reihe { display: flex; gap: var(--sp-s); flex-wrap: wrap; margin-top: var(--sp-s); }
+.dok-kachel {
+  position: relative; flex: none; width: 72px; height: 72px;
+  border-radius: var(--r-sm); overflow: hidden;
+  background: var(--card2); border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--doc);
+}
+.dok-kachel img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dok-kachel .dok-wort { font-size: var(--fs-mini); font-weight: var(--fw-bold); letter-spacing: 0.5px; }
+.dok-weg {
+  position: absolute; top: 2px; right: 2px; padding: 0;
+  width: 22px; height: 22px; border-radius: 50%; border: none;
+  background: rgba(4, 10, 12, 0.8); color: var(--text);
+  font-size: 15px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Vollbild fuer ein hinterlegtes Bild.
+   Am Schalter zaehlt nur eines: das Dokument gross und ohne Umweg.
+   Deshalb eine eigene Ebene ueber allem, auch ueber der Navigation. */
+.dok-voll {
+  position: fixed; inset: 0; z-index: 200; background: #040a0c;
+  display: none; flex-direction: column;
+}
+.dok-voll.auf { display: flex; }
+.dok-voll-kopf {
+  display: flex; align-items: center; gap: var(--sp-s);
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) var(--sp-l) 10px;
+}
+.dok-voll-name {
+  flex: 1; font-size: var(--fs-sub); color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dok-voll-flaeche {
+  flex: 1; overflow: auto; padding: 0 var(--sp-s) var(--sp-l);
+  display: flex; align-items: center; justify-content: center;
+}
+.dok-voll-flaeche img { max-width: 100%; max-height: 100%; object-fit: contain; }
 .doc-leer-text { font-size: var(--fs-sub); color: var(--muted); }
 .grp-head {
   font-size: var(--fs-mini); color: var(--muted); font-weight: var(--fw-bold);
@@ -920,10 +962,10 @@ a { color: var(--teal); }
     <div id="ticketsList"></div>
     <div class="upload-box" id="addTicketBox">
       <div class="ic" data-icon="plus" style="margin-bottom: 6px; color: var(--teal);"></div>
-      <div class="subtitle" style="color: var(--text);">Ticket hinzufügen</div>
-      <div class="hint-line">Foto oder PDF – bleibt auf dem Gerät</div>
-      <input type="file" id="ticketInput" accept="image/*,application/pdf" capture="environment" style="display: none;">
+      <div class="subtitle" style="color: var(--text);">Dokument hinterlegen</div>
+      <div class="hint-line">Fragt zuerst, zu welcher Buchung – bleibt auf dem Gerät</div>
     </div>
+    <input type="file" id="dokInput" accept="image/*,application/pdf" capture="environment" style="display: none;">
   </div>
 
   <!-- KARTE (Unterseite) -->
@@ -1039,15 +1081,31 @@ a { color: var(--teal); }
         <button class="btn btn-secondary btn-inline" id="importSpendBtn"><span class="ic" data-icon="down" data-size="16"></span>Importieren</button>
         <button class="btn btn-secondary btn-inline" id="exportSpendBtn"><span class="ic" data-icon="up" data-size="16"></span>Sichern</button>
       </div>
+      <div class="grp-head">Dokumente</div>
+      <div class="row" style="margin-top: 0;">
+        <button class="btn btn-secondary btn-inline" id="importDokBtn"><span class="ic" data-icon="down" data-size="16"></span>Importieren</button>
+        <button class="btn btn-secondary btn-inline" id="exportDokBtn"><span class="ic" data-icon="up" data-size="16"></span>Sichern</button>
+      </div>
+      <div class="badge-label" id="speicherZeile">Speicherzustand wird geprüft.</div>
       <div class="badge-label">Alle Daten bleiben lokal auf diesem Gerät.</div>
       <input type="file" id="importInput" accept=".json" style="display: none;">
       <input type="file" id="importSpendInput" accept=".json" style="display: none;">
+      <input type="file" id="importDokInput" accept=".json" style="display: none;">
     </div>
   </div>
 
   <!-- Blatt von unten: Ausgabe genauer erfassen oder korrigieren -->
   <div class="sheet-bg" id="sheetBg"></div>
   <div class="sheet" id="sheet"></div>
+
+  <!-- Vollbild fuer ein hinterlegtes Dokument -->
+  <div class="dok-voll" id="dokVoll">
+    <div class="dok-voll-kopf">
+      <button class="icon-btn" id="dokVollZu"><span class="ic" data-icon="chevL"></span></button>
+      <div class="dok-voll-name" id="dokVollName"></div>
+    </div>
+    <div class="dok-voll-flaeche" id="dokVollFlaeche"></div>
+  </div>
 
   <!-- NAV -->
   <div class="nav">
@@ -1646,6 +1704,189 @@ function openDay(idx) {
    tage[].hotel, nicht aus tickets, denn Adresse, Telefon und
    Koordinaten stehen in den Reisedaten. Deshalb erscheint dort
    jede Unterkunft einmal, nicht einmal pro Nacht. */
+/* ---------- Dokumenten-Ablage ----------
+
+   Warum IndexedDB und nicht localStorage: localStorage ist fuer Text
+   gedacht und bei rund 5 MB voll. Eine Datei muesste dort als Base64
+   liegen, was sie um ein Drittel vergroessert. Ein einziges Handyfoto
+   sprengt das. IndexedDB nimmt den Blob unveraendert und hat keine
+   solche Grenze.
+
+   Zwei Speicher, absichtlich getrennt:
+     dateien  id -> { id, blob }            gross, wird nur einzeln geholt
+     meta     id -> { id, ticketId, ... }   klein, wird beim Start ganz gelesen
+
+   Grund: Die Uebersicht muss wissen, welche Buchung ein Dokument hat.
+   Laege das in einem Speicher zusammen mit den Blobs, muessten beim
+   Start alle Dateien in den Arbeitsspeicher. Geschrieben und geloescht
+   wird immer in **einer** Transaktion ueber beide Speicher, damit kein
+   Eintrag ohne Datei und keine Datei ohne Eintrag entstehen kann. */
+const DOK_DB = 'reisebegleiter-dok';
+const DOK_VERSION = 1;
+let dokDbCache = null;
+/* ticketId -> Liste der Metadaten. Einzige Quelle fuer die Anzeige. */
+let dokIndex = {};
+let dokAblageDefekt = false;
+
+function dokDb() {
+  if (dokDbCache) return dokDbCache;
+  dokDbCache = new Promise((ok, fehler) => {
+    const anf = indexedDB.open(DOK_DB, DOK_VERSION);
+    anf.onupgradeneeded = () => {
+      const db = anf.result;
+      if (!db.objectStoreNames.contains('dateien')) db.createObjectStore('dateien', { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('meta')) {
+        db.createObjectStore('meta', { keyPath: 'id' }).createIndex('ticketId', 'ticketId');
+      }
+    };
+    anf.onsuccess = () => ok(anf.result);
+    anf.onerror = () => fehler(anf.error);
+  });
+  /* Ein gescheiterter Versuch darf nicht dauerhaft gemerkt werden,
+     sonst bleibt die Ablage bis zum Neuladen tot. */
+  dokDbCache.catch(() => { dokDbCache = null; });
+  return dokDbCache;
+}
+
+async function dokIndexLaden() {
+  dokIndex = {};
+  try {
+    const db = await dokDb();
+    const alle = await new Promise((ok, fehler) => {
+      const a = db.transaction('meta', 'readonly').objectStore('meta').getAll();
+      a.onsuccess = () => ok(a.result || []);
+      a.onerror = () => fehler(a.error);
+    });
+    alle.sort((a, b) => String(a.erfasst).localeCompare(String(b.erfasst)));
+    alle.forEach(m => { (dokIndex[m.ticketId] = dokIndex[m.ticketId] || []).push(m); });
+  } catch(e) {
+    /* Ohne IndexedDB laeuft die App weiter, nur ohne Ablage. Das darf
+       nicht still bleiben, sonst wiederholt sich der alte Fehler:
+       ein Knopf, der Erfolg meldet und nichts speichert. */
+    console.error('Dokumenten-Ablage nicht verfuegbar', e);
+    dokAblageDefekt = true;
+  }
+}
+
+function dokListe(ticketId) { return dokIndex[ticketId] || []; }
+
+/* Bilder werden verkleinert, PDF geht unveraendert in den Speicher.
+   1800 Pixel und 0.85, nicht die 900 und 0.8 des Hotelfotos: Das
+   Hotelfoto ist Zierde, ein Ticket muss am Schalter lesbar sein.
+   Barcode und Buchungsnummer ueberleben 900 Pixel nicht zuverlaessig. */
+function dokVerkleinern(file) {
+  return new Promise(ok => {
+    if (!String(file.type || '').startsWith('image/')) return ok(file);
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const max = 1800;
+      let w = img.width, h = img.height;
+      if (w > max || h > max) { const s = max / Math.max(w, h); w = Math.round(w * s); h = Math.round(h * s); }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      c.toBlob(b => ok(b || file), 'image/jpeg', 0.85);
+    };
+    /* Ein Bild, das der Browser nicht dekodieren kann, wird trotzdem
+       abgelegt. Lieber das Original behalten als nichts. */
+    img.onerror = () => { URL.revokeObjectURL(url); ok(file); };
+    img.src = url;
+  });
+}
+
+async function dokSpeichern(ticketId, file) {
+  const blob = await dokVerkleinern(file);
+  const meta = {
+    id: 'dok-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+    ticketId: ticketId,
+    name: file.name || 'Dokument',
+    typ: blob.type || file.type || 'application/octet-stream',
+    groesse: blob.size,
+    erfasst: new Date().toISOString()
+  };
+  const db = await dokDb();
+  await new Promise((ok, fehler) => {
+    const tx = db.transaction(['dateien', 'meta'], 'readwrite');
+    tx.objectStore('dateien').put({ id: meta.id, blob: blob });
+    tx.objectStore('meta').put(meta);
+    tx.oncomplete = () => ok();
+    /* Beide Wege abfangen. Ist der Speicher voll, scheitert die
+       Transaktion mit onabort, nicht mit onerror. Wer nur onerror
+       behandelt, haelt einen Fehlschlag fuer einen Erfolg. */
+    tx.onabort = () => fehler(tx.error || new Error('Transaktion abgebrochen'));
+    tx.onerror = () => fehler(tx.error || new Error('Schreibfehler'));
+  });
+  (dokIndex[ticketId] = dokIndex[ticketId] || []).push(meta);
+  return meta;
+}
+
+async function dokBlob(id) {
+  const db = await dokDb();
+  return await new Promise((ok, fehler) => {
+    const a = db.transaction('dateien', 'readonly').objectStore('dateien').get(id);
+    a.onsuccess = () => ok(a.result ? a.result.blob : null);
+    a.onerror = () => fehler(a.error);
+  });
+}
+
+async function dokLoeschen(id, ticketId) {
+  const db = await dokDb();
+  await new Promise((ok, fehler) => {
+    const tx = db.transaction(['dateien', 'meta'], 'readwrite');
+    tx.objectStore('dateien').delete(id);
+    tx.objectStore('meta').delete(id);
+    tx.oncomplete = () => ok();
+    tx.onabort = () => fehler(tx.error || new Error('Transaktion abgebrochen'));
+    tx.onerror = () => fehler(tx.error || new Error('Loeschfehler'));
+  });
+  dokIndex[ticketId] = dokListe(ticketId).filter(m => m.id !== id);
+}
+
+/* Dauerhafter Speicher. Ohne diese Zusage darf der Browser die
+   Ablage bei Platzmangel aufraeumen. Fuer eine installierte PWA wird
+   sie meist gewaehrt, aber "meist" ist keine Grundlage fuer eine
+   Reise. Deshalb wird das Ergebnis angezeigt und nicht angenommen. */
+let speicherLage = null;
+async function speicherPruefen() {
+  const s = navigator.storage;
+  if (!s) { speicherLage = { moeglich: false }; return speicherLage; }
+  let dauerhaft = null;
+  try {
+    if (s.persisted) dauerhaft = await s.persisted();
+    if (dauerhaft === false && s.persist) dauerhaft = await s.persist();
+  } catch(e) { dauerhaft = null; }
+  let belegt = null, frei = null;
+  try {
+    if (s.estimate) {
+      const e = await s.estimate();
+      belegt = e.usage; frei = (e.quota || 0) - (e.usage || 0);
+    }
+  } catch(e) {}
+  speicherLage = { moeglich: true, dauerhaft: dauerhaft, belegt: belegt, frei: frei };
+  return speicherLage;
+}
+
+function mb(bytes) {
+  if (typeof bytes !== 'number' || isNaN(bytes)) return '?';
+  if (bytes < 1024 * 1024) return Math.max(1, Math.round(bytes / 1024)) + ' KB';
+  return (bytes / 1024 / 1024).toFixed(bytes < 100 * 1024 * 1024 ? 1 : 0) + ' MB';
+}
+
+function renderSpeicherLage() {
+  const el = document.getElementById('speicherZeile');
+  if (!el) return;
+  const s = speicherLage;
+  if (!s || !s.moeglich) { el.textContent = 'Speicherzustand kann dieser Browser nicht melden.'; return; }
+  const anzahl = Object.values(dokIndex).reduce((n, l) => n + l.length, 0);
+  const teile = [anzahl + (anzahl === 1 ? ' Dokument' : ' Dokumente') + ' hinterlegt'];
+  if (s.dauerhaft === true) teile.push('Speicher ist dauerhaft zugesagt');
+  else if (s.dauerhaft === false) teile.push('ACHTUNG: keine Zusage, der Browser darf aufräumen');
+  if (typeof s.frei === 'number' && s.frei > 0) teile.push('noch ' + mb(s.frei) + ' frei');
+  el.textContent = teile.join(' · ') + '.';
+}
+
 const DOC_KAT = [
   { id: 'hotel',  name: 'Hotels',            cls: 'tile-hotel',  ic: 'palm' },
   { id: 'boot',   name: 'Boote und Fähren',  cls: 'tile-boot',   ic: 'ship' },
@@ -1733,13 +1974,31 @@ function renderDocPanel() {
   panel.appendChild(kopf);
 
   const inhalt = docInhalt(kat.id);
-  if (!inhalt.length) {
+  /* Buchungen der Gruppe "Hotels" waren bisher unsichtbar. docInhalt
+     liefert fuer diese Kachel die Unterkuenfte aus dem Reiseplan und
+     ignoriert appData.tickets, und die Liste "Nicht zugeordnet" faengt
+     sie nicht auf, weil ticketKat sie der Hotel-Kachel zuordnet. Sie
+     fielen also durch beide Raster, ohne Fehlermeldung. In den
+     Demodaten sind das 8 von 21 Buchungen. Ohne diesen Zusatz haette
+     die neue Ablage die groesste Gruppe nie erreicht. */
+  const hotelTickets = kat.id === 'hotel'
+    ? (appData.tickets || []).filter(t => ticketKat(t.gruppe) === 'hotel')
+    : [];
+
+  if (!inhalt.length && !hotelTickets.length) {
     const leer = document.createElement('div');
     leer.className = 'doc-leer-text';
-    leer.textContent = 'Hier liegt noch nichts. Über "Ticket hinzufügen" kommt ein Foto oder PDF dazu.';
+    leer.textContent = 'Hier liegt noch nichts. Über "Dokument hinterlegen" kommt ein Foto oder PDF dazu.';
     panel.appendChild(leer);
   } else if (kat.id === 'hotel') {
     inhalt.forEach(h => panel.appendChild(hotelEintrag(h)));
+    if (hotelTickets.length) {
+      const kopf2 = document.createElement('div');
+      kopf2.className = 'grp-head';
+      kopf2.textContent = 'Buchungsbestätigungen';
+      panel.appendChild(kopf2);
+      hotelTickets.forEach(t => panel.appendChild(ticketEintrag(t)));
+    }
   } else {
     inhalt.forEach(t => panel.appendChild(ticketEintrag(t)));
   }
@@ -1793,20 +2052,135 @@ function hotelEintrag(h) {
   return div;
 }
 
+/* Der Status kommt nicht mehr aus der Datendatei allein. Liegt eine
+   Datei in der Ablage, ist das Dokument vorhanden, egal was in den
+   Daten steht. Die Ablage ist die Wahrheit, nicht die Planung. */
+function ticketStatusZeile(t) {
+  if (dokListe(t.id).length) return '<div class="status-line status-teal">Hinterlegt</div>';
+  if (t.status === 'fehlt') return '<div class="status-line status-red">Fehlt noch</div>';
+  if (t.status === 'foto_noetig') return '<div class="status-line status-gold">Foto nötig</div>';
+  return '';
+}
+
 function ticketEintrag(t) {
   const div = document.createElement('div');
   div.className = 'doc-eintrag';
   div.innerHTML =
     '<div class="doc-eintrag-titel">' + esc(t.titel) + '</div>' +
     (t.info ? '<div class="doc-eintrag-zeile">' + esc(t.info) + '</div>' : '') +
-    (t.status === 'fehlt' ? '<div class="status-line status-red">Fehlt noch</div>' :
-     t.status === 'foto_noetig' ? '<div class="status-line status-gold">Foto nötig</div>' : '');
+    ticketStatusZeile(t);
+
+  const dokus = dokListe(t.id);
+  if (dokus.length) div.appendChild(dokReihe(t, dokus));
+
+  const knopf = document.createElement('button');
+  knopf.className = 'btn btn-secondary btn-inline';
+  knopf.type = 'button';
+  knopf.style.marginTop = 'var(--sp-s)';
+  knopf.innerHTML = icon('plus', 16) + (dokus.length ? 'Weiteres hinterlegen' : 'Foto oder PDF hinterlegen');
+  knopf.addEventListener('click', () => dokAufnehmen(t.id));
+  div.appendChild(knopf);
   return div;
+}
+
+/* Vorschau pro Datei. Die Blob-URL wird beim naechsten Aufbau der
+   Liste wieder freigegeben, sonst haelt jeder Neuaufbau alle Bilder
+   im Arbeitsspeicher fest. */
+let dokVorschauUrls = [];
+function dokVorschauFreigeben() {
+  dokVorschauUrls.forEach(u => URL.revokeObjectURL(u));
+  dokVorschauUrls = [];
+}
+
+function dokReihe(t, dokus) {
+  const reihe = document.createElement('div');
+  reihe.className = 'dok-reihe';
+  dokus.forEach(m => {
+    const kachel = document.createElement('div');
+    kachel.className = 'dok-kachel';
+    const istBild = String(m.typ).startsWith('image/');
+
+    if (istBild) {
+      const img = document.createElement('img');
+      img.alt = m.name;
+      dokBlob(m.id).then(b => {
+        if (!b) return;
+        const u = URL.createObjectURL(b);
+        dokVorschauUrls.push(u);
+        img.src = u;
+      }).catch(() => {});
+      kachel.appendChild(img);
+    } else {
+      kachel.innerHTML = '<span class="dok-wort">PDF</span>';
+    }
+
+    kachel.addEventListener('click', () => dokZeigen(m));
+
+    const weg = document.createElement('button');
+    weg.className = 'dok-weg';
+    weg.type = 'button';
+    weg.textContent = '×';
+    weg.title = 'Entfernen';
+    weg.addEventListener('click', async ev => {
+      ev.stopPropagation();
+      if (!confirm('"' + m.name + '" aus der Ablage entfernen?')) return;
+      try {
+        await dokLoeschen(m.id, t.id);
+        renderDokumente();
+        await speicherPruefen();
+        renderSpeicherLage();
+      } catch(e) {
+        alert('Entfernen fehlgeschlagen: ' + (e && e.message ? e.message : e));
+      }
+    });
+    kachel.appendChild(weg);
+    reihe.appendChild(kachel);
+  });
+  return reihe;
+}
+
+/* Bild im Vollbild in der App. PDF muss in einen neuen Tab, weil die
+   Sicherheitsregel default-src 'none' jedes eingebettete Dokument
+   blockiert. Das ist kein Versehen: die Regel haelt Reisedaten im
+   Geraet. Deshalb der Hinweis, dass ein Foto am Schalter der bessere
+   Weg ist. */
+let dokVollUrl = null;
+/* PDF-URLs bleiben bis zum Neuladen gueltig. Der fremde Tab haelt
+   keine Verbindung zu dieser Seite: wird die URL hier freigegeben,
+   zeigt er eine leere Seite. Deshalb sammeln statt freigeben. */
+let dokTabUrls = [];
+function dokZeigen(m) {
+  dokBlob(m.id).then(b => {
+    if (!b) { alert('Die Datei ist nicht mehr in der Ablage.'); return; }
+    const url = URL.createObjectURL(b);
+    if (!String(m.typ).startsWith('image/')) {
+      dokTabUrls.push(url);
+      window.open(url, '_blank');
+      return;
+    }
+    if (dokVollUrl) URL.revokeObjectURL(dokVollUrl);
+    dokVollUrl = url;
+    document.getElementById('dokVollName').textContent = m.name;
+    const flaeche = document.getElementById('dokVollFlaeche');
+    flaeche.innerHTML = '';
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = m.name;
+    flaeche.appendChild(img);
+    document.getElementById('dokVoll').classList.add('auf');
+  }).catch(e => alert('Anzeigen fehlgeschlagen: ' + (e && e.message ? e.message : e)));
+}
+
+function dokVollSchliessen() {
+  document.getElementById('dokVoll').classList.remove('auf');
+  document.getElementById('dokVollFlaeche').innerHTML = '';
+  if (dokVollUrl) { URL.revokeObjectURL(dokVollUrl); dokVollUrl = null; }
 }
 
 function renderDokumente() {
   const tiles = document.getElementById('docTiles');
   const rest = document.getElementById('ticketsList');
+  dokVorschauFreigeben();
   tiles.innerHTML = '';
   rest.innerHTML = '';
 
@@ -2755,22 +3129,105 @@ document.getElementById('hotelPhotoInput').addEventListener('change', function(e
   this.value = '';
 });
 
-/* ---------- Tickets hinzufügen ---------- */
-function pickTicketFile() { document.getElementById('ticketInput').click(); }
-document.getElementById('addTicketBox').addEventListener('click', pickTicketFile);
-document.getElementById('addTicketTop').addEventListener('click', pickTicketFile);
-document.getElementById('ticketInput').addEventListener('change', function(e) {
+/* ---------- Dokument hinterlegen ----------
+
+   Der alte Weg schrieb die Datei nach appData.dokumente, und dieses
+   Feld wurde nirgends gelesen. Der Knopf meldete "gespeichert", das
+   Dokument war weg. Die Ursache war nicht die fehlende Anzeige,
+   sondern die fehlende Zuordnung: der Knopf wusste nicht, zu welcher
+   Buchung die Datei gehoert. Deshalb steht am Anfang jetzt immer eine
+   Buchung, nie eine Datei. */
+let dokZielTicket = null;
+
+function dokAufnehmen(ticketId) {
+  if (dokAblageDefekt) {
+    alert('Die Dokumenten-Ablage ist in diesem Browser nicht verfügbar.\n\n' +
+      'Meist liegt das am privaten Modus. Ohne Ablage würde die Datei verloren gehen, ' +
+      'deshalb wird sie nicht angenommen.');
+    return;
+  }
+  dokZielTicket = ticketId;
+  document.getElementById('dokInput').click();
+}
+
+document.getElementById('dokInput').addEventListener('change', async function(e) {
   const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    if (!appData.dokumente) appData.dokumente = [];
-    appData.dokumente.push({ name: file.name, data: ev.target.result });
-    localStorage.setItem('reisebegleiter_data', JSON.stringify(appData));
-    alert('Dokument gespeichert!');
-  };
-  reader.readAsDataURL(file);
+  const ticketId = dokZielTicket;
+  this.value = '';
+  dokZielTicket = null;
+  if (!file || !ticketId) return;
+
+  try {
+    const meta = await dokSpeichern(ticketId, file);
+    renderDokumente();
+    await speicherPruefen();
+    renderSpeicherLage();
+    const nachsatz = String(meta.typ).startsWith('image/')
+      ? ''
+      : '\n\nHinweis: PDF öffnet sich in einem neuen Tab, nicht in der App. Am Schalter ist ein Foto der zuverlässigere Weg.';
+    alert('Hinterlegt: ' + meta.name + ' (' + mb(meta.groesse) + ').' + nachsatz);
+  } catch(err) {
+    /* Ehrlich scheitern. Genau hier lag der alte Fehler. */
+    const voll = err && (err.name === 'QuotaExceededError' || /quota|speicher/i.test(String(err.message || '')));
+    alert(voll
+      ? 'Speicher voll – das Dokument wurde NICHT hinterlegt.\n\nÄltere Dokumente entfernen oder Gerätespeicher freigeben.'
+      : 'Das Dokument wurde NICHT hinterlegt.\n\n' + (err && err.message ? err.message : String(err)));
+  }
 });
+
+/* Der Plus-Knopf oben und der Kasten unten kennen keine Buchung.
+   Sie fragen deshalb zuerst. Reihenfolge der Liste: erst was noch
+   fehlt, dann der Rest. Wer 21 Belege abarbeitet, sieht oben immer
+   das Naechste. */
+function dokZielWaehlen() {
+  const alle = (appData.tickets || []).slice();
+  if (!alle.length) {
+    alert('Es sind noch keine Buchungen erfasst. Erst den Reiseplan importieren.');
+    return;
+  }
+  const offen = alle.filter(t => !dokListe(t.id).length);
+  const fertig = alle.filter(t => dokListe(t.id).length);
+
+  const sheet = document.getElementById('sheet');
+  sheet.innerHTML = '';
+  const titel = document.createElement('div');
+  titel.className = 'sheet-titel';
+  titel.textContent = 'Zu welcher Buchung?';
+  sheet.appendChild(titel);
+  const sub = document.createElement('div');
+  sub.className = 'sheet-sub';
+  sub.textContent = offen.length
+    ? offen.length + ' von ' + alle.length + ' Buchungen haben noch kein Dokument.'
+    : 'Alle ' + alle.length + ' Buchungen haben ein Dokument.';
+  sheet.appendChild(sub);
+
+  const gruppe = (kopf, liste) => {
+    if (!liste.length) return;
+    const h = document.createElement('div');
+    h.className = 'grp-head';
+    h.textContent = kopf;
+    sheet.appendChild(h);
+    liste.forEach(t => {
+      const b = document.createElement('button');
+      b.className = 'btn btn-secondary';
+      b.type = 'button';
+      b.style.cssText = 'width:100%;text-align:left;margin-bottom:6px;';
+      b.innerHTML = '<div>' + esc(t.titel) + '</div>' +
+        (t.info ? '<div class="hint-line">' + esc(t.info) + '</div>' : '');
+      b.addEventListener('click', () => { sheetSchliessen(); dokAufnehmen(t.id); });
+      sheet.appendChild(b);
+    });
+  };
+  gruppe('Noch ohne Dokument', offen);
+  gruppe('Schon hinterlegt', fertig);
+
+  document.getElementById('sheetBg').classList.add('auf');
+  requestAnimationFrame(() => { sheet.classList.add('auf'); sheet.scrollTop = 0; });
+}
+document.getElementById('addTicketBox').addEventListener('click', dokZielWaehlen);
+document.getElementById('addTicketTop').addEventListener('click', dokZielWaehlen);
+document.getElementById('dokVollZu').addEventListener('click', dokVollSchliessen);
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape') dokVollSchliessen(); });
 
 /* ---------- Import/Export ----------
    Zwei getrennte Sicherungen. Der Reiseplan kennt keine Ausgaben,
@@ -2862,7 +3319,112 @@ document.getElementById('importInput').addEventListener('change', function(e) {
 document.getElementById('exportBtn').addEventListener('click', function() {
   const kopie = JSON.parse(JSON.stringify(appData || {}));
   delete kopie.ausgaben;
+  /* Das alte, nie gelesene Feld nicht mitschleppen. Sonst wandert der
+     Muell aus der Zeit vor der Ablage bei jedem Export weiter. */
+  delete kopie.dokumente;
   dateiSchreiben(kopie, 'reiseplan-sicherung');
+});
+
+/* ---------- Sicherung der Dokumente ----------
+   Eigene Datei, nicht im Reiseplan mit drin. Der Reiseplan ist wenige
+   Kilobyte und wird oft von Hand bearbeitet, die Dokumente sind
+   mehrere Megabyte. In einer Datei wuerde beides unbrauchbar: der
+   Plan nicht mehr lesbar, die Dokumente bei jeder Planaenderung neu
+   geschrieben.
+
+   Base64 ist hier richtig, obwohl es die Daten um ein Drittel
+   vergroessert. Der Grund, der gegen localStorage sprach, gilt fuer
+   eine Download-Datei nicht: sie liegt im Dateisystem, nicht in einem
+   5-MB-Fach. Und JSON kann keine Blobs. */
+function blobNachBase64(blob) {
+  return new Promise((ok, fehler) => {
+    const r = new FileReader();
+    r.onload = () => ok(String(r.result).split(',')[1] || '');
+    r.onerror = () => fehler(r.error);
+    r.readAsDataURL(blob);
+  });
+}
+function base64NachBlob(b64, typ) {
+  const roh = atob(b64);
+  const bytes = new Uint8Array(roh.length);
+  for (let i = 0; i < roh.length; i++) bytes[i] = roh.charCodeAt(i);
+  return new Blob([bytes], { type: typ || 'application/octet-stream' });
+}
+
+document.getElementById('exportDokBtn').addEventListener('click', async function() {
+  const alle = [];
+  Object.keys(dokIndex).forEach(k => dokIndex[k].forEach(m => alle.push(m)));
+  if (!alle.length) {
+    alert('Es ist noch kein Dokument hinterlegt. Eine Sicherung wäre leer.');
+    return;
+  }
+  this.disabled = true;
+  try {
+    const raus = [];
+    for (const m of alle) {
+      const b = await dokBlob(m.id);
+      if (!b) continue;
+      raus.push({ id: m.id, ticketId: m.ticketId, name: m.name, typ: m.typ,
+                  groesse: m.groesse, erfasst: m.erfasst, data: await blobNachBase64(b) });
+    }
+    if (raus.length < alle.length) {
+      alert('Achtung: ' + (alle.length - raus.length) + ' von ' + alle.length +
+        ' Einträgen hatten keine Datei mehr. Die Sicherung enthält ' + raus.length + '.');
+    }
+    dateiSchreiben({ art: 'reisebegleiter-dokumente', version: 1, dokumente: raus }, 'dokumente-sicherung');
+  } catch(e) {
+    alert('Sicherung fehlgeschlagen: ' + (e && e.message ? e.message : e));
+  } finally {
+    this.disabled = false;
+  }
+});
+
+document.getElementById('importDokBtn').addEventListener('click', () => document.getElementById('importDokInput').click());
+document.getElementById('importDokInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  this.value = '';
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    let daten;
+    try { daten = jsonLesen(ev.target.result); }
+    catch(err) { alert('Die Datei ist keine gültige JSON-Datei.\n\n' + err.message); return; }
+    const liste = Array.isArray(daten && daten.dokumente) ? daten.dokumente : null;
+    if (!liste || !liste.length) {
+      alert('In der Datei steht keine Dokumentenliste. Erwartet wird eine Sicherung aus "Dokumente sichern".');
+      return;
+    }
+    /* Bestehendes bleibt stehen, gleiche Kennung wird ersetzt. Ein
+       Import darf nie loeschen, was er nicht mitbringt. */
+    let neu = 0, fehler = 0;
+    for (const d of liste) {
+      try {
+        const meta = { id: d.id, ticketId: d.ticketId, name: d.name || 'Dokument',
+                       typ: d.typ || 'application/octet-stream',
+                       groesse: d.groesse || 0, erfasst: d.erfasst || new Date().toISOString() };
+        if (!meta.id || !meta.ticketId || !d.data) { fehler++; continue; }
+        const blob = base64NachBlob(d.data, meta.typ);
+        meta.groesse = blob.size;
+        const db = await dokDb();
+        await new Promise((ok, schief) => {
+          const tx = db.transaction(['dateien', 'meta'], 'readwrite');
+          tx.objectStore('dateien').put({ id: meta.id, blob: blob });
+          tx.objectStore('meta').put(meta);
+          tx.oncomplete = () => ok();
+          tx.onabort = () => schief(tx.error || new Error('Transaktion abgebrochen'));
+          tx.onerror = () => schief(tx.error || new Error('Schreibfehler'));
+        });
+        neu++;
+      } catch(err) { fehler++; }
+    }
+    await dokIndexLaden();
+    renderDokumente();
+    await speicherPruefen();
+    renderSpeicherLage();
+    alert(neu + ' von ' + liste.length + ' Dokumenten übernommen.' +
+      (fehler ? '\n\n' + fehler + ' konnten nicht gelesen oder nicht gespeichert werden.' : ''));
+  };
+  reader.readAsText(file);
 });
 
 document.getElementById('exportSpendBtn').addEventListener('click', function() {
@@ -2951,6 +3513,15 @@ if (gespeichert && gespeichert.datenstand) {
 }
 ausgabenNeuZeichnen();
 notizenLaden();
+
+/* Die Dokumenten-Ablage laedt asynchron, der erste Aufbau der
+   Oberflaeche laeuft synchron. Ohne diesen Nachzug stuende bei einer
+   Buchung mit hinterlegtem Foto beim Start noch "Foto noetig". Der
+   zweite Aufbau kostet nichts und stellt den wahren Stand her. */
+dokIndexLaden()
+  .then(() => { renderDokumente(); return speicherPruefen(); })
+  .then(renderSpeicherLage)
+  .catch(e => console.error('Dokumenten-Ablage beim Start', e));
 
 /* Uhren nachziehen. Alle 30 Sekunden reicht: die Anzeige ist auf
    Minuten genau, und ein Wecker im Sekundentakt kostet nur Akku. */
