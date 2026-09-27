@@ -845,9 +845,9 @@ a { color: var(--teal); }
     <div class="palm-deco"><span class="ic" data-icon="palm" data-size="190"></span></div>
     <div class="hero">
       <div class="greet" id="greetLine">Guten Tag 👋</div>
-      <h1 class="h1">Heute</h1>
+      <h1 class="h1" id="todayHeading">Heute</h1>
       <div class="sub" id="todayDate">–</div>
-      <div class="loc-pill"><span class="ic" data-icon="pin" data-size="15"></span><span id="todayLocText">–</span></div>
+      <div class="loc-pill" id="todayLocPill"><span class="ic" data-icon="pin" data-size="15"></span><span id="todayLocText">–</span></div>
 
       <!-- Zwei Uhren. Beide rechnen über eine feste Zeitzone, nicht
            über die Geräteuhr. Dadurch stimmen sie zu Hause wie vor
@@ -864,6 +864,24 @@ a { color: var(--teal); }
           <div class="uhr-tag" id="uhrZielTag"></div>
         </div>
       </div>
+    </div>
+
+    <!-- Zustand vor, nach und neben der Reise.
+         Ohne diesen Block fiel Heute stillschweigend auf Tag 1 zurueck
+         und behauptete bis zum Abflug, es sei der erste Reisetag. Das
+         sah nicht nach einer Luecke aus, sondern nach einem kaputten
+         Programm, und es machte jeden Blick auf den wichtigsten
+         Bildschirm bis zur Abreise wertlos. -->
+    <div class="card card-gold" id="vorReise" style="display: none;">
+      <div class="card-row">
+        <div class="badge-ic" id="vorReiseIcon"><span class="ic" data-icon="calendar"></span></div>
+        <div style="flex: 1; min-width: 0;">
+          <div class="card-label" id="vorReiseLabel">Bis zum Abflug</div>
+          <div class="card-sub" id="vorReiseSub"></div>
+        </div>
+      </div>
+      <div id="vorReiseListe"></div>
+      <div class="card-sub" id="vorReiseRest" style="display: none;"></div>
     </div>
 
     <!-- Wetter: Beiwerk, nie Voraussetzung. Faellt der Dienst aus,
@@ -1396,23 +1414,186 @@ function hintergrundUmschalten() {
 }
 
 /* ---------- Heute ---------- */
+
+/* Lokales Datum als JJJJ-MM-TT. Bewusst nicht ueber toISOString: das
+   rechnet nach UTC und liefert in der Schweiz zwischen Mitternacht und
+   01:00 beziehungsweise 02:00 noch den Vortag. Der Countdown waere dann
+   um einen Tag zu hoch, und zwar genau in den Nachtstunden vor der
+   Abreise, in denen man packt und nachschaut. */
+function heuteLokal() {
+  const d = new Date();
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+}
+
+/* Ganze Tage zwischen zwei JJJJ-MM-TT. Beide Seiten werden als lokale
+   Mitternacht gelesen, damit die Differenz nicht an Zeitzonen haengt. */
+function tageZwischen(vonStr, bisStr) {
+  const a = new Date(String(vonStr || '') + 'T00:00:00');
+  const b = new Date(String(bisStr || '') + 'T00:00:00');
+  if (isNaN(a.getTime()) || isNaN(b.getTime())) return null;
+  return Math.round((b - a) / 86400000);
+}
+
+function tageWort(n) { return n === 1 ? '1 Tag' : n + ' Tage'; }
+/* Dativ. "in 76 Tage" ist falsch, es heisst "in 76 Tagen". */
+function tageWortDativ(n) { return n === 1 ? '1 Tag' : n + ' Tagen'; }
+
+/* 'vor' | 'waehrend' | 'nach'. Der Zeichenkettenvergleich genuegt,
+   weil JJJJ-MM-TT lexikalisch dieselbe Ordnung hat wie zeitlich. */
+function reiseLage(reise, heute) {
+  if (!reise || !reise.start || !reise.ende) return 'waehrend';
+  if (heute < reise.start) return 'vor';
+  if (heute > reise.ende) return 'nach';
+  return 'waehrend';
+}
+
+/* Was noch fehlt, vollstaendig aus den Unterlagen abgeleitet. Kein
+   neues Datenfeld noetig: jede fehlende Buchung fuehrt ein abDatum,
+   den Tag, ab dem sie gebraucht wird. Getrennt wird nach "bis zum
+   Abflug" und "erst unterwegs", weil nur das Erste jetzt zu erledigen
+   ist. Alles in eine Liste zu werfen hiesse, das Dringende im
+   Nichtdringenden zu verstecken. */
+function faelligZeichnen(reise, heute, listeEl, restEl, subEl) {
+  const fehlend = (appData.tickets || [])
+    .filter(t => t.status === 'fehlt' && t.abDatum)
+    .sort((a, b) => String(a.abDatum).localeCompare(String(b.abDatum)));
+
+  if (!fehlend.length) {
+    subEl.textContent = 'Alle Unterlagen sind hinterlegt.';
+    return;
+  }
+
+  const bisAbflug = fehlend.filter(t => t.abDatum <= reise.start);
+  const unterwegs = fehlend.filter(t => t.abDatum > reise.start);
+
+  subEl.textContent = bisAbflug.length
+    ? bisAbflug.length + ' von ' + fehlend.length + ' fehlenden Unterlagen brauchst du bis zum Abflug'
+    : 'Bis zum Abflug fehlt nichts mehr';
+
+  bisAbflug.forEach(t => {
+    const rest = tageZwischen(heute, t.abDatum);
+    const eintrag = document.createElement('div');
+    eintrag.className = 'doc-eintrag';
+    eintrag.innerHTML =
+      '<div class="doc-eintrag-titel">' + esc(t.titel) + '</div>' +
+      '<div class="doc-eintrag-zeile">' + esc(t.gruppe) + ' · gebraucht ab ' +
+        esc(formatDateFull(t.abDatum)) +
+        (rest !== null && rest > 0 ? ', in ' + tageWortDativ(rest) : '') +
+        (rest === 0 ? ', heute' : '') + '</div>' +
+      '<div class="status-line ' + (rest !== null && rest <= 7 ? 'status-red' : 'status-gold') +
+        '">Fehlt noch</div>';
+    listeEl.appendChild(eintrag);
+  });
+
+  if (unterwegs.length) {
+    restEl.style.display = '';
+    restEl.textContent = unterwegs.length + ' weitere werden erst unterwegs gebraucht, siehe Dokumente.';
+  }
+}
+
+/* Zeichnet Heute, wenn heute kein Reisetag ist. Drei Faelle, und keiner
+   davon darf einen Reisetag vortaeuschen:
+     'vor'     noch nicht abgereist, Countdown und Faelligkeiten
+     'nach'    Reise vorbei, Plan und Belege bleiben abrufbar
+     'luecke'  Datum liegt im Reisezeitraum, fehlt aber in den Daten */
+function renderAusserhalbReise(lage, reise, heute) {
+  ['todayNight', 'todayTransfer', 'todayNotes', 'wxCard'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  const pill = document.getElementById('todayLocPill');
+  if (pill) pill.style.display = 'none';
+
+  const kopf = document.getElementById('todayHeading');
+  const datum = document.getElementById('todayDate');
+  const karte = document.getElementById('vorReise');
+  const listeEl = document.getElementById('vorReiseListe');
+  const restEl = document.getElementById('vorReiseRest');
+  const subEl = document.getElementById('vorReiseSub');
+  const labelEl = document.getElementById('vorReiseLabel');
+  const ikonEl = document.getElementById('vorReiseIcon');
+
+  karte.style.display = '';
+  listeEl.innerHTML = '';
+  restEl.style.display = 'none';
+  restEl.textContent = '';
+  subEl.textContent = '';
+
+  if (lage === 'vor') {
+    /* Kein Sonderfall fuer null Tage: der Abflugtag selbst ist bereits
+       ein Reisetag und wird oben von reiseLage als 'waehrend' geliefert.
+       Hier kommt nur an, wer wirklich noch wartet. */
+    const bis = tageZwischen(heute, reise.start);
+    kopf.textContent = 'Noch ' + tageWort(bis);
+    datum.textContent = 'Abflug ' + formatDateFull(reise.start);
+    labelEl.textContent = 'Bis zum Abflug';
+    ikonEl.innerHTML = icon('calendar', 20);
+    faelligZeichnen(reise, heute, listeEl, restEl, subEl);
+    return;
+  }
+
+  if (lage === 'nach') {
+    const her = tageZwischen(reise.ende, heute);
+    kopf.textContent = 'Reise beendet';
+    datum.textContent = 'Letzter Reisetag ' + formatDateFull(reise.ende) +
+      (her ? ', ' + tageWort(her) + ' her' : '');
+    labelEl.textContent = 'Nach der Reise';
+    ikonEl.innerHTML = icon('plane', 20);
+    subEl.textContent = 'Reiseplan, Belege und erfasste Ausgaben bleiben vollständig abrufbar.';
+    return;
+  }
+
+  /* Datenluecke. Der Tag wird ausdruecklich nicht durch einen anderen
+     ersetzt, sonst entsteht genau die stille Falschanzeige zurueck,
+     die dieser Block behebt. */
+  kopf.textContent = 'Kein Eintrag für heute';
+  datum.textContent = formatDateFull(heute) + ' liegt im Reisezeitraum, fehlt aber in den Reisedaten';
+  labelEl.textContent = 'Datenlücke';
+  ikonEl.innerHTML = icon('warn', 20);
+  subEl.textContent = 'Es wird bewusst kein Ersatztag angezeigt. Reiseplan und Dokumente sind unberührt nutzbar.';
+}
+
 function loadUIFromAppData() {
   if (!appData) return;
   const reise = appData.reise || {};
   const tage = appData.tage || [];
   tage.sort((a, b) => String(a.datum).localeCompare(String(b.datum)));
-  const today = new Date();
-  const startDate = new Date(reise.start);
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = heuteLokal();
+  const lage = reiseLage(reise, todayStr);
 
-  let todayData = tage.find(t => t.datum === todayStr);
-  if (!todayData && tage.length > 0) todayData = tage[0];
+  /* Frueher stand hier: faellt heute nicht in die Reise, nimm Tag 1.
+     Das war die Zeile, die bis zum Abflug einen falschen Reisetag
+     behauptete. Jetzt wird kein Tag ersetzt, sondern der wirkliche
+     Zustand gezeigt. */
+  const todayData = lage === 'waehrend' ? tage.find(t => t.datum === todayStr) : null;
 
   document.getElementById('greetLine').textContent = greeting();
 
+  const vorReiseKarte = document.getElementById('vorReise');
+  if (vorReiseKarte) vorReiseKarte.style.display = 'none';
+
+  if (!todayData) {
+    renderAusserhalbReise(lage === 'waehrend' ? 'luecke' : lage, reise, todayStr);
+    /* Die beiden Uhren bleiben sinnvoll, auch vor der Reise. Als
+       Zielzone dient der erste Tag, der eine andere als die Heimatzone
+       fuehrt. Sind beide gleich, blendet uhrenZeichnen selbst aus. */
+    uhrenZeichnen(tage.find(t => t.tz && t.tz !== reise.heimatZeitzone) || tage[0]);
+  }
+
   if (todayData) {
-    const dayNum = Math.floor((new Date(todayData.datum) - startDate) / (1000 * 60 * 60 * 24)) + 1;
-    const tagInfo = isNaN(dayNum) ? '' : ' · Tag ' + dayNum + ' von ' + tage.length;
+    /* Zurueckstellen, was renderAusserhalbReise ausgeblendet haben kann.
+       Ohne das blieb die Hotelkarte leer, sobald die App den Wechsel
+       vom Vorabend zum ersten Reisetag im laufenden Betrieb erlebt.
+       Die Wetterkarte ist hier absichtlich nicht dabei, die schaltet
+       wetterLaden beziehungsweise wxZeigen selbst. */
+    document.getElementById('todayHeading').textContent = 'Heute';
+    const locPill = document.getElementById('todayLocPill');
+    if (locPill) locPill.style.display = '';
+    document.getElementById('todayNight').style.display = '';
+    const versatz = tageZwischen(reise.start, todayData.datum);
+    const tagInfo = versatz === null ? '' : ' · Tag ' + (versatz + 1) + ' von ' + tage.length;
     document.getElementById('todayDate').textContent = formatDateFull(todayData.datum) + tagInfo;
     document.getElementById('todayLocText').textContent = todayData.ort || '–';
 
@@ -1566,7 +1747,7 @@ function renderDayList() {
   const list = document.getElementById('dayList');
   list.innerHTML = '';
   if (!appData.tage) return;
-  const heute = new Date().toISOString().split('T')[0];
+  const heute = heuteLokal();
 
   ortsGruppen().forEach((g, gi) => {
     const schluessel = gi + '|' + g.ort + '|' + g.hotel;
@@ -2178,6 +2359,14 @@ function dokVollSchliessen() {
 }
 
 function renderDokumente() {
+  /* Wettlauf beim Start: Die Dokumenten-Ablage wird aus IndexedDB
+     geladen, die Reisedaten per fetch. Gewinnt die Ablage, lief diese
+     Funktion auf appData === null und warf einen TypeError, der nur als
+     "Dokumenten-Ablage beim Start" im Protokoll landete. Sporadisch,
+     also genau die Art Fehler, die man erst am Flughafen bemerkt.
+     Folge war keine kaputte Ansicht, aber die Speicherzeile blieb
+     stehen, weil die ganze Kette danach abbrach. */
+  if (!appData) return;
   const tiles = document.getElementById('docTiles');
   const rest = document.getElementById('ticketsList');
   dokVorschauFreigeben();
