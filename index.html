@@ -789,6 +789,8 @@ body.foto-an .palm-deco, body.foto-an .hero-bg { display: none; }
 }
 .notfall-zeile:last-child { border-bottom: none; }
 .notfall-nr { color: var(--muted); font-size: var(--fs-sub); }
+.hinweis-zeile { margin-bottom: 8px; }
+.hinweis-zeile:last-child { margin-bottom: 0; }
 
 /* Navigation */
 .nav {
@@ -971,7 +973,7 @@ a { color: var(--teal); }
     <div class="topbar">
       <div style="flex: 1;">
         <h1 class="h1">Dokumente</h1>
-        <div class="topbar-sub">Alles offline gespeichert</div>
+        <div class="topbar-sub" id="dokTopSub">Hinterlegte Dateien liegen offline auf dem Gerät</div>
       </div>
       <button class="icon-btn" id="addTicketTop"><span class="ic" data-icon="plus"></span></button>
     </div>
@@ -1684,9 +1686,13 @@ function loadUIFromAppData() {
       document.getElementById('todayTransfer').style.display = 'none';
     }
 
+    /* Frueher wurde nur hinweise[0] gezeigt. Tage mit zwei oder drei
+       Warnungen verloren den Rest lautlos, und ausgerechnet der 21.12.
+       hat fuenf. Ein unsichtbarer Hinweis ist schlimmer als keiner. */
     if (todayData.hinweise && todayData.hinweise.length > 0) {
       document.getElementById('todayNotes').style.display = '';
-      document.getElementById('notesText').textContent = todayData.hinweise[0];
+      document.getElementById('notesText').innerHTML =
+        todayData.hinweise.map(h => '<div class="hinweis-zeile">' + esc(h) + '</div>').join('');
     } else {
       document.getElementById('todayNotes').style.display = 'none';
     }
@@ -1836,11 +1842,16 @@ function openDay(idx) {
   document.getElementById('daySub').textContent = date.getDate() + '. ' + MONTHS[date.getMonth()] + ' · ' + day.ort;
 
   const items = [];
+  /* Der Abfahrtsort eines Transfers ist der Ort, an dem man um sechs
+     Uhr morgens steht und nicht weiss, wo der Pier ist. Steht er in
+     den Daten, bekommt die Zeile einen Routen-Knopf. */
   if (day.transfer) {
-    items.push({ zeit: day.transfer.zeit, titel: day.transfer.typ, sub: day.transfer.detail, cls: 'gold', ic: transferIconName(day.transfer.typ) });
+    items.push({ zeit: day.transfer.zeit, titel: day.transfer.typ, sub: day.transfer.detail, cls: 'gold', ic: transferIconName(day.transfer.typ),
+                 maps: day.transfer.ort ? mapsUrl({ adresse: day.transfer.ort }) : '' });
   }
   if (day.hotel && day.hotel.name && day.hotel.checkin) {
-    items.push({ zeit: day.hotel.checkin, titel: 'Check-in · ' + day.hotel.name, sub: day.hotel.adresse || '', cls: 'teal', ic: 'bed', foto: day.hotel.foto || null });
+    items.push({ zeit: day.hotel.checkin, titel: 'Check-in · ' + day.hotel.name, sub: day.hotel.adresse || '', cls: 'teal', ic: 'bed', foto: day.hotel.foto || null,
+                 maps: mapsUrl(day.hotel) });
   }
   (day.programm || []).forEach(p => {
     if (typeof p === 'string') {
@@ -1870,6 +1881,15 @@ function openDay(idx) {
         (it.sub ? '<div class="tl-sub">' + esc(it.sub) + '</div>' : '') +
       '</div>' +
       (it.foto && String(it.foto).indexOf('data:image/') === 0 ? '<img src="' + esc(it.foto) + '" alt="" style="width: 54px; height: 54px; object-fit: cover; border-radius: 10px; flex: 0 0 54px;">' : '');
+    if (it.maps) {
+      const b = document.createElement('button');
+      b.className = 'btn btn-inline';
+      b.type = 'button';
+      b.style.marginTop = 'var(--sp-s)';
+      b.innerHTML = icon('map', 16) + 'Route';
+      b.addEventListener('click', () => window.open(it.maps, '_blank'));
+      div.querySelector('div[style*="flex: 1"]').appendChild(b);
+    }
     tl.appendChild(div);
   });
   showScreen('screenDay', 'screenPlan');
@@ -2261,6 +2281,20 @@ function ticketEintrag(t) {
   knopf.innerHTML = icon('plus', 16) + (dokus.length ? 'Weiteres hinterlegen' : 'Foto oder PDF hinterlegen');
   knopf.addEventListener('click', () => dokAufnehmen(t.id));
   div.appendChild(knopf);
+
+  /* Piers und Flughaefen haben keine Koordinaten in den Daten, wohl
+     aber einen eindeutigen Namen. Google Maps findet "Ao Thalane Pier,
+     Krabi" zuverlaessig. Ein erfundener Zahlenwert waere von einer
+     Tatsache nicht zu unterscheiden, ein Name ist ehrlich. */
+  if (t.ort) {
+    const route = document.createElement('button');
+    route.className = 'btn btn-inline';
+    route.type = 'button';
+    route.style.marginTop = 'var(--sp-s)';
+    route.innerHTML = icon('map', 16) + 'Route zum Abfahrtsort';
+    route.addEventListener('click', () => window.open(mapsUrl({ adresse: t.ort }), '_blank'));
+    div.appendChild(route);
+  }
   return div;
 }
 
@@ -2374,16 +2408,20 @@ function renderDokumente() {
   rest.innerHTML = '';
 
   DOC_KAT.forEach(kat => {
-    const anzahl = docInhalt(kat.id).length;
+    /* Frueher zaehlte die Kachel Zeilen, nicht Dateien. "Boote und
+       Faehren, 7 Dokumente" stand da, obwohl keine einzige Datei
+       hinterlegt war. Jetzt steht die Wahrheit: x von y vorhanden. */
+    const buchungen = kat.id === 'hotel'
+      ? (appData.tickets || []).filter(t => ticketKat(t.gruppe) === 'hotel')
+      : docInhalt(kat.id);
+    const gesamt = buchungen.length;
+    const mitDok = buchungen.filter(t => dokListe(t.id).length > 0).length;
     const tile = document.createElement('div');
-    tile.className = 'doc-tile ' + kat.cls + (anzahl ? '' : ' leer');
+    tile.className = 'doc-tile ' + kat.cls + (mitDok ? '' : ' leer');
     tile.dataset.kat = kat.id;
-    const wort = kat.id === 'hotel'
-      ? (anzahl === 1 ? 'Unterkunft' : 'Unterkünfte')
-      : (anzahl === 1 ? 'Dokument' : 'Dokumente');
     tile.innerHTML =
       '<div class="t-name">' + esc(kat.name) + '</div>' +
-      '<div class="t-count">' + (anzahl ? anzahl + ' ' + wort : 'noch nichts') + '</div>' +
+      '<div class="t-count">' + (gesamt ? mitDok + ' von ' + gesamt + ' vorhanden' : 'noch nichts') + '</div>' +
       '<div class="art">' + icon(kat.ic, 96) + '</div>';
     tile.addEventListener('click', () => {
       offeneKachel = offeneKachel === kat.id ? null : kat.id;
@@ -2460,29 +2498,15 @@ function renderMap() {
       x: PAD + ((lon - minLon) / dLon) * (W - 2 * PAD),
       y: PAD + ((maxLat - lat) / dLat) * (H - 2 * PAD)
     });
-    pts = stations.map(s => {
-      if (s.lat === null) return { x: null, y: null, label: s.label };
+    /* Stationen ohne Koordinate wurden frueher zwischen ihre Nachbarn
+       interpoliert. Auf einer Karte ist eine Schaetzung von einer
+       Tatsache nicht zu unterscheiden, und die beiden betroffenen
+       Stationen sind ohnehin Flugstrecken, keine Orte. Sie werden
+       jetzt weggelassen. */
+    pts = withGps.map(s => {
       const q = project(s.lat, s.lon);
       return { x: q.x, y: q.y, label: s.label };
     });
-    for (let i = 0; i < pts.length; i++) {
-      if (pts[i].x !== null) continue;
-      let p = i - 1; while (p >= 0 && pts[p].x === null) p--;
-      let n = i + 1; while (n < pts.length && pts[n].x === null) n++;
-      if (p >= 0 && n < pts.length) {
-        const t = (i - p) / (n - p);
-        pts[i].x = pts[p].x + (pts[n].x - pts[p].x) * t;
-        pts[i].y = pts[p].y + (pts[n].y - pts[p].y) * t;
-      } else if (p >= 0) {
-        pts[i].x = Math.min(Math.max(pts[p].x + 40, PAD), W - PAD);
-        pts[i].y = Math.max(pts[p].y - 55, 24);
-      } else if (n < pts.length) {
-        pts[i].x = Math.min(Math.max(pts[n].x - 40, PAD), W - PAD);
-        pts[i].y = Math.max(pts[n].y - 55, 24);
-      } else {
-        pts[i].x = W / 2; pts[i].y = PAD + i * 60;
-      }
-    }
   } else {
     pts = stations.map((s, i) => ({
       x: W / 2 + (i % 2 === 0 ? -50 : 50),
@@ -3274,10 +3298,15 @@ document.getElementById('notAmbulanz').addEventListener('click', () => window.lo
 function renderNotfall() {
   const box = document.getElementById('notfallListe');
   const n = (appData && appData.notfall) || {};
+  /* Rettungsdienst und DAN standen in den Daten und wurden hier
+     ignoriert. Beim Tauchen ist DAN die Nummer, die zaehlt: eine
+     Dekompressionskammer findet man nicht ueber 191. */
   const zeilen = [
     { label: 'Notruf allgemein', nr: n.notruf || '191' },
+    { label: 'Rettungsdienst', nr: n.ambulanz || '1669' },
     { label: 'Feuerwehr', nr: n.feuerwehr || '199' },
-    { label: 'Schweizer Botschaft Bangkok', nr: n.botschaft || '' }
+    { label: 'Schweizer Botschaft Bangkok', nr: n.botschaft || '' },
+    { label: 'Divers Alert Network, 24 h', nr: n.dan || '' }
   ].filter(z => z.nr);
   box.innerHTML = zeilen.map(z =>
     '<a class="notfall-zeile" href="tel:' + esc(String(z.nr).replace(/\s/g, '')) + '">' +
