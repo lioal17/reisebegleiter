@@ -1457,6 +1457,38 @@ function reiseLage(reise, heute) {
    Abflug" und "erst unterwegs", weil nur das Erste jetzt zu erledigen
    ist. Alles in eine Liste zu werfen hiesse, das Dringende im
    Nichtdringenden zu verstecken. */
+/* Termine mit Frist sind keine Unterlagen und gehoeren deshalb nicht in
+   die Faelligkeitsliste oben. Es sind Geldtermine und Stornofristen:
+   Dinge, die von selbst passieren und nur dann schieflaufen, wenn das
+   Konto leer ist. Die teuersten davon liegen mitten in der Reise. */
+function fristenZeichnen(heute, listeEl) {
+  const fristen = (appData.fristen || [])
+    .filter(f => f && f.datum && f.titel)
+    .sort((a, b) => String(a.datum).localeCompare(String(b.datum)));
+  if (!fristen.length) return;
+
+  const kopf = document.createElement('div');
+  kopf.className = 'grp-head';
+  kopf.textContent = 'Termine mit Frist';
+  listeEl.appendChild(kopf);
+
+  fristen.forEach(f => {
+    const rest = tageZwischen(heute, f.datum);
+    const vorbei = rest !== null && rest < 0;
+    const eintrag = document.createElement('div');
+    eintrag.className = 'doc-eintrag';
+    eintrag.innerHTML =
+      '<div class="doc-eintrag-titel">' + esc(f.titel) + '</div>' +
+      '<div class="doc-eintrag-zeile">' + esc(formatDateFull(f.datum)) +
+        (rest !== null && rest > 0 ? ', in ' + tageWortDativ(rest) : '') +
+        (rest === 0 ? ', heute' : '') +
+        (f.detail ? ' · ' + esc(f.detail) : '') + '</div>' +
+      '<div class="status-line ' + (!vorbei && rest !== null && rest <= 14 ? 'status-red' : 'status-gold') + '">' +
+        (vorbei ? 'Datum vorbei' : 'Offen') + '</div>';
+    listeEl.appendChild(eintrag);
+  });
+}
+
 function faelligZeichnen(reise, heute, listeEl, restEl, subEl) {
   const fehlend = (appData.tickets || [])
     .filter(t => t.status === 'fehlt' && t.abDatum)
@@ -1532,6 +1564,7 @@ function renderAusserhalbReise(lage, reise, heute) {
     datum.textContent = 'Abflug ' + formatDateFull(reise.start);
     labelEl.textContent = 'Bis zum Abflug';
     ikonEl.innerHTML = icon('calendar', 20);
+    fristenZeichnen(heute, listeEl);
     faelligZeichnen(reise, heute, listeEl, restEl, subEl);
     return;
   }
@@ -3307,7 +3340,8 @@ function renderNotfall() {
     { label: 'Feuerwehr', nr: n.feuerwehr || '199' },
     { label: 'Schweizer Botschaft Bangkok', nr: n.botschaft || '' },
     { label: 'Divers Alert Network, 24 h', nr: n.dan || '' }
-  ].filter(z => z.nr);
+  ].concat(Array.isArray(n.weitere) ? n.weitere.filter(z => z && z.nr) : [])
+   .filter(z => z.nr);
   box.innerHTML = zeilen.map(z =>
     '<a class="notfall-zeile" href="tel:' + esc(String(z.nr).replace(/\s/g, '')) + '">' +
       '<span>' + esc(z.label) + '</span><span class="notfall-nr">' + esc(z.nr) + '</span>' +
