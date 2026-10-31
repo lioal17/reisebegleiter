@@ -1879,7 +1879,16 @@ function openDay(idx) {
      Uhr morgens steht und nicht weiss, wo der Pier ist. Steht er in
      den Daten, bekommt die Zeile einen Routen-Knopf. */
   if (day.transfer) {
-    items.push({ zeit: day.transfer.zeit, titel: day.transfer.typ, sub: day.transfer.detail, cls: 'gold', ic: transferIconName(day.transfer.typ),
+    /* Der Abfahrtsort stand bis hierher ausschliesslich im
+       Routen-Knopf. Ohne Netz oeffnet sich keine Karte, und damit war
+       der Name des Piers nirgends lesbar, obwohl er in den Daten
+       steht. Jetzt steht er als Text da, der Knopf bleibt daneben. */
+    const tDetail = String(day.transfer.detail || '').trim();
+    const tOrt = String(day.transfer.ort || '').trim();
+    const tSub = tOrt && !tDetail.includes(tOrt)
+      ? (tDetail ? tDetail + ' · ab ' + tOrt : 'ab ' + tOrt)
+      : tDetail;
+    items.push({ zeit: day.transfer.zeit, titel: day.transfer.typ, sub: tSub, cls: 'gold', ic: transferIconName(day.transfer.typ),
                  maps: day.transfer.ort ? mapsUrl({ adresse: day.transfer.ort }) : '' });
   }
   if (day.hotel && day.hotel.name && day.hotel.checkin) {
@@ -2111,6 +2120,16 @@ function mb(bytes) {
 function renderSpeicherLage() {
   const el = document.getElementById('speicherZeile');
   if (!el) return;
+  /* Bei einer nicht lesbaren Ablage stand hier "0 Dokumente
+     hinterlegt". Das ist dieselbe Luege wie ein Knopf, der Erfolg
+     meldet und nichts speichert, nur in der anderen Richtung: Die
+     Dateien koennen sehr wohl da sein, nur kommt die App nicht an den
+     Index. Eine Null, die man fuer eine Messung haelt, ist schlimmer
+     als eine Fehlermeldung. */
+  if (dokAblageDefekt) {
+    el.textContent = 'ACHTUNG: Die Dokumenten-Ablage ist nicht lesbar. Hinterlegte Dateien werden nicht angezeigt, auch wenn sie vorhanden sind.';
+    return;
+  }
   const s = speicherLage;
   if (!s || !s.moeglich) { el.textContent = 'Speicherzustand kann dieser Browser nicht melden.'; return; }
   const anzahl = Object.values(dokIndex).reduce((n, l) => n + l.length, 0);
@@ -2484,6 +2503,45 @@ function renderDokumente() {
       karte.className = 'card';
       karte.style.marginBottom = '10px';
       karte.appendChild(ticketEintrag(t));
+      rest.appendChild(karte);
+    });
+  }
+
+  /* Dokumente, deren Buchung es im Reiseplan nicht mehr gibt.
+     Der Abschnitt "Nicht zugeordnet" darueber geht die Buchungen
+     durch, nicht die Ablage. Eine Datei, deren Ticket-ID in keiner
+     Buchung mehr vorkommt, war damit in keiner Kachel und in keiner
+     Liste zu sehen, lag aber weiter in IndexedDB. Sie fiel lautlos aus
+     der Anzeige, und das ist genau das Muster, das diese App schon
+     zweimal hatte.
+
+     Wie es dazu kommt: ein neuer Reiseplan vergibt oder entfernt eine
+     Ticket-ID, oder eine Sicherung der Ablage wird vor dem passenden
+     Reiseplan eingelesen. Letzteres ist nicht die Ausnahme, sondern
+     die normale Reihenfolge beim Wiederherstellen auf einem neuen
+     Geraet. */
+  const bekannteIds = new Set((appData.tickets || []).map(t => String(t.id)));
+  const waisen = Object.keys(dokIndex)
+    .filter(id => dokIndex[id] && dokIndex[id].length && !bekannteIds.has(String(id)));
+  if (waisen.length) {
+    const kopf = document.createElement('div');
+    kopf.className = 'grp-head';
+    kopf.textContent = 'In der Ablage, aber nicht im Reiseplan';
+    rest.appendChild(kopf);
+    waisen.forEach(id => {
+      const dokus = dokIndex[id];
+      const karte = document.createElement('div');
+      karte.className = 'card';
+      karte.style.marginBottom = '10px';
+      const titel = document.createElement('div');
+      titel.className = 'doc-eintrag-titel';
+      titel.textContent = dokus.length + (dokus.length === 1 ? ' Datei' : ' Dateien') + ' ohne Buchung';
+      karte.appendChild(titel);
+      const zeile = document.createElement('div');
+      zeile.className = 'doc-eintrag-zeile';
+      zeile.textContent = 'Die Buchung "' + id + '" steht nicht im geladenen Reiseplan. Die Dateien sind hier weiterhin erreichbar.';
+      karte.appendChild(zeile);
+      karte.appendChild(dokReihe({ id: id, titel: titel.textContent }, dokus));
       rest.appendChild(karte);
     });
   }
@@ -2897,9 +2955,20 @@ function ausgabenLaden() {
   if (JSON.stringify(ausgaben) !== vorher) ausgabenSpeichern();
   if (appData) delete appData.ausgaben;
 }
+/* Gibt zurueck, ob wirklich geschrieben wurde. Vorher verschluckte
+   diese Funktion den Fehlschlag: Sie zeigte den Hinweis, der Aufrufer
+   lief weiter, leerte das Eingabefeld und meldete "Gebucht". Beim
+   naechsten Start fehlte der Eintrag. Wer den Hinweis wegklickt, hat
+   danach keinen Anlass mehr zu zweifeln. */
 function ausgabenSpeichern() {
-  try { localStorage.setItem(SPEND_KEY, JSON.stringify(ausgaben)); }
-  catch(e) { alert('Ausgabe konnte nicht gespeichert werden, der Speicher ist voll.'); }
+  try {
+    localStorage.setItem(SPEND_KEY, JSON.stringify(ausgaben));
+    return true;
+  } catch(e) {
+    alert('Die Ausgabe wurde NICHT gespeichert, der Speicher ist voll.\n\n' +
+      'Unter Werkzeuge, Datensicherung lassen sich Ausgaben sichern und danach Platz schaffen.');
+    return false;
+  }
 }
 function chfAus(thb) { return Math.ceil(thb / KURS * 100) / 100; }
 function updateSpendTotal() {
@@ -2931,8 +3000,14 @@ function renderCatGrid() {
         knopf: 'Buchen',
         speichern: obj => {
           ausgaben.push(obj);
+          if (!ausgabenSpeichern()) {
+            /* Zurueckrollen, damit die Anzeige nicht einen Eintrag
+               fuehrt, den der Speicher nicht hat. */
+            ausgaben.pop();
+            ausgabenNeuZeichnen();
+            return;
+          }
           letzteBuchung = obj;
-          ausgabenSpeichern();
           feldLeeren();
           ausgabenNeuZeichnen();
         }
@@ -2959,8 +3034,15 @@ function buchen(kategorie, btn) {
   if (betrag <= 0) { feld.focus(); return; }
   const eintrag = { betrag: betrag, kategorie: kategorie, notiz: '', ts: Date.now() };
   ausgaben.push(eintrag);
+  if (!ausgabenSpeichern()) {
+    /* Kein "Gebucht", kein geleertes Feld, keine Vibration: Der
+       Betrag steht noch da und kann nach dem Aufraeumen erneut
+       gebucht werden. */
+    ausgaben.pop();
+    ausgabenNeuZeichnen();
+    return;
+  }
   letzteBuchung = eintrag;
-  ausgabenSpeichern();
   feldLeeren();
   ausgabenNeuZeichnen();
   if (btn) { btn.classList.add('gebucht'); setTimeout(() => btn.classList.remove('gebucht'), 450); }
@@ -3185,7 +3267,9 @@ function ausgabeBlatt(o) {
   betragFeld.className = 'spend-input';
   betragFeld.placeholder = '0';
   betragFeld.autocomplete = 'off';
-  betragFeld.value = o.betrag > 0 ? String(Math.round(o.betrag)) : '';
+  /* Ohne Math.round: Wer eine Ausgabe nur oeffnet, um die Notiz zu
+     aendern, soll den Betrag unveraendert zurueckspeichern. */
+  betragFeld.value = o.betrag > 0 ? String(o.betrag) : '';
   const betragChf = document.createElement('div');
   betragChf.className = 'spend-cur';
   const chfWert = document.createElement('div');
@@ -3541,16 +3625,80 @@ document.getElementById('importInput').addEventListener('change', function(e) {
       return;
     }
 
+    /* Jeden Tag einzeln pruefen, nicht nur die Liste als Ganzes.
+       Vorher genuegte ein Array mit mindestens einem Element. Ein
+       Eintrag null oder ein Tag ohne brauchbares Datum kam damit
+       durch, wurde gespeichert, und erst danach scheiterte der
+       Aufbau der Anzeige. Der kaputte Plan lag dann aber schon in
+       localStorage und wurde beim naechsten Start erneut geladen,
+       diesmal ohne jede Auffangstelle: Die App war von aussen nicht
+       mehr zu retten. Deshalb wird vor dem Schreiben geprueft. */
+    const schlechteTage = [];
+    d.tage.forEach((t, i) => {
+      if (!t || typeof t !== 'object') { schlechteTage.push('Tag ' + (i + 1) + ': kein Eintrag'); return; }
+      const roh = String(t.datum || '');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(roh)) {
+        schlechteTage.push('Tag ' + (i + 1) + ': Datum "' + roh + '"');
+        return;
+      }
+      /* Rueckvergleich, nicht nur isNaN. Der 30. Februar ist fuer
+         new Date kein Fehler, sondern rutscht auf den 2. Maerz.
+         Ein Tippfehler wuerde damit stillschweigend zu einem anderen
+         Datum, und bei einer Faehre um 07:30 ist das keine
+         Schoenheitsfrage. */
+      const d0 = new Date(roh + 'T00:00:00');
+      const zurueck = isNaN(d0.getTime()) ? '' :
+        d0.getFullYear() + '-' +
+        String(d0.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d0.getDate()).padStart(2, '0');
+      if (zurueck !== roh) {
+        schlechteTage.push('Tag ' + (i + 1) + ': Datum "' + roh + '" gibt es nicht');
+      }
+    });
+    if (schlechteTage.length) {
+      alert('Der Reiseplan wurde NICHT übernommen.\n\n' +
+        schlechteTage.length + ' von ' + d.tage.length + ' Tagen haben kein brauchbares Datum. ' +
+        'Erwartet wird JJJJ-MM-TT.\n\n' +
+        schlechteTage.slice(0, 8).join('\n') +
+        (schlechteTage.length > 8 ? '\n... und ' + (schlechteTage.length - 8) + ' weitere' : '') +
+        '\n\nEs gilt weiterhin der bisherige Reiseplan.');
+      return;
+    }
+
     if (!d.reise) d.reise = {};
     /* Ausgaben aus einer Reiseplan-Datei werden bewusst verworfen.
        Sie haben ihre eigene Sicherung. */
     const hatteAusgaben = Array.isArray(d.ausgaben) && d.ausgaben.length > 0;
     delete d.ausgaben;
+
+    /* Ein importierter Plan ohne "datenstand" wurde von der Weiche am
+       Dateiende als Demo-Rest eingeordnet und beim naechsten Start
+       stillschweigend durch die Datendatei ersetzt. Ein Import ist
+       aber eine ausdrueckliche Handlung, kein Demo-Rest. Bringt die
+       Datei keine Kennzeichnung mit, wird sie hier gesetzt. */
+    if (!d.datenstand) {
+      d.datenstand = { quelle: 'Import in der App', stand: heuteLokal() };
+    }
+
+    /* Erst schreiben, dann uebernehmen. Vorher lief der Code nach
+       einem gescheiterten localStorage.setItem einfach weiter und
+       meldete am Ende "Reiseplan importiert: x Tage". Beim naechsten
+       Start war der alte Plan wieder da. Eine Erfolgsmeldung, die man
+       am Flughafen glaubt, ist schlimmer als ein Fehler. */
+    const vorherigerStand = localStorage.getItem('reisebegleiter_data');
+    const vorherigeDaten = appData;
     appData = d;
     try {
       localStorage.setItem('reisebegleiter_data', JSON.stringify(appData));
     } catch(err) {
-      alert('Import geladen, aber Speichern fehlgeschlagen (Speicher evtl. voll): ' + err.message);
+      appData = vorherigeDaten;
+      if (vorherigerStand !== null) {
+        try { localStorage.setItem('reisebegleiter_data', vorherigerStand); } catch(e2) {}
+      }
+      alert('Der Reiseplan wurde NICHT übernommen.\n\n' +
+        'Das Speichern ist fehlgeschlagen, meist weil der Speicher voll ist:\n' + err.message +
+        '\n\nEs gilt weiterhin der bisherige Reiseplan.');
+      return;
     }
     try {
       loadUIFromAppData();
@@ -3776,9 +3924,29 @@ dokIndexLaden()
   .catch(e => console.error('Dokumenten-Ablage beim Start', e));
 
 /* Uhren nachziehen. Alle 30 Sekunden reicht: die Anzeige ist auf
-   Minuten genau, und ein Wecker im Sekundentakt kostet nur Akku. */
-setInterval(() => uhrenZeichnen(), 30000);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) uhrenZeichnen(); });
+   Minuten genau, und ein Wecker im Sekundentakt kostet nur Akku.
+
+   Dazu der Datumswechsel. Vorher wurde beim Zurueckholen aus dem
+   Hintergrund nur die Uhr neu gezeichnet, nie der Reisetag. Wer die
+   App am Vorabend offen liess und sie am Morgen nach vorn holte, sah
+   die Uhrzeit von heute und Unterkunft, Transfer und Hinweise von
+   gestern. Eine installierte PWA wird genau so benutzt, sie wird
+   selten neu geladen. Auf 28 Reisetagen passiert das zwangslaeufig,
+   und zwar in der Stunde, fuer die diese App gebaut ist. */
+let angezeigterTag = heuteLokal();
+function tagNachziehen() {
+  const jetzt = heuteLokal();
+  if (jetzt === angezeigterTag) return;
+  angezeigterTag = jetzt;
+  loadUIFromAppData();
+  renderDokumente();
+}
+setInterval(() => { tagNachziehen(); uhrenZeichnen(); }, 30000);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  tagNachziehen();
+  uhrenZeichnen();
+});
 
 /* PWA-Schnellzugriff: langes Druecken aufs App-Icon fuehrt direkt
    hierher. Die Ausgabe-Eingabe bekommt sofort den Fokus, damit die
