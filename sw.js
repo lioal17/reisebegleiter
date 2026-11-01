@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reisebegleiter-v13';
+const CACHE_NAME = 'reisebegleiter-v14';
 
 /* PFLICHT ist das Programm selbst. Schlaegt eine dieser Dateien beim
    Installieren fehl, bricht die Installation ab und der bisherige,

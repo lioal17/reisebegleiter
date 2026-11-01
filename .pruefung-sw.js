@@ -11,6 +11,11 @@ const QUELLE = path.join(__dirname, 'sw.js');
 const ORIGIN = 'https://beispiel.github.io';
 const BASE = ORIGIN + '/reisebegleiter/';
 const ECHTES_SET_TIMEOUT = setTimeout;
+/* Cache-Name aus sw.js lesen, nicht fest verdrahten. Sonst scheitert
+   die Pruefung bei jedem Versionssprung, und zwar aus dem falschen
+   Grund. */
+const AKTUELLER_CACHE = (fs.readFileSync(QUELLE, 'utf8').match(/CACHE_NAME = '([^']+)'/) || [])[1];
+const ALTER_CACHE = 'reisebegleiter-alt';
 
 function umgebung(gecacht, netz, sofortAbbrechen) {
   class Resp {
@@ -65,7 +70,7 @@ function umgebung(gecacht, netz, sofortAbbrechen) {
   Object.keys(gecacht).forEach(u => {
     v13.set(new URL(u, BASE).href, new Resp(gecacht[u], { url: new URL(u, BASE).href }));
   });
-  speicher.set('reisebegleiter-v13', v13);
+  speicher.set(AKTUELLER_CACHE, v13);
 
   const caches = {
     open: async name => {
@@ -267,7 +272,7 @@ const faelle = [
     /* Ein alter, vollstaendiger Cache aus der Vorgaengerfassung. */
     const alt = new Map();
     alt.set(BASE + 'index.html', new u.Resp('ALTE APP', { url: BASE + 'index.html' }));
-    u.speicher.set('reisebegleiter-v12', alt);
+    u.speicher.set(ALTER_CACHE, alt);
 
     let gescheitert = false;
     try { await u.ereignis('install'); } catch(e) { gescheitert = true; }
@@ -282,18 +287,18 @@ const faelle = [
     '10. Update bricht ab: alter Speicher bleibt unversehrt',
     pflichtFehlt,
     (u, gescheitert) => gescheitert &&
-      !u.speicher.has('reisebegleiter-v13') &&
-      u.speicher.has('reisebegleiter-v12') &&
-      u.speicher.get('reisebegleiter-v12').get(BASE + 'index.html').body === 'ALTE APP'
+      !u.speicher.has(AKTUELLER_CACHE) &&
+      u.speicher.has(ALTER_CACHE) &&
+      u.speicher.get(ALTER_CACHE).get(BASE + 'index.html').body === 'ALTE APP'
   );
 
   await installPruefung(
     '11. Update gelingt: neuer Speicher aktiv, alter geraeumt',
     allesDa,
     (u, gescheitert) => !gescheitert &&
-      u.speicher.has('reisebegleiter-v13') &&
-      !u.speicher.has('reisebegleiter-v12') &&
-      u.speicher.get('reisebegleiter-v13').get(BASE + 'index.html').body === 'NEU'
+      u.speicher.has(AKTUELLER_CACHE) &&
+      !u.speicher.has(ALTER_CACHE) &&
+      u.speicher.get(AKTUELLER_CACHE).get(BASE + 'index.html').body === 'NEU'
   );
 
   console.log('\n' + gut + ' bestanden, ' + schlecht + ' gescheitert.');

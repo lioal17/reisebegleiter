@@ -1,7 +1,7 @@
 {
-  "name": "Reisebegleiter – Thailand 2026/27",
-  "short_name": "Reisebegleiter",
-  "description": "Offline-Reisebegleiter: Heute, Reiseplan, Tickets, Werkzeuge – alles lokal auf dem Handy.",
+  "name": "Travel-Mate, Thailand 2026/27",
+  "short_name": "Travel-Mate",
+  "description": "Offline-Reisebegleiter: Heute, Reiseplan, Tickets, Werkzeuge, alles lokal auf dem Handy.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
