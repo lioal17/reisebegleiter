@@ -1889,7 +1889,7 @@ function openDay(idx) {
       ? (tDetail ? tDetail + ' · ab ' + tOrt : 'ab ' + tOrt)
       : tDetail;
     items.push({ zeit: day.transfer.zeit, titel: day.transfer.typ, sub: tSub, cls: 'gold', ic: transferIconName(day.transfer.typ),
-                 maps: day.transfer.ort ? mapsUrl({ adresse: day.transfer.ort }) : '' });
+                 maps: day.transfer.ort ? mapsUrl({ gps: day.transfer.gps, adresse: day.transfer.ort }) : '' });
   }
   if (day.hotel && day.hotel.name && day.hotel.checkin) {
     items.push({ zeit: day.hotel.checkin, titel: 'Check-in · ' + day.hotel.name, sub: day.hotel.adresse || '', cls: 'teal', ic: 'bed', foto: day.hotel.foto || null,
@@ -2339,12 +2339,17 @@ function ticketEintrag(t) {
      Krabi" zuverlaessig. Ein erfundener Zahlenwert waere von einer
      Tatsache nicht zu unterscheiden, ein Name ist ehrlich. */
   if (t.ort) {
+    /* Seit 01.11.2026 fuehren die Abfahrtsorte, bei denen eine
+       geprueft Koordinate vorliegt, ein Feld gps. mapsUrl bevorzugt
+       sie vor dem Namen. Der Unterschied zaehlt offline: Eine
+       Koordinate findet Google Maps in einem heruntergeladenen Gebiet
+       immer, eine Suche nach "Manoh Pier" nicht zwingend. */
     const route = document.createElement('button');
     route.className = 'btn btn-inline';
     route.type = 'button';
     route.style.marginTop = 'var(--sp-s)';
     route.innerHTML = icon('map', 16) + 'Route zum Abfahrtsort';
-    route.addEventListener('click', () => window.open(mapsUrl({ adresse: t.ort }), '_blank'));
+    route.addEventListener('click', () => window.open(mapsUrl({ gps: t.gps, adresse: t.ort }), "_blank"));
     div.appendChild(route);
   }
   return div;
