@@ -1,4 +1,8 @@
 {
+  "regeln": [
+    "Immer in Landeswährung abrechnen, nie in Franken (Demo-Regel).",
+    "Keine Buchung dieser Reise muss je bestätigt werden (Demo-Regel)."
+  ],
   "reise": {
     "titel": "Thailand Demo-Reise (fiktiv)",
     "name": "Alex",
@@ -23,7 +27,7 @@
         "checkin": "17:30",
         "gps": ""
       },
-      "transfer": { "typ": "Flug", "zeit": "17:30", "detail": "ZB 415 Zürich → Bangkok", "ticketRef": "f-zrh-bkk" },
+      "transfer": { "typ": "Flug", "zeit": "17:30", "detail": "ZB 415 Zürich → Bangkok", "ort": "Flughafen Zürich, Terminal 2 (Demo)", "ankunft": "11:05 Ortszeit", "ticketRef": "f-zrh-bkk" },
       "hinweise": ["Flugzeit ca. 11.5h. Spätestens 15:00 am Flughafen"],
       "programm": []
     },
@@ -37,6 +41,8 @@
         "tel": "+66 2 000 11 22",
         "whatsapp": "+66800001122",
         "checkin": "14:00",
+        "checkout": "11:00",
+        "buchung": "DEMO-4711-BKK",
         "gps": "13.7512,100.5083"
       },
       "transfer": null,

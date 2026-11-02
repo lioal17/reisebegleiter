@@ -49,6 +49,9 @@ Du brauchst:
       "abDatum": "2026-12-20"
     }
   ],
+  "regeln": [
+    "Immer in Landeswährung abrechnen, nie in Franken."
+  ],
   "notfall": {
     "botschaft": "+66 2 674 6900",
     "notruf": "191",
@@ -94,21 +97,53 @@ Du brauchst:
     "tel": "+66 123 456 7890",    // Oder leer ""
     "whatsapp": "+66812345678",   // Oder leer ""
     "checkin": "14:00",           // Check-in-Zeit
+    "checkout": "11:00",          // Optional, Abreisetag
+    "buchung": "ABC-123456",      // Optional, Buchungsnummer
     "gps": "13.7512,100.5083"     // Lat,Lon oder leer
   },
   "transfer": {                   // null wenn kein Transfer
     "typ": "Flug",                // "Flug", "Boot", "Bus", "Tauchen", etc.
     "zeit": "08:00",              // Abfahrtszeit
-    "detail": "ZB 415",           // Flugnummer, Route, etc.
+    "detail": "ZB 415",           // Flugnummer, Bootsname, Route
+    "ort": "Ao Thalane Pier",     // Optional: Pier, Flughafen, Terminal
+    "gps": "8.1234,98.7654",      // Optional, genauer als der Name
+    "ankunft": "11:30",           // Optional
+    "buchung": "ABC-123456",      // Optional, falls kein Ticket verknüpft
     "ticketRef": "flight-bkk"     // Referenz zu Ticket-ID (siehe unten)
   } oder null,
   "hinweise": [
     "Früh raus (06:00)",
-    "Kein Bankomat auf der Insel"
+    "Vorher Geld holen, auf der Insel gibt es keinen Bankomaten"
   ],
   "programm": ["Tauchen", "Snorkeln"] // Optional
 }
 ```
+
+**Was in `hinweise` gehört und was nicht.** Hier steht nur, was **an diesem Tag** zu tun oder zu wissen ist: früh raus, vorher Geld holen, Check-in schliesst um 18:30. Sätze, die an jedem Tag gelten, gehören in den Block `regeln` weiter unten. Die App zeigt `hinweise` im Tagesplan und `regeln` einmal unter «Mehr».
+
+Steht eine allgemeine Regel in zwanzig Tagen, wird sie an keinem gelesen, und sie verdeckt das, was wirklich nur heute gilt. Zum Aufräumen gibt es ein Hilfsskript:
+
+```bash
+node .regeln-verschieben.js            # zeigt alle Hinweise mit Nummer
+node .regeln-verschieben.js 2 3 4      # verschiebt diese nach "regeln"
+```
+
+Es legt vorher eine Sicherung `reisedaten-backup-*.json` an.
+
+### Buchungsnummer, Pier und Beleg im Tagesplan
+
+Der Tagesplan zeigt pro Tag drei Blöcke: **Unterwegs**, **Unterkunft**, **Programm**. Was dort erscheint, kommt aus diesen Feldern:
+
+| Angabe im Tagesplan | Feld |
+|---|---|
+| Flug-, Boots- oder Zugnummer | `transfer.detail` |
+| Pier, Flughafen, Terminal | `transfer.ort`, sonst `ort` am verknüpften Ticket |
+| Buchungsnummer Transfer | `transfer.buchung`, sonst `info` am verknüpften Ticket |
+| Beleg ansehen | Dokument, das am verknüpften Ticket hinterlegt ist |
+| Hotelname, Adresse, Telefon | `hotel.name`, `hotel.adresse`, `hotel.tel` |
+| Buchungsnummer Hotel | `hotel.buchung` |
+
+Verknüpft wird ausschliesslich über `transfer.ticketRef`. Ohne diese Angabe zeigt der Tagesplan keine Buchungsnummer und keinen Beleg, auch wenn ein ähnlich benanntes Ticket existiert. Das ist Absicht: Geratenes sieht auf dem Schirm aus wie Gewusstes.
 
 ### `tickets`-Block
 
@@ -129,6 +164,19 @@ Für jeden Flug, Hotel, Boot, Einreiseformular:
 - `"vorhanden"` – Bestätigung liegt vor
 - `"foto_noetig"` – Ticket fotografiert, aber nicht hochgeladen
 - `"fehlt"` – Noch nicht gebucht (wird rot angezeigt)
+
+### `regeln`-Block
+
+Sätze, die an **jedem** Tag gelten. Geldregeln, Betrugsmuster, Gewohnheiten. Die App zeigt sie einmal unter «Mehr» und nie im Tagesplan.
+
+```json
+"regeln": [
+  "Immer in Landeswährung abrechnen, nie in Franken.",
+  "Keine Buchung dieser Reise muss je bestätigt werden."
+]
+```
+
+Fehlt der Block oder ist er leer, verschwindet die Karte in «Mehr».
 
 ### `notfall`-Block
 

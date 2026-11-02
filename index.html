@@ -241,6 +241,13 @@ body.foto-an .palm-deco, body.foto-an .hero-bg { display: none; }
   border-radius: 12px; color: var(--text); cursor: pointer;
 }
 .icon-btn:active { background: var(--card2); }
+/* Ein Knopf, der aus der App hinausfuehrt, traegt sein Wort daneben.
+   Ein Symbol allein war auf dem Telefon nicht zu deuten, dort gibt es
+   keinen Tooltip, und zwei Kartensymbole sahen gleich aus. */
+.maps-btn {
+  width: auto; flex: 0 0 auto; gap: 6px; padding: 0 12px;
+  font-family: inherit; font-size: var(--fs-mini); white-space: nowrap;
+}
 
 /* Karten */
 .card {
@@ -432,6 +439,13 @@ body.foto-an .palm-deco, body.foto-an .hero-bg { display: none; }
 
 /* Tagesplan Timeline */
 .tl { display: flex; flex-direction: column; gap: 10px; }
+/* Karten bringen ihren eigenen Abstand mit. Im Tagesplan regelt den
+   die Spalte, sonst stehen die Bloecke doppelt weit auseinander. */
+.tl > .card { margin-bottom: 0; }
+/* Drei Knoepfe nebeneinander werden auf einem schmalen Telefon zu
+   eng. Sie brechen dann um, statt den Text abzuschneiden. */
+.tl .row { flex-wrap: wrap; }
+.tl .row .btn { min-width: 44%; }
 .tl-item {
   display: flex; gap: 12px; align-items: flex-start;
   background: var(--card); border: 1px solid var(--line);
@@ -449,6 +463,16 @@ body.foto-an .palm-deco, body.foto-an .hero-bg { display: none; }
 .tl-time { font-size: var(--fs-sub); font-weight: var(--fw-bold); color: var(--teal); letter-spacing: 0.01em; }
 .tl-title { font-size: var(--fs-body); font-weight: var(--fw-semi); }
 .tl-sub { font-size: var(--fs-sub); color: var(--muted); }
+
+/* Harte Angabe als Zeile aus Wort und Wert: Flugnummer, Pier,
+   Buchungsnummer, Telefon. Am Schalter zaehlt, dass der Wert ohne
+   Suchen dasteht. Der Wert bleibt markierbar, Buchungsnummern will
+   man kopieren. */
+.fakt { display: flex; gap: 10px; margin-top: 7px; font-size: var(--fs-sub); align-items: baseline; }
+.fakt-wort { flex: 0 0 86px; color: var(--muted); }
+.card-teal .fakt-wort, .card-gold .fakt-wort { color: rgba(234, 244, 242, 0.6); }
+.fakt-wert { flex: 1; min-width: 0; font-weight: var(--fw-med); overflow-wrap: anywhere; user-select: text; }
+.fakt-wert.nummer { font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
 
 /* Dokumente Kacheln
    Zwei Schichten: Farbverlauf plus Icon ist die Grundlage und
@@ -951,7 +975,7 @@ a { color: var(--teal); }
         <h1 class="h1">Reiseplan</h1>
         <div class="topbar-sub" id="planStats">–</div>
       </div>
-      <button class="icon-btn" id="openMapBtn" title="Karte"><span class="ic" data-icon="map"></span></button>
+      <button class="icon-btn maps-btn" id="planMapsBtn"><span class="ic" data-icon="pin" data-size="16"></span>Google Maps</button>
     </div>
     <div class="day-list" id="dayList"></div>
   </div>
@@ -1021,6 +1045,15 @@ a { color: var(--teal); }
         <input type="text" inputmode="decimal" id="chfInput" placeholder="CHF" class="input-field">
       </div>
       <div class="badge-label">1 CHF = 40 THB, immer zu deinen Ungunsten gerundet</div>
+    </div>
+
+    <!-- Regeln für unterwegs. Stehen einmal hier, nie im Tagesplan.
+         Was an jedem Tag gilt, gehört nicht an einen einzelnen Tag:
+         dort verdrängt es das, was nur heute gilt. -->
+    <div class="card" id="regelnKarte" style="display: none;">
+      <div class="card-label">Regeln für unterwegs</div>
+      <div id="regelnListe" style="margin-top: 10px;"></div>
+      <div class="badge-label">Gilt an jedem Tag der Reise.</div>
     </div>
 
     <!-- Ausgaben: Betrag tippen, Kategorie tippen, gebucht.
@@ -1213,11 +1246,38 @@ document.querySelectorAll('[data-icon]').forEach(el => {
 
 let appData = null;
 let dayScreenReturn = 'screenPlan';
-let mapScreenReturn = 'screenPlan';
+/* Die Schemakarte wird nur noch von Heute aus geoeffnet, seit in
+   Reiseplan Google Maps steht. Der Rueckweg zeigt deshalb dorthin. */
+let mapScreenReturn = 'screenToday';
 let currentHotelName = '';
 let mapProject = null;
 let mapView = { W: 360, H: 540 };
 let geoWatchId = null;
+
+/* ---------- Nach draussen ----------
+   window.open ist in der installierten App unzuverlaessig. Die App
+   laeuft als "standalone", und darin entscheidet Android von Fall zu
+   Fall, ob ein Aufruf ohne Nutzergeste ein Reiter, ein Fenster oder
+   gar nichts wird. Ein dritter Parameter wie 'noopener' laesst manche
+   Browser den Aufruf zusaetzlich als Pop-up werten und blocken, ohne
+   Meldung, ohne Spur.
+
+   Ein echter Link hat dieses Problem nicht: ihn vergibt das System,
+   und einen Link auf google.com/maps faengt die Maps-App selbst ab.
+   Deshalb laeuft alles, was nach draussen fuehrt, ueber diese eine
+   Stelle. */
+function extern(url) {
+  const ziel = String(url || '').trim();
+  if (!ziel) return;
+  const a = document.createElement('a');
+  a.href = ziel;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => a.remove(), 0);
+}
 
 /* ---------- Navigation ---------- */
 function showScreen(screenId, navScreenId) {
@@ -1234,7 +1294,6 @@ function showScreen(screenId, navScreenId) {
 document.querySelectorAll('.nav-btn').forEach(btn => {
   btn.addEventListener('click', function() { showScreen(this.dataset.screen); });
 });
-document.getElementById('openMapBtn').addEventListener('click', () => { mapScreenReturn = 'screenPlan'; renderMap(); showScreen('screenMap', 'screenPlan'); });
 document.getElementById('mapBackBtn').addEventListener('click', () => { stopGeo(); showScreen(mapScreenReturn, mapScreenReturn); });
 document.getElementById('geoBtn').addEventListener('click', toggleGeo);
 document.getElementById('dayBackBtn').addEventListener('click', () => showScreen(dayScreenReturn, dayScreenReturn));
@@ -1736,6 +1795,8 @@ function loadUIFromAppData() {
   document.getElementById('planStats').textContent = nTage + ' Tage · ' + nStationen + ' Stationen';
 
   renderDayList();
+  planMapsKnopf();
+  renderRegeln();
   renderDokumente();
   renderNotfall();
 }
@@ -1776,6 +1837,55 @@ function ortsGruppen() {
     }
   });
   return gruppen;
+}
+
+/* ---------- Google Maps in der Kopfzeile ---------- */
+/* Der Knopf oeffnet genau einen Ort, nie die ganze Route. Eine URL
+   mit allen Stationen waere die vollstaendige Reise in fremder Hand,
+   und dafuer ist dieser Knopf nicht da. Ein Ziel pro Aufruf ist
+   dasselbe, was die Hotelkarte und die Transferzeile schon tun.
+
+   Welcher Ort, entscheidet dieselbe Regel wie beim Wetter: der
+   heutige, sonst der naechste, der eine Koordinate oder Adresse
+   fuehrt. Vor der Reise ist das die erste Station, an einem Flugtag
+   die, wo man abends ankommt. Geraten wird nichts. Liegt die Reise
+   ganz hinter uns oder fehlt jedes Ziel, verschwindet der Knopf. */
+function planMapsZiel() {
+  const tage = (appData && appData.tage) || [];
+  if (!tage.length) return null;
+  const heute = heuteLokal();
+  const ab = tage.findIndex(t => String(t.datum) >= heute);
+  if (ab === -1) return null;
+  for (let i = ab; i < tage.length; i++) {
+    const h = (tage[i].hotel) || {};
+    const url = mapsUrl(h);
+    if (url) {
+      return {
+        url: url,
+        name: h.name || zielOrt(tage[i].ort) || 'Reiseziel',
+        istHeute: tage[i].datum === heute
+      };
+    }
+  }
+  return null;
+}
+
+function planMapsKnopf() {
+  const btn = document.getElementById('planMapsBtn');
+  if (!btn) return;
+  const ziel = planMapsZiel();
+  if (!ziel) {
+    btn.style.display = 'none';
+    btn.onclick = null;
+    btn.removeAttribute('title');
+    return;
+  }
+  btn.style.display = '';
+  /* Der Titel nennt den Ort, damit nie offen bleibt, was sich
+     oeffnet. "noopener", weil die fremde Seite keinen Griff auf das
+     App-Fenster braucht. */
+  btn.title = (ziel.istHeute ? 'Heute: ' : 'Nächste Station: ') + ziel.name + ' in Google Maps öffnen';
+  btn.onclick = () => extern(ziel.url);
 }
 
 /* Merkt sich, welche Gruppen offen sind, damit ein Neuzeichnen
@@ -1866,74 +1976,220 @@ function programIconName(text) {
   if (t.includes('markt') || t.includes('market') || t.includes('show')) return 'ticket';
   return 'pin';
 }
+/* ---------- Tagesplan ----------
+   Dieser Schirm wird im Stehen gelesen: am Schalter, am Pier, an der
+   Rezeption. Deshalb steht hier nur, was eine Zeit, eine Nummer, einen
+   Ort oder einen Beleg hat.
+
+   Allgemeine Reiseregeln stehen bewusst nicht mehr hier, sondern
+   einmal unter Mehr. Eine Regel, die an 28 Tagen steht, wird an
+   keinem davon gelesen, und sie schiebt weg, was heute wirklich gilt.
+   Was in hinweise bleibt, ist das, was an diesem Tag zu tun ist:
+   vorher Geld holen, frueh am Flughafen sein. */
+
+/* Harte Angabe. Leere Werte erzeugen keine Zeile, damit ein fehlendes
+   Feld nicht als leeres Versprechen dasteht. */
+function fakt(wort, wert, istNummer) {
+  const v = String(wert == null ? '' : wert).trim();
+  if (!v) return '';
+  return '<div class="fakt"><div class="fakt-wort">' + esc(wort) + '</div>' +
+    '<div class="fakt-wert' + (istNummer ? ' nummer' : '') + '">' + esc(v) + '</div></div>';
+}
+
+/* Buchungsnummer und Beleg kommen ausschliesslich ueber ticketRef,
+   also ueber eine ausdrueckliche Angabe in den Daten. Ein Treffer
+   ueber aehnliche Namen waere geraten, und Geratenes sieht auf einem
+   Schirm genauso aus wie Gewusstes. */
+function ticketZu(ref) {
+  if (!ref) return null;
+  return (appData.tickets || []).find(t => t.id === ref) || null;
+}
+
+function tagKnopf(text, ikone, aktion, zweitrangig) {
+  const b = document.createElement('button');
+  b.className = 'btn btn-inline' + (zweitrangig ? ' btn-secondary' : '');
+  b.type = 'button';
+  b.innerHTML = icon(ikone, 16) + text;
+  b.addEventListener('click', aktion);
+  return b;
+}
+
 function openDay(idx) {
   const day = appData.tage[idx];
   if (!day) return;
   dayScreenReturn = 'screenPlan';
-  const date = new Date(day.datum + 'T00:00:00');
-  document.getElementById('dayTitle').textContent = DOW_FULL[date.getDay()];
-  document.getElementById('daySub').textContent = date.getDate() + '. ' + MONTHS[date.getMonth()] + ' · ' + day.ort;
 
-  const items = [];
-  /* Der Abfahrtsort eines Transfers ist der Ort, an dem man um sechs
-     Uhr morgens steht und nicht weiss, wo der Pier ist. Steht er in
-     den Daten, bekommt die Zeile einen Routen-Knopf. */
-  if (day.transfer) {
-    /* Der Abfahrtsort stand bis hierher ausschliesslich im
-       Routen-Knopf. Ohne Netz oeffnet sich keine Karte, und damit war
-       der Name des Piers nirgends lesbar, obwohl er in den Daten
-       steht. Jetzt steht er als Text da, der Knopf bleibt daneben. */
-    const tDetail = String(day.transfer.detail || '').trim();
-    const tOrt = String(day.transfer.ort || '').trim();
-    const tSub = tOrt && !tDetail.includes(tOrt)
-      ? (tDetail ? tDetail + ' · ab ' + tOrt : 'ab ' + tOrt)
-      : tDetail;
-    items.push({ zeit: day.transfer.zeit, titel: day.transfer.typ, sub: tSub, cls: 'gold', ic: transferIconName(day.transfer.typ),
-                 maps: day.transfer.ort ? mapsUrl({ gps: day.transfer.gps, adresse: day.transfer.ort }) : '' });
-  }
-  if (day.hotel && day.hotel.name && day.hotel.checkin) {
-    items.push({ zeit: day.hotel.checkin, titel: 'Check-in · ' + day.hotel.name, sub: day.hotel.adresse || '', cls: 'teal', ic: 'bed', foto: day.hotel.foto || null,
-                 maps: mapsUrl(day.hotel) });
-  }
-  (day.programm || []).forEach(p => {
-    if (typeof p === 'string') {
-      items.push({ zeit: '', titel: p, sub: '', cls: 'purple', ic: programIconName(p) });
-    } else {
-      items.push({ zeit: p.zeit || '', titel: p.titel || '', sub: p.detail || '', cls: 'purple', ic: programIconName((p.titel || '') + ' ' + (p.typ || '')) });
-    }
-  });
-  items.sort((a, b) => (a.zeit || '99:99').localeCompare(b.zeit || '99:99'));
-  (day.hinweise || []).forEach(h => {
-    items.push({ zeit: '', titel: h, sub: 'Hinweis', cls: 'red', ic: 'warn' });
-  });
+  const tage = appData.tage || [];
+  const reise = appData.reise || {};
+  const date = new Date(day.datum + 'T00:00:00');
+  const versatz = tageZwischen(reise.start, day.datum);
+  const tagInfo = versatz === null ? '' : ' · Tag ' + (versatz + 1) + ' von ' + (reise.tage || tage.length);
+  document.getElementById('dayTitle').textContent = DOW_FULL[date.getDay()];
+  document.getElementById('daySub').textContent =
+    date.getDate() + '. ' + MONTHS[date.getMonth()] + ' · ' + (day.ort || '') + tagInfo;
 
   const tl = document.getElementById('dayTimeline');
   tl.innerHTML = '';
-  if (items.length === 0) {
-    tl.innerHTML = '<div class="card"><div class="card-sub">Kein Programm eingetragen – freier Tag 🌴</div></div>';
-  }
-  items.forEach(it => {
-    const div = document.createElement('div');
-    div.className = 'tl-item';
-    div.innerHTML =
-      '<div class="tl-ic ' + it.cls + '">' + icon(it.ic, 19) + '</div>' +
-      '<div style="flex: 1; min-width: 0;">' +
-        (it.zeit ? '<div class="tl-time">' + esc(it.zeit) + '</div>' : '') +
-        '<div class="tl-title">' + esc(it.titel) + '</div>' +
-        (it.sub ? '<div class="tl-sub">' + esc(it.sub) + '</div>' : '') +
-      '</div>' +
-      (it.foto && String(it.foto).indexOf('data:image/') === 0 ? '<img src="' + esc(it.foto) + '" alt="" style="width: 54px; height: 54px; object-fit: cover; border-radius: 10px; flex: 0 0 54px;">' : '');
-    if (it.maps) {
-      const b = document.createElement('button');
-      b.className = 'btn btn-inline';
-      b.type = 'button';
-      b.style.marginTop = 'var(--sp-s)';
-      b.innerHTML = icon('map', 16) + 'Route';
-      b.addEventListener('click', () => window.open(it.maps, '_blank'));
-      div.querySelector('div[style*="flex: 1"]').appendChild(b);
+  let etwasDa = false;
+
+  const hotel = day.hotel || {};
+  /* Derselbe Test wie auf dem Heute-Schirm: der Nachtflug steht im
+     Hotel-Feld, ist aber keine Unterkunft. Anrufen und Route ergeben
+     dafuer keinen Sinn. */
+  const echteUnterkunft = !(day.transfer && !String(hotel.gps || '').trim() && !String(hotel.tel || '').trim());
+
+  /* --- Unterwegs: Zeit, Nummer, Abfahrtsort, Buchung, Beleg --- */
+  if (day.transfer) {
+    const tr = day.transfer;
+    const tk = ticketZu(tr.ticketRef);
+    const dokus = tk ? dokListe(tk.id) : [];
+    /* Der Abfahrtsort steht mal am Tag, mal am Ticket. Beides ist
+       dieselbe Angabe, deshalb wird beides gelesen. */
+    const abOrt = String(tr.ort || '').trim() || (tk ? String(tk.ort || '').trim() : '');
+    const abGps = String(tr.gps || '').trim() || (tk ? String(tk.gps || '').trim() : '');
+    const karte = document.createElement('div');
+    karte.className = 'card card-gold';
+    karte.innerHTML =
+      '<div class="card-row">' +
+        '<div class="badge-ic">' + icon(transferIconName(tr.typ), 20) + '</div>' +
+        '<div class="tag-spalte" style="flex: 1; min-width: 0;">' +
+          '<div class="card-label">Unterwegs</div>' +
+          '<div class="card-title">' + esc([tr.zeit, tr.typ].filter(Boolean).join(' · ') || 'Transfer') + '</div>' +
+          fakt('Verbindung', tr.detail) +
+          fakt('Ab', abOrt) +
+          fakt('Ankunft', tr.ankunft) +
+          fakt('Buchung', tr.buchung || (tk ? tk.info : ''), true) +
+          '<div class="chip">' + (dokus.length ? 'Beleg liegt auf dem Gerät' : 'Kein Beleg hinterlegt') + '</div>' +
+        '</div>' +
+      '</div>';
+    const spalte = karte.querySelector('.tag-spalte');
+    const reihe = document.createElement('div');
+    reihe.className = 'row';
+    if (abOrt || abGps) {
+      reihe.appendChild(tagKnopf('Route', 'map', () => extern(mapsUrl({ gps: abGps, adresse: abOrt }))));
     }
-    tl.appendChild(div);
-  });
+    if (dokus.length) {
+      reihe.appendChild(tagKnopf('Beleg ansehen', 'doc', () => dokZeigen(dokus[0]), true));
+    }
+    if (reihe.children.length) spalte.appendChild(reihe);
+    tl.appendChild(karte);
+    etwasDa = true;
+  }
+
+  /* --- Unterkunft: steht an jedem Tag, auch ohne Check-in ---
+     Bis hierher erschien die Unterkunft nur an Tagen mit Check-in.
+     An den Tagen dazwischen stand das Hotel nirgends, obwohl genau
+     dort die Nummer gebraucht wird, wenn man abends nicht zurueck
+     findet.
+
+     Ist die Nacht keine Unterkunft, sondern der Nachtflug, steht sie
+     schon im Block darueber. Zweimal dieselbe Angabe untereinander
+     liest sich wie zwei verschiedene. */
+  if (hotel.name && echteUnterkunft) {
+    const karte = document.createElement('div');
+    karte.className = 'card card-teal';
+    karte.innerHTML =
+      '<div class="card-row">' +
+        '<div class="badge-ic">' + icon('bed', 20) + '</div>' +
+        '<div class="tag-spalte" style="flex: 1; min-width: 0;">' +
+          '<div class="card-label">Unterkunft</div>' +
+          '<div class="card-title">' + esc(hotel.name) + '</div>' +
+          fakt('Adresse', hotel.adresse) +
+          fakt('Check-in', hotel.checkin) +
+          fakt('Check-out', hotel.checkout) +
+          fakt('Telefon', hotel.tel, true) +
+          fakt('Buchung', hotel.buchung, true) +
+        '</div>' +
+        (hotel.foto && String(hotel.foto).indexOf('data:image/') === 0
+          ? '<img src="' + esc(hotel.foto) + '" alt="" style="width: 54px; height: 54px; object-fit: cover; border-radius: 10px; flex: 0 0 54px;">'
+          : '') +
+      '</div>';
+    const spalte = karte.querySelector('.tag-spalte');
+    const reihe = document.createElement('div');
+    reihe.className = 'row';
+    if (hotel.tel) reihe.appendChild(tagKnopf('Anrufen', 'phone', () => { window.location = 'tel:' + hotel.tel; }));
+    if (hotel.whatsapp) reihe.appendChild(tagKnopf('WhatsApp', 'chat', () => { window.location = 'https://wa.me/' + String(hotel.whatsapp).replace(/[^0-9]/g, ''); }, true));
+    if (mapsUrl(hotel)) reihe.appendChild(tagKnopf('Route', 'map', () => extern(mapsUrl(hotel)), true));
+    if (reihe.children.length) spalte.appendChild(reihe);
+    tl.appendChild(karte);
+    etwasDa = true;
+  }
+
+  /* --- Programm: was ansteht und was moeglich ist --- */
+  const programm = (day.programm || []).map(p => typeof p === 'string'
+    ? { zeit: '', titel: p, sub: '', ic: programIconName(p) }
+    : { zeit: p.zeit || '', titel: p.titel || '', sub: p.detail || '', ic: programIconName((p.titel || '') + ' ' + (p.typ || '')) }
+  ).filter(p => p.titel);
+  programm.sort((a, b) => (a.zeit || '99:99').localeCompare(b.zeit || '99:99'));
+  if (programm.length) {
+    const kopf = document.createElement('div');
+    kopf.className = 'grp-head';
+    kopf.textContent = 'Programm';
+    tl.appendChild(kopf);
+    programm.forEach(p => {
+      const div = document.createElement('div');
+      div.className = 'tl-item';
+      div.innerHTML =
+        '<div class="tl-ic purple">' + icon(p.ic, 19) + '</div>' +
+        '<div style="flex: 1; min-width: 0;">' +
+          (p.zeit ? '<div class="tl-time">' + esc(p.zeit) + '</div>' : '') +
+          '<div class="tl-title">' + esc(p.titel) + '</div>' +
+          (p.sub ? '<div class="tl-sub">' + esc(p.sub) + '</div>' : '') +
+        '</div>';
+      tl.appendChild(div);
+    });
+    etwasDa = true;
+  }
+
+  /* --- Vorher erledigen: was an diesem Tag zu tun ist --- */
+  const hinweise = (day.hinweise || []).filter(h => String(h || '').trim());
+  if (hinweise.length) {
+    const karte = document.createElement('div');
+    karte.className = 'card';
+    karte.innerHTML =
+      '<div class="card-row">' +
+        '<div class="badge-ic" style="color: var(--gold);">' + icon('pin', 20) + '</div>' +
+        '<div style="flex: 1; min-width: 0;">' +
+          '<div class="card-label">An diesem Tag</div>' +
+          '<div style="margin-top: 6px;">' +
+            hinweise.map(h => '<div class="hinweis-zeile">' + esc(h) + '</div>').join('') +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    tl.appendChild(karte);
+    etwasDa = true;
+  }
+
+  if (!etwasDa) {
+    const leer = document.createElement('div');
+    leer.className = 'card';
+    leer.innerHTML = '<div class="card-sub">Nichts eingetragen – freier Tag 🌴</div>';
+    tl.appendChild(leer);
+  }
+
+  /* --- Danach: der naechste Schritt, ohne zurueckzublaettern --- */
+  const naechster = tage[idx + 1];
+  if (naechster) {
+    const d2 = new Date(naechster.datum + 'T00:00:00');
+    const tr2 = naechster.transfer;
+    const knopf = document.createElement('button');
+    knopf.className = 'card card-knopf';
+    knopf.type = 'button';
+    knopf.innerHTML =
+      '<div class="card-row">' +
+        '<div class="badge-ic">' + icon('calendar', 20) + '</div>' +
+        '<div style="flex: 1; min-width: 0; text-align: left;">' +
+          '<div class="card-label">Danach</div>' +
+          '<div class="card-title card-title-sm">' + esc(DOW_FULL[d2.getDay()] + ', ' + d2.getDate() + '. ' + MONTHS[d2.getMonth()]) + '</div>' +
+          '<div class="card-sub">' + esc((naechster.ort || '') +
+            (tr2 ? ' · ' + [tr2.zeit, tr2.typ].filter(Boolean).join(' ') : '')) + '</div>' +
+        '</div>' +
+        '<div class="chevron">' + icon('chevR') + '</div>' +
+      '</div>';
+    knopf.addEventListener('click', () => openDay(idx + 1));
+    tl.appendChild(knopf);
+  }
+
   showScreen('screenDay', 'screenPlan');
 }
 
@@ -2298,7 +2554,7 @@ function hotelEintrag(h) {
     b.className = 'btn btn-inline';
     b.type = 'button';
     b.innerHTML = icon('map', 16) + 'Route';
-    b.addEventListener('click', () => window.open(url, '_blank'));
+    b.addEventListener('click', () => extern(url));
     reihe.appendChild(b);
   }
   if (reihe.children.length) div.appendChild(reihe);
@@ -2349,7 +2605,7 @@ function ticketEintrag(t) {
     route.type = 'button';
     route.style.marginTop = 'var(--sp-s)';
     route.innerHTML = icon('map', 16) + 'Route zum Abfahrtsort';
-    route.addEventListener('click', () => window.open(mapsUrl({ gps: t.gps, adresse: t.ort }), "_blank"));
+    route.addEventListener('click', () => extern(mapsUrl({ gps: t.gps, adresse: t.ort })));
     div.appendChild(route);
   }
   return div;
@@ -2427,7 +2683,7 @@ function dokZeigen(m) {
     const url = URL.createObjectURL(b);
     if (!String(m.typ).startsWith('image/')) {
       dokTabUrls.push(url);
-      window.open(url, '_blank');
+      extern(url);
       return;
     }
     if (dokVollUrl) URL.revokeObjectURL(dokVollUrl);
@@ -3411,8 +3667,21 @@ function notizenLaden() {
 /* ---------- Uebersetzer ----------
    Braucht Netz. Ein eingebauter Uebersetzer laesst sich in einer
    PWA nicht offline betreiben, deshalb der ehrliche Umweg. */
-document.getElementById('trDeEn').addEventListener('click', () => window.open('https://translate.google.com/?sl=de&tl=en', '_blank'));
-document.getElementById('trDeTh').addEventListener('click', () => window.open('https://translate.google.com/?sl=de&tl=th', '_blank'));
+document.getElementById('trDeEn').addEventListener('click', () => extern('https://translate.google.com/?sl=de&tl=en'));
+document.getElementById('trDeTh').addEventListener('click', () => extern('https://translate.google.com/?sl=de&tl=th'));
+
+/* ---------- Regeln fuer unterwegs ----------
+   Stehen im Datenblock "regeln", einer Liste von Saetzen. Fehlt der
+   Block, verschwindet die Karte. Dieselben Saetze gehoeren nicht
+   zusaetzlich in tage[].hinweise: eine Angabe, ein Ort. */
+function renderRegeln() {
+  const karte = document.getElementById('regelnKarte');
+  const liste = document.getElementById('regelnListe');
+  if (!karte || !liste) return;
+  const regeln = ((appData && appData.regeln) || []).filter(r => String(r || '').trim());
+  karte.style.display = regeln.length ? '' : 'none';
+  liste.innerHTML = regeln.map(r => '<div class="hinweis-zeile">' + esc(r) + '</div>').join('');
+}
 
 /* ---------- Notfall ---------- */
 document.getElementById('notPolizei').addEventListener('click', () => window.location = 'tel:1155');
