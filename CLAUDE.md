@@ -8,27 +8,40 @@ Immer einzuhalten:
 
 - Die App bleibt eine **reine Offline-/Local-First-Webapp** (eine einzige `index.html`, Daten nur in `localStorage`/`IndexedDB`, **kein** Backend, kein Tracking, keine Telemetrie).
 - **Keine** Funktion einbauen, die Reisedaten per Netzwerk sendet: kein `fetch`/XHR/WebSocket/`sendBeacon`/Formular-POST an externe Ziele, kein Cloud-Sync, kein Analytics.
-- Die **Content-Security-Policy nicht aufweichen** (`default-src 'none'`, `form-action 'none'`), sodass keine Datenexfiltration möglich wird. Für `connect-src` gilt die Präzisierung unten – sie ist abschliessend.
+- Die **Content-Security-Policy nicht aufweichen** (`default-src 'none'`, `form-action 'none'`), sodass keine Datenexfiltration möglich wird. Für `connect-src` gelten die beiden Präzisierungen unten – sie sind abschliessend.
 - **Nie** echte Reisedaten in Commits, Pull Requests, Screenshots, Logs, Artifacts oder Issue-/PR-Kommentaren – und niemals an Dritte oder externe Dienste – weitergeben. Export-`*.json` (Datensicherungen) gehören **nicht** ins Repository (siehe `.gitignore`).
 - Test-/Demodaten sind **immer frei erfunden** (keine echten Orte/Hotels/Flüge wenn möglich; Nummern angepasst).
 - **Kein externer Zugriff von außen:** Weder Dritte noch externe Anwendungen oder Dienste dürfen auf Reisedaten zugreifen können. Keine Funktion/Integration darf einen Zugriffsweg von außerhalb des lokalen Systems öffnen (keine Freigaben, keine Remote-Schnittstellen, kein Sync-Dienst).
 - **Auch Claude selbst ist ein externer Kanal:** Reisedaten dürfen **nicht** in den Claude-Chat gelangen (keine echten Namen/Hotels/Abläufe in Nachrichten, Screenshots oder eingefügten Exporten). Claude fordert nie echte Reisedaten an und arbeitet ausschliesslich mit erfundenen Demodaten.
 
-### Präzisierung `connect-src`: genau eine Ausnahme
+### Präzisierung `connect-src`: genau zwei Ausnahmen
 
-`connect-src` ist **nicht** mehr `'self'` allein, sondern `'self' https://api.open-meteo.com`. Diese Ausnahme ist abschliessend und an vier Bedingungen gebunden:
+#### Ausnahme 1: Wetter
 
-1. **Genau ein Dienst.** Open-Meteo, ohne Schlüssel, ohne Konto, ohne Registrierung. Kein zweiter Host kommt dazu, egal wie nützlich er wäre.
+`connect-src` ist **nicht** mehr `'self'` allein, sondern `'self' https://api.open-meteo.com https://api.frankfurter.dev`. Die Wetter-Ausnahme ist an vier Bedingungen gebunden:
+
+1. **Genau ein Wetterdienst.** Open-Meteo, ohne Schlüssel, ohne Konto, ohne Registrierung.
 2. **Nur Koordinaten, auf eine Nachkommastelle gerundet.** Rund elf Kilometer Unschärfe. Der Dienst erfährt die Region, nicht die Unterkunft. Die Rundung passiert im Code, nicht im Kopf: `Math.round(x * 10) / 10`.
 3. **Nur ausgehende Abfrage von Wetterwerten.** Keine Namen, keine Daten, keine Termine, keine Kennungen, kein Zeitplan der Reise. Ein Request enthält ausschliesslich gerundete Koordinaten und die gewünschten Wetterfelder.
 4. **Die App bleibt ohne diesen Dienst voll funktionsfähig.** Fällt er aus oder ist kein Netz da, zeigt sie zwischengespeicherte Werte mit Zeitstempel, sonst fest eingebaute Klimamittelwerte. Wetter ist Beiwerk, nie Voraussetzung.
 
+#### Ausnahme 2: Wechselkurse (entschieden am 12.11.2026)
+
+Der Währungsrechner darf Tageskurse holen. Die Ausnahme ist an vier Bedingungen gebunden:
+
+1. **Genau ein Kursdienst.** Frankfurter (`api.frankfurter.dev`, Referenzkurse der Europäischen Zentralbank), ohne Schlüssel, ohne Konto, ohne Registrierung.
+2. **Die Abfrage ist für jede Reise dieselbe.** Sie lautet immer «alle Kurse zur Heimatwährung» und enthält sonst nichts. Insbesondere **keine** Liste der gebrauchten Währungen: daraus liessen sich die Reiseländer ablesen. Der Dienst erfährt die Heimatwährung, nicht das Ziel.
+3. **Nur ausgehende Abfrage von Kursen.** Keine Beträge, keine Ausgaben, keine Namen, keine Daten, keine Kennungen.
+4. **Die App bleibt ohne diesen Dienst voll funktionsfähig.** Fällt er aus oder ist kein Netz da, gilt der zuletzt gespeicherte Kurs mit Stand-Datum, sonst ein von Hand eingetragener Kurs. Bereits erfasste Ausgaben behalten ihren eingefrorenen Franken-Betrag und werden von einem neuen Kurs nie verändert.
+
+**Kein dritter Host kommt dazu, egal wie nützlich er wäre.**
+
 Alles andere bleibt: `default-src 'none'`, `form-action 'none'`, kein Backend, kein Tracking, keine Telemetrie, kein Cloud-Sync.
 
-**Wer diese Ausnahme erweitern will, ändert zuerst diese Datei und fragt zuerst nach.**
+**Wer diese Ausnahmen erweitern will, ändert zuerst diese Datei und fragt zuerst nach.**
 
 **Pflicht-Checkliste bei JEDER Anpassung (vor Commit/PR zu bestätigen):**
-1. Bleibt die App vollständig **offline nutzbar** (kein neuer Netzwerkpfad ausser der oben beschriebenen Wetter-Ausnahme)?
+1. Bleibt die App vollständig **offline nutzbar** (kein neuer Netzwerkpfad ausser den beiden oben beschriebenen Ausnahmen Wetter und Wechselkurse)?
 2. Bleibt die **CSP unverändert restriktiv** (`default-src 'none'`, `form-action 'none'`, `connect-src` ohne weitere Hosts)?
 3. Enthalten Commit/PR/Screenshots/Logs/ZIPs **keine echten Reisedaten** (nur erfundene)?
 4. Entsteht **kein Zugriffsweg von außen** auf Reisedaten (keine Freigabe, kein Endpoint)?
@@ -47,6 +60,10 @@ Ich (Claude) bin das **wachende Auge über die Reisedaten** und trage aktiv Mitv
 ## Technischer Kontext
 
 - Die gesamte App ist **eine `index.html`** (HTML + CSS + JS inline, kein Build, kein Server). Im Browser öffnen oder via GitHub Pages.
+- In `index.html` stehen zwei Skriptblöcke: `<script id="kern">` enthält die Logik ohne Oberfläche (Erkennung von Buchungen, Tagesansicht, Finanzen), der zweite Block die Oberfläche. Die Tests führen den Kern-Block direkt in Node aus.
+- **Einzige Zusatzdateien: `vendor/pdf.min.js` und `vendor/pdf.worker.min.js`** (pdf.js 3.11, Apache-2.0). Sie lesen PDF **auf dem Gerät** und senden nichts. Sie sind Beiwerk: fehlen sie, läuft die App weiter, nur ohne PDF-Text und PDF-Vorschau. Weitere Bibliotheken nur nach Rückfrage.
+- **Keine Texterkennung in der Cloud und keine Cloud-KI.** Buchungen werden regelbasiert aus eingefügtem Text und aus der Textschicht von PDF erkannt, alles lokal.
+- Tests: `node tests/kern.test.js` und `node tests/e2e.test.js` (braucht Playwright global, kein `node_modules` im Repo). Testdaten sind erfunden.
 - Daten liegen lokal in **`localStorage`** (Reiseplan, Ausgaben) und **`IndexedDB`** (Ticket-Dokumente/Blobs).
 - Service Worker (`sw.js`) cached das App-Shell für Offline-Betrieb.
 - Manifest (`manifest.webmanifest`) macht die PWA installierbar auf Android/iOS.
