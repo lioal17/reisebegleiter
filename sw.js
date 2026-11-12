@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reisebegleiter-v16';
+const CACHE_NAME = 'reisebegleiter-v17';
 
 /* PFLICHT ist das Programm selbst. Schlaegt eine dieser Dateien beim
    Installieren fehl, bricht die Installation ab und der bisherige,
@@ -34,7 +34,12 @@ const KANN = [
   './assets/tile-hotel.jpg',
   './assets/tile-pass.jpg',
   './assets/tile-schutz.jpg',
-  './assets/tile-visa.jpg'
+  './assets/tile-visa.jpg',
+  /* pdf.js: liest und zeigt PDF auf dem Geraet. Beiwerk, deshalb
+     hier und nicht unter PFLICHT. Fehlen die Dateien im Speicher,
+     laeuft die App weiter, PDF oeffnen dann in einem neuen Tab. */
+  './vendor/pdf.min.js',
+  './vendor/pdf.worker.min.js'
 ];
 
 /* cache: 'reload' umgeht den HTTP-Zwischenspeicher des Browsers. Ohne
