@@ -204,9 +204,65 @@ Freiwillig, aber sinnvoll:
 }
 ```
 
+### `buchungen`-Block (seit November 2026)
+
+Buchungen müssen nicht mehr in die Datei. Sie lassen sich in der App über **«Reise planen»** erfassen und stehen danach hier. Wer die Datei von Hand pflegt, kann sie trotzdem eintragen:
+
+```json
+"buchungen": [
+  {
+    "id": "b-hotel-demo",
+    "typ": "unterkunft",
+    "titel": "Sandmond Resort",
+    "datum": "2026-12-24",
+    "zeit": "14:00",
+    "bisDatum": "2026-12-27",
+    "bisZeit": "11:00",
+    "ort": "Koh Ngai",
+    "land": "TH",
+    "preis": 9600,
+    "waehrung": "THB",
+    "zahlung": "offen",
+    "referenz": "DEMO-448812",
+    "status": "bestaetigt"
+  }
+]
+```
+
+| Feld | Bedeutung |
+|---|---|
+| `typ` | `flug`, `unterkunft`, `faehre`, `zugbus`, `transfer`, `mietfahrzeug`, `aktivitaet`, `versicherung`, `dokument`, `sonstiges` |
+| `datum`, `zeit` | Beginn: Abflug, Check-in, Abfahrt. Immer Ortszeit |
+| `bisDatum`, `bisZeit` | Ende: Ankunft, Check-out, Rückgabe |
+| `vonOrt`, `vonCode`, `nachOrt`, `nachCode` | Strecke. Der Flughafencode bringt die Zeitzone mit, daraus rechnet die App die Flugdauer |
+| `zahlung` | `geplant`, `offen`, `bezahlt`, `storniert`, `erstattet` |
+| `bezahltChf` | Tatsächlich bezahlter Betrag in Franken, falls bekannt. Geht jeder Schätzung vor |
+| `status` | `bestaetigt` oder `geplant`. Geplantes erscheint im Tagesplan gestrichelt und beschriftet |
+
+**Wie Buchungen und `tage` zusammenspielen.** Die Tage in der Datei bleiben, wie sie sind. Die App legt die Buchungen beim Anzeigen darüber: eine Unterkunft füllt ihre Nächte, eine Verbindung steht an ihrem Tag, eine Aktivität im Programm. Ein Tag kann dadurch mehrere Verbindungen haben. Nennt die Datei für eine Nacht ein anderes Hotel als eine Buchung, zeigt der Tag einen Widerspruch-Hinweis, und keine der beiden Angaben gewinnt stillschweigend.
+
+Der Preis einer Buchung zählt in der Abrechnung aus der Buchung. Er darf nicht zusätzlich als Ausgabe erfasst werden.
+
+### Land, Währung und Notfall im `reise`- und `notfall`-Block
+
+```json
+"reise": {
+  "land": "TH",                 // optional, sonst aus "zeitzone" abgeleitet
+  "heimatWaehrung": "CHF"       // optional, Standard CHF
+},
+"notfall": {
+  "polizei": "1155",            // die beiden roten Knöpfe unter Mehr
+  "ambulanz": "1669",
+  "botschaft": "+66 2 674 6900",
+  "botschaftName": "Schweizer Botschaft Bangkok"
+}
+```
+
+Das Budget aus dem `budget`-Block (`gesamt_chf`) erscheint jetzt auf **Heute** und unter **Mehr, Budget und Abrechnung**. Es lässt sich dort auch ändern.
+
 ### `favoriten`-Block
 
-«In der Nähe» – pro Ort 3 Lieblingsplätze:
+Wird von der App nicht mehr gelesen (Entscheid vom 09.08.2026, «In der Nähe» entfällt). Der Block darf in der Datei stehen bleiben, er hat keine Wirkung.
 
 ```json
 "favoriten": {

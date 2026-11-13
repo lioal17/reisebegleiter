@@ -415,3 +415,91 @@ Januar sind im August teilweise noch nicht veroeffentlicht.
 Danach die Vault-Notizen nachziehen. Sie sind veraltet: Die
 Projektnotiz spricht von zwei Commits, die Spec enthaelt Features, die
 hier gestrichen wurden.
+
+---
+
+## Ausbau vom 12.11.2026: Reise planen, Finanzen, Reiseabschluss
+
+Diese Fassung liegt auf dem Branch `claude/sharp-hypatia-fytcvi`.
+`main` ist unberuehrt und damit der Wiederherstellungspunkt. Kein
+Pull Request ohne Auftrag.
+
+### Entscheide vom 12.11.2026
+
+| # | Entscheid | Begruendung |
+|---|---|---|
+| 11 | **Genau ein zweiter Host: Kursdienst Frankfurter.** Abfrage immer «alle Kurse zu CHF», nie eine Liste der gebrauchten Waehrungen | Aus der Liste liessen sich die Reiselaender ablesen. In CLAUDE.md eingetragen |
+| 12 | **Erkennung aus Text und aus PDF mit Textschicht.** pdf.js liegt als Datei unter `vendor/`. Keine Screenshot-Texterkennung, keine Cloud-KI | Datenschutz. Texterkennung fuer Bilder haette rund 15 MB und eine Lockerung der CSP gekostet, bei unsicherem Treffer |
+| 13 | **Sechs Schnellkacheln bleiben.** Die Kategorienliste ist anpassbar, feinere Kategorien stehen im Stift-Blatt | Entscheid vom 09.08. bleibt in Kraft, die Auswertung wird trotzdem genauer |
+| 14 | **Eine `index.html` bleibt.** Die Logik ohne Oberflaeche steht im Block `<script id="kern">` | Ein Update bleibt atomar, und die Tests koennen den Block direkt ausfuehren |
+| 15 | **Buchungen liegen neben den Reisedaten** (`buchungen[]`) und werden erst beim Anzeigen ueber die Tage gelegt | `tage[]` und `tickets[]` werden nie umgeschrieben. Eine gepflegte Datendatei bleibt gueltig |
+
+### Was nicht gebaut ist, und warum
+
+- **Buchungslinks auslesen.** Der Browser verbietet einer lokalen
+  Seite den Abruf fremder Seiten, und Buchungen liegen hinter einer
+  Anmeldung. Ginge nur mit einem Server. Der Link wird gespeichert.
+- **Online-Kartenkacheln und Routing in der App.** Wuerden genaue
+  Koordinaten an Dritte senden. Es bleibt bei Schemakarte und
+  Google-Maps-Link pro Ziel.
+- **Sync, Konten, Abo.**
+
+### Fertig und geprueft
+
+Geprueft heisst: von `tests/kern.test.js` (92 Pruefungen) und
+`tests/e2e.test.js` (85 Pruefungen, Chromium in Handygroesse)
+abgedeckt.
+
+- «Reise planen»: Text, PDF, Bild, Link, Handeingabe, Drag and Drop,
+  Einfuegen aus der Zwischenablage. Vorschau mit Sicherheit je Feld,
+  Dubletten-Erkennung mit «Bestehende aktualisieren».
+- Buchungen bearbeiten und loeschen. Belege bleiben beim Loeschen in
+  der Ablage.
+- Tagesplan mit mehreren Verbindungen pro Tag, Flugdauer ueber
+  Zeitzonen, «geplant» sichtbar anders als «bestaetigt».
+- Dokumente: acht Kacheln, Suche, PDF-Vorschau in der App, dieselbe
+  Datei wird nur einmal gespeichert, Originale bis 3 MB bleiben
+  unveraendert.
+- Geld: Land und Waehrung, Kursdienst mit Stand, eigener Kurs,
+  eingefrorener Franken-Betrag je Ausgabe, tatsaechlich bezahlter
+  Betrag, Kassenbon-Foto an der Ausgabe, anpassbare Kategorien.
+- Budget und Abrechnung, «Reise beenden» und wieder oeffnen, CSV,
+  Reisebericht ueber den Druckdialog.
+- Umstellung alter Daten mit Sicherungskopie unter
+  `reisebegleiter_data_vor_v2` und `reisebegleiter_ausgaben_vor_v2`.
+
+### Nebenbei behoben
+
+1. **Die drei Knoepfe an der Hotelkarte liefen bei 390 px ueber den
+   Kartenrand**, 381 gegen 374 Pixel. Bestand schon vor dem Umbau.
+2. **Hotelfoto lag an jedem Tag des Aufenthalts**, fuenf Naechte
+   waren fuenf Kopien im 5-MB-Speicher. Liegt jetzt einmal.
+3. **«undefined» auf Heute**, wenn ein Transfer keine Zeit hatte.
+4. **Klimamittel «Zentralthailand» fuer jeden Ort der Welt.** Gilt
+   jetzt nur innerhalb Thailands.
+5. **Sicherungsdatei konnte leer bleiben**, weil die Adresse sofort
+   nach dem Klick freigegeben wurde.
+6. **`capture="environment"` am Datei-Feld** oeffnete auf Android nur
+   die Kamera. Screenshots und PDF aus den Downloads waren nicht
+   waehlbar.
+7. **`budget` stand in den Daten und wurde nie angezeigt.**
+
+### Offen
+
+- **Der Kursdienst ist nicht gegen den echten Dienst geprueft.** Die
+  Testumgebung erreicht `api.frankfurter.dev` nicht, im Test antwortet
+  ein Ersatz. Ungeprueft ist insbesondere, ob der Dienst Abfragen aus
+  dem Browser zulaesst (CORS). **Pruefung am Handy:** Mehr, Umrechner,
+  «Kurs aktualisieren». Steht danach «Referenzkurs vom ...», laeuft
+  es. Steht «konnte nicht geholt werden», gilt weiter der eigene
+  Kurs, und der Dienst muss ersetzt werden.
+- Der Kursdienst fuehrt nur rund 30 Waehrungen. Fuer Dong, Kip, Riel
+  und Rupien braucht es einen eigenen Kurs.
+- **Mehrere Reisen und Archiv.** «Reise beenden» markiert die eine
+  Reise. Eine zweite Reise anlegen und zwischen Reisen wechseln ist
+  nicht gebaut.
+- Schemakarte zeichnet die Kuestenlinie nur fuer Thailand. Anderswo
+  stehen die Punkte ohne Kueste.
+- Uebersetzer-Knopf «DE – Thai» ist fest verdrahtet.
+- Ungeprueft am echten Geraet: Einfuegen eines Screenshots aus der
+  Zwischenablage, Druckdialog auf Android.
