@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://api.open-meteo.com https://api.frankfurter.dev; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://api.open-meteo.com https://api.frankfurter.dev; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Travel-Mate, Thailand 2026/27</title>
 <meta name="theme-color" content="#0e1b1e">
@@ -827,23 +827,23 @@ body.foto-an .palm-deco, body.foto-an .hero-bg { display: none; }
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
   border-top: 1px solid var(--line);
-  padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
+  padding: 8px 2px calc(8px + env(safe-area-inset-bottom));
   z-index: 100;
 }
 .nav-btn {
-  flex: 1;
+  flex: 1 1 0; min-width: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 3px;
   background: none; border: none;
   color: var(--faint);
   cursor: pointer;
-  padding: 7px 4px;
+  padding: 7px 0;
   border-radius: 14px;
   transition: color 0.2s;
 }
 .nav-btn.active { color: var(--teal); }
 .nav-btn.active .ic { filter: drop-shadow(0 0 8px rgba(47, 217, 192, 0.8)); }
-.nav-label { font-size: var(--fs-label); font-weight: var(--fw-med); }
+.nav-label { font-size: var(--fs-label); font-weight: var(--fw-med); white-space: nowrap; }
 
 .offline-badge {
   position: fixed; top: 10px; right: 10px;
@@ -929,6 +929,16 @@ body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.88); backdrop-filter:
   background: var(--teal-bg); border: 1px solid var(--line-active); border-radius: var(--r-btn);
   padding: var(--sp-m); font-size: var(--fs-sub); margin-bottom: var(--gap-card);
 }
+.planen-wege { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-s); border: 2px dashed transparent; border-radius: var(--r); }
+.planen-wege.drueber { border-color: var(--teal); background: var(--teal-bg); }
+.planen-weg { flex-direction: column; gap: 6px; min-height: 84px; font-size: var(--fs-sub); }
+.lese-stand { text-align: center; padding: var(--sp-xl) 0; color: var(--muted); font-size: var(--fs-body); }
+.lese-stand b { display: block; color: var(--text); font-size: var(--fs-title); margin-bottom: 6px; }
+.eingang-zeile { display: flex; gap: var(--sp-m); align-items: center; padding: var(--sp-s) 0; border-top: 1px solid var(--divider-soft); }
+.eingang-zeile:first-of-type { border-top: none; }
+.eingang-zeile .dok-reihe { margin-top: 0; flex: 0 0 auto; }
+.eingang-zeile .hist-main { flex: 1; min-width: 0; }
+.eingang-zeile .btn { flex: 0 0 auto; padding: 10px 14px; font-size: var(--fs-sub); }
 #druckBericht { display: none; }
 @media print {
   body { background: #fff !important; color: #000 !important; }
@@ -1001,6 +1011,20 @@ body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.88); backdrop-filter:
       <div id="vorReiseListe"></div>
       <div class="card-sub" id="vorReiseRest" style="display: none;"></div>
     </div>
+
+    <!-- Belege, die abgelegt, aber noch keiner Buchung zugeordnet
+         sind. Erscheint nur, wenn es welche gibt. -->
+    <button class="card card-knopf" id="todayEingang" type="button" style="display: none;">
+      <div class="card-row">
+        <div class="badge-ic" style="color: var(--gold);"><span class="ic" data-icon="doc"></span></div>
+        <div style="flex: 1; min-width: 0; text-align: left;">
+          <div class="card-label">Eingang</div>
+          <div class="card-title card-title-sm" id="todayEingangTitel">–</div>
+          <div class="card-sub">Antippen zum Zuordnen</div>
+        </div>
+        <div class="chevron ic" data-icon="chevR"></div>
+      </div>
+    </button>
 
     <!-- Budget in einer Zeile. Die Eingabe der Ausgaben bleibt unter
          Mehr (Entscheid vom 09.08.2026), hier steht nur der Stand. -->
@@ -1113,6 +1137,7 @@ body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.88); backdrop-filter:
       </div>
       <button class="icon-btn" id="addTicketTop"><span class="ic" data-icon="plus"></span></button>
     </div>
+    <div id="eingangBox"></div>
     <input type="search" id="dokSuche" class="input-field" placeholder="Buchung oder Dokument suchen" autocomplete="off">
     <div id="dokTreffer"></div>
     <div class="doc-grid" id="docTiles"></div>
@@ -1128,6 +1153,8 @@ body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.88); backdrop-filter:
          nicht waehlbar. Ohne es bietet das System Kamera und Dateien an. -->
     <input type="file" id="dokInput" accept="image/*,application/pdf" style="display: none;">
     <input type="file" id="planenDatei" accept="image/*,application/pdf" style="display: none;">
+    <!-- Mit "capture": dieses Feld oeffnet direkt die Kamera. -->
+    <input type="file" id="planenKamera" accept="image/*" capture="environment" style="display: none;">
   </div>
 
   <!-- KARTE (Unterseite) -->
@@ -1150,28 +1177,7 @@ body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.88); backdrop-filter:
     <div class="topbar">
       <div style="flex: 1;">
         <h1 class="h1">Mehr</h1>
-        <div class="topbar-sub">Werkzeuge & Einstellungen</div>
-      </div>
-    </div>
-
-    <!-- Umrechner -->
-    <div class="card">
-      <div class="card-label">Umrechner</div>
-      <!-- Reiseland waehlen, die Waehrung folgt. Die Waehrung laesst
-           sich daneben von Hand uebersteuern. -->
-      <div class="kurs-zeile">
-        <select id="landWahl" class="input-field" aria-label="Reiseland"></select>
-        <select id="waehrungWahl" class="input-field" aria-label="Währung" style="flex: 0 0 96px;"></select>
-      </div>
-      <div class="conv-row">
-        <input type="text" inputmode="decimal" id="thbInput" placeholder="THB" class="input-field">
-        <button class="exchange-btn" id="convSwap" title="Felder leeren"><span class="ic" data-icon="swap" data-size="18"></span></button>
-        <input type="text" inputmode="decimal" id="chfInput" placeholder="CHF" class="input-field">
-      </div>
-      <div class="badge-label" id="kursInfo">–</div>
-      <div class="row">
-        <button class="btn btn-secondary btn-inline" id="kursHolen" type="button">Kurs aktualisieren</button>
-        <button class="btn btn-secondary btn-inline" id="kursEigen" type="button">Eigener Kurs</button>
+        <div class="topbar-sub">Notizen, Notfall, Datensicherung</div>
       </div>
     </div>
 
@@ -1184,71 +1190,11 @@ body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.88); backdrop-filter:
       <div class="badge-label">Gilt an jedem Tag der Reise.</div>
     </div>
 
-    <!-- Ausgaben: Betrag tippen, Kategorie tippen, gebucht.
-         Kein Bestaetigen, kein Dialog. Der Stift auf jeder Kachel
-         oeffnet den Weg mit Notiz. -->
-    <div class="card" id="spendCard">
-      <div class="spend-head">
-        <div class="card-label">Ausgaben</div>
-        <div class="spend-summe">
-          <div class="spend-total" id="spendTotal">0.00 CHF</div>
-          <div class="spend-total-thb" id="spendTotalThb">0 THB</div>
-        </div>
-      </div>
-      <div class="spend-input-row">
-        <input type="text" inputmode="decimal" id="spendAmount" placeholder="0" class="spend-input" autocomplete="off">
-        <div class="spend-cur">
-          <div class="spend-cur-unit" id="spendUnit">THB</div>
-          <div class="spend-cur-chf" id="spendChf">0.00 CHF</div>
-        </div>
-      </div>
-      <div class="cat-grid" id="catGrid"></div>
-      <div class="spend-last" id="spendLast"></div>
-    </div>
-
-    <!-- Verlauf: nur eine Zeile mit Zusammenfassung, der ganze
-         Verlauf oeffnet sich im Blatt. Sonst schiebt eine lange
-         Liste alles andere unter den Bildrand. -->
-    <button class="card card-knopf" id="histOeffnen" type="button">
-      <div class="card-row">
-        <div class="badge-ic"><span class="ic" data-icon="clock"></span></div>
-        <div style="flex: 1; min-width: 0; text-align: left;">
-          <div class="card-label">Verlauf</div>
-          <div class="card-title card-title-sm" id="histAnzahl">Noch nichts erfasst</div>
-          <div class="card-sub" id="histLetzte"></div>
-        </div>
-        <div class="chevron ic" data-icon="chevR"></div>
-      </div>
-    </button>
-
-    <!-- Budget und Abrechnung -->
-    <button class="card card-knopf" id="budgetOeffnen" type="button">
-      <div class="card-row">
-        <div class="badge-ic"><span class="ic" data-icon="wallet"></span></div>
-        <div style="flex: 1; min-width: 0; text-align: left;">
-          <div class="card-label">Budget und Abrechnung</div>
-          <div class="card-title card-title-sm" id="budgetKarteTitel">–</div>
-          <div class="card-sub" id="budgetKarteSub"></div>
-        </div>
-        <div class="chevron ic" data-icon="chevR"></div>
-      </div>
-    </button>
-
     <!-- Notizen -->
     <div class="card">
       <div class="card-label">Notizen</div>
       <textarea class="sheet-feld" id="notizFeld" rows="5" placeholder="Was am Bankomat zu drücken ist, wann das Taxi kommt, was die Rezeption gesagt hat …"></textarea>
       <div class="badge-label" id="notizStatus">Bleibt auf diesem Gerät. Keine PINs, keine Kartennummern.</div>
-    </div>
-
-    <!-- Übersetzer -->
-    <div class="card">
-      <div class="card-label">Übersetzer</div>
-      <div class="row-2">
-        <button class="btn btn-secondary" id="trDeEn"><span class="ic" data-icon="translate" data-size="17"></span>DE – ENG</button>
-        <button class="btn btn-secondary" id="trDeTh"><span class="ic" data-icon="translate" data-size="17"></span>DE – Thai</button>
-      </div>
-      <div class="badge-label">Öffnet Google Translate im Browser. Braucht Netz.</div>
     </div>
 
     <!-- Notfall -->
@@ -1288,16 +1234,96 @@ body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.88); backdrop-filter:
     </div>
   </div>
 
-  <!-- BUDGET UND ABRECHNUNG (Unterseite) -->
+  <!-- BUDGET: Umrechner, Ausgaben, Verlauf, Uebersicht und Abrechnung.
+       Seit 13.11.2026 ein eigener Reiter. -->
   <div class="screen" id="screenBudget">
     <div class="topbar">
-      <button class="icon-btn" id="budgetBackBtn"><span class="ic" data-icon="chevL"></span></button>
       <div style="flex: 1;">
         <h1 class="h1" id="budgetTitel">Budget</h1>
         <div class="topbar-sub" id="budgetSub">–</div>
       </div>
     </div>
+
+    <!-- Umrechner -->
+    <div class="card">
+      <div class="card-label">Umrechner</div>
+      <!-- Reiseland waehlen, die Waehrung folgt. Die Waehrung laesst
+           sich daneben von Hand uebersteuern. -->
+      <div class="kurs-zeile">
+        <select id="landWahl" class="input-field" aria-label="Reiseland"></select>
+        <select id="waehrungWahl" class="input-field" aria-label="Währung" style="flex: 0 0 96px;"></select>
+      </div>
+      <div class="conv-row">
+        <input type="text" inputmode="decimal" id="thbInput" placeholder="THB" class="input-field">
+        <button class="exchange-btn" id="convSwap" title="Felder leeren"><span class="ic" data-icon="swap" data-size="18"></span></button>
+        <input type="text" inputmode="decimal" id="chfInput" placeholder="CHF" class="input-field">
+      </div>
+      <div class="badge-label" id="kursInfo">–</div>
+      <div class="row">
+        <button class="btn btn-secondary btn-inline" id="kursHolen" type="button">Kurs aktualisieren</button>
+        <button class="btn btn-secondary btn-inline" id="kursEigen" type="button">Eigener Kurs</button>
+      </div>
+    </div>
+
+    <!-- Ausgaben: Betrag tippen, Kategorie tippen, gebucht.
+         Kein Bestaetigen, kein Dialog. Der Stift auf jeder Kachel
+         oeffnet den Weg mit Notiz. -->
+    <div class="card" id="spendCard">
+      <div class="spend-head">
+        <div class="card-label">Ausgaben</div>
+        <div class="spend-summe">
+          <div class="spend-total" id="spendTotal">0.00 CHF</div>
+          <div class="spend-total-thb" id="spendTotalThb">0 THB</div>
+        </div>
+      </div>
+      <div class="spend-input-row">
+        <input type="text" inputmode="decimal" id="spendAmount" placeholder="0" class="spend-input" autocomplete="off">
+        <div class="spend-cur">
+          <div class="spend-cur-unit" id="spendUnit">THB</div>
+          <div class="spend-cur-chf" id="spendChf">0.00 CHF</div>
+        </div>
+      </div>
+      <div class="cat-grid" id="catGrid"></div>
+      <div class="spend-last" id="spendLast"></div>
+    </div>
+
+    <!-- Verlauf: nur eine Zeile mit Zusammenfassung, der ganze
+         Verlauf oeffnet sich im Blatt. Sonst schiebt eine lange
+         Liste alles andere unter den Bildrand. -->
+    <button class="card card-knopf" id="histOeffnen" type="button">
+      <div class="card-row">
+        <div class="badge-ic"><span class="ic" data-icon="clock"></span></div>
+        <div style="flex: 1; min-width: 0; text-align: left;">
+          <div class="card-label">Verlauf</div>
+          <div class="card-title card-title-sm" id="histAnzahl">Noch nichts erfasst</div>
+          <div class="card-sub" id="histLetzte"></div>
+        </div>
+        <div class="chevron ic" data-icon="chevR"></div>
+      </div>
+    </button>
+
     <div id="budgetInhalt"></div>
+  </div>
+
+  <!-- TRANSLATOR: seit 13.11.2026 ein eigener Reiter. -->
+  <div class="screen" id="screenTranslator">
+    <div class="topbar">
+      <div style="flex: 1;">
+        <h1 class="h1">Translator</h1>
+        <div class="topbar-sub">Öffnet Google Translate</div>
+      </div>
+    </div>
+
+    <!-- Übersetzer -->
+    <div class="card">
+      <div class="card-label">Übersetzer</div>
+      <div class="row-2">
+        <button class="btn btn-secondary" id="trDeEn"><span class="ic" data-icon="translate" data-size="17"></span>DE – ENG</button>
+        <button class="btn btn-secondary" id="trDeTh"><span class="ic" data-icon="translate" data-size="17"></span>DE – Thai</button>
+      </div>
+      <div class="badge-label">Öffnet Google Translate im Browser. Braucht Netz.</div>
+    </div>
+
   </div>
 
   <div class="toast" id="toast" role="status"></div>
@@ -1328,6 +1354,14 @@ body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.88); backdrop-filter:
     <button class="nav-btn" data-screen="screenTickets">
       <span class="ic" data-icon="doc"></span>
       <span class="nav-label">Dokumente</span>
+    </button>
+    <button class="nav-btn" data-screen="screenBudget">
+      <span class="ic" data-icon="wallet"></span>
+      <span class="nav-label">Budget</span>
+    </button>
+    <button class="nav-btn" data-screen="screenTranslator">
+      <span class="ic" data-icon="translate"></span>
+      <span class="nav-label">Translator</span>
     </button>
     <button class="nav-btn" data-screen="screenTools">
       <span class="ic" data-icon="grid"></span>
@@ -2654,6 +2688,7 @@ function showScreen(screenId, navScreenId) {
     b.classList.toggle('active', b.dataset.screen === navTarget);
   });
   document.getElementById(screenId).scrollTop = 0;
+  if (screenId === 'screenBudget' && typeof renderBudget === 'function') renderBudget();
   if (typeof hintergrundUmschalten === 'function') hintergrundUmschalten();
 }
 document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -4322,7 +4357,7 @@ function renderDokumente() {
      Geraet. */
   const bekannteIds = new Set(alleTickets().map(t => String(t.id)));
   const waisen = Object.keys(dokIndex)
-    .filter(id => dokIndex[id] && dokIndex[id].length && !bekannteIds.has(String(id)) && String(id).indexOf('ausgabe-') !== 0);
+    .filter(id => dokIndex[id] && dokIndex[id].length && !bekannteIds.has(String(id)) && String(id).indexOf('ausgabe-') !== 0 && String(id) !== EINGANG);
   if (waisen.length) {
     const kopf = document.createElement('div');
     kopf.className = 'grp-head';
@@ -4347,6 +4382,7 @@ function renderDokumente() {
   }
 
   renderDocPanel();
+  eingangZeichnen();
 }
 
 /* ---------- Karte (schematisch, offline) ---------- */
@@ -4806,7 +4842,7 @@ async function kurseHolen(vonHand) {
 
 function ohneKursMelden(w) {
   alert('Für ' + w + ' ist kein Kurs hinterlegt, deshalb wurde NICHT gebucht.\n\n' +
-    'Unter Mehr, Umrechner: «Kurs aktualisieren» (braucht Netz) oder «Eigener Kurs» eintragen. ' +
+    'Unter Budget, Umrechner: «Kurs aktualisieren» (braucht Netz) oder «Eigener Kurs» eintragen. ' +
     'Oder im Stift-Blatt den tatsächlich bezahlten Betrag in ' + heimat() + ' angeben.');
 }
 
@@ -5565,7 +5601,10 @@ function renderRegeln() {
   const liste = document.getElementById('regelnListe');
   if (!karte || !liste) return;
   const regeln = ((appData && appData.regeln) || []).filter(r => String(r || '').trim());
-  karte.style.display = regeln.length ? '' : 'none';
+  /* Seit 13.11.2026 ausgeblendet (Entscheid Lio). Die Regeln bleiben
+     in den Reisedaten stehen und werden weiter mitgesichert, nur
+     gezeigt werden sie nicht mehr. */
+  karte.style.display = 'none';
   liste.innerHTML = regeln.map(r => '<div class="hinweis-zeile">' + esc(r) + '</div>').join('');
 }
 
@@ -6092,6 +6131,21 @@ function meldung(text) {
 
    Ohne Schrift-Einbettung und ohne eval, damit die Sicherheitsregel
    (CSP) unveraendert bleibt. */
+/* Ein Hintergrund-Skript (Worker) wird nie direkt aus einer Datei
+   gestartet, sondern ueber einen Blob, der die Datei nachlaedt.
+   Grund, gemessen am 13.11.2026: Fuer einen Worker aus einer Datei
+   gilt die Sicherheitsregel der Seite nicht, er koennte jeden Host
+   erreichen. Ein Worker aus einem Blob erbt die Regel. Siehe
+   CLAUDE.md, "Praezisierung Hintergrund-Skripte". */
+function absolut(pfad) { return new URL(pfad, location.href).href; }
+function workerUeberBlob(pfad) {
+  const blob = new Blob(['importScripts(' + JSON.stringify(absolut(pfad)) + ');'], { type: 'text/javascript' });
+  const adresse = URL.createObjectURL(blob);
+  const w = new Worker(adresse);
+  setTimeout(() => URL.revokeObjectURL(adresse), 30000);
+  return w;
+}
+
 let pdfLib = null;
 function pdfLaden() {
   if (pdfLib) return pdfLib;
@@ -6101,7 +6155,7 @@ function pdfLaden() {
     s.src = 'vendor/pdf.min.js';
     s.onload = () => {
       if (!window.pdfjsLib) return fehler(new Error('PDF-Bibliothek nicht geladen'));
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdf.worker.min.js';
+      window.pdfjsLib.GlobalWorkerOptions.workerPort = workerUeberBlob('vendor/pdf.worker.min.js');
       ok(window.pdfjsLib);
     };
     s.onerror = () => fehler(new Error('PDF-Bibliothek nicht verfügbar'));
@@ -6182,32 +6236,297 @@ async function pdfInAppZeigen(blob, name) {
   }
 }
 
+/* ---------- Texterkennung auf dem Geraet ----------
+   tesseract.js liegt als Datei im Repo (vendor/ocr/) und liest
+   Bilder lokal. Nichts geht ins Netz: der Worker startet ueber einen
+   Blob und steht damit unter derselben Sicherheitsregel wie die
+   Seite. Gelesen wird Deutsch und Englisch.
+
+   Was die Texterkennung liefert, ist ein Vorschlag. Eine 8 kann eine
+   3 sein. Deshalb gilt kein so gelesenes Feld als sicher, alle
+   tragen in der Vorschau "bitte pruefen". */
+const OCR_FASSUNG = '7.0.0';
+let ocrLib = null;
+function ocrLaden() {
+  if (ocrLib) return ocrLib;
+  ocrLib = new Promise((ok, fehler) => {
+    if (window.Tesseract) return ok(window.Tesseract);
+    const s = document.createElement('script');
+    s.src = 'vendor/ocr/tesseract.min.js';
+    s.onload = () => window.Tesseract ? ok(window.Tesseract) : fehler(new Error('Texterkennung nicht geladen'));
+    s.onerror = () => fehler(new Error('Texterkennung nicht verfügbar'));
+    document.head.appendChild(s);
+  });
+  ocrLib.catch(() => { ocrLib = null; });
+  return ocrLib;
+}
+async function ocrArbeiter() {
+  const T = await ocrLaden();
+  return await T.createWorker(['deu', 'eng'], 1, {
+    workerPath: absolut('vendor/ocr/worker.min.js'),
+    corePath: absolut('vendor/ocr'),
+    langPath: absolut('vendor/ocr/lang'),
+    workerBlobURL: true, gzip: true, cacheMethod: 'none'
+  });
+}
+/* Grosse Kamerafotos vor dem Lesen verkleinern. Zwoelf Megapixel
+   lesen dauert auf einem Handy eine halbe Minute, 2200 Pixel reichen
+   fuer gedruckten Text. Betrifft nur das Lesen, nicht die Ablage. */
+function bildFuerOcr(blob) {
+  /* Jedes Bild wird zuerst vom Browser dekodiert und als sauberes
+     PNG weitergegeben. Ein beschaedigtes Bild scheitert damit hier,
+     mit null, und nicht tief in der Texterkennung mit einem
+     Skriptfehler. */
+  return new Promise(ok => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const max = 2200;
+      let w = img.width, h = img.height;
+      if (!w || !h) { URL.revokeObjectURL(url); return ok(null); }
+      if (w > max || h > max) { const f = max / Math.max(w, h); w = Math.round(w * f); h = Math.round(h * f); }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const g = c.getContext('2d');
+      g.fillStyle = '#fff';
+      g.fillRect(0, 0, w, h);
+      g.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      c.toBlob(b => ok(b || null), 'image/png');
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); ok(null); };
+    img.src = url;
+  });
+}
+const OCR_LIMIT_MS = 90000;
+async function ocrLesen(blob) {
+  const bild = await bildFuerOcr(blob);
+  /* Nicht lesbar oder zu klein fuer Text: dann gibt es nichts zu
+     erkennen. Der Beleg ist trotzdem gespeichert. */
+  if (!bild) return '';
+  const w = await ocrArbeiter();
+  let wecker = null;
+  try {
+    const erg = await Promise.race([
+      w.recognize(bild),
+      new Promise((_, nein) => { wecker = setTimeout(() => nein(new Error('Zeitlimit überschritten')), OCR_LIMIT_MS); })
+    ]);
+    return String((erg && erg.data && erg.data.text) || '');
+  } finally {
+    clearTimeout(wecker);
+    try { await w.terminate(); } catch(e) { /* egal */ }
+  }
+}
+/* Erste Seite eines PDF als Bild, fuer gescannte PDF ohne Textschicht. */
+async function pdfSeiteAlsBild(blob) {
+  const doc = await pdfOeffnen(blob);
+  try {
+    const seite = await doc.getPage(1);
+    const basis = seite.getViewport({ scale: 1 });
+    const vp = seite.getViewport({ scale: Math.min(3, 2000 / Math.max(basis.width, basis.height)) });
+    const c = document.createElement('canvas');
+    c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
+    await seite.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+    return await new Promise(ok => c.toBlob(b => ok(b), 'image/png'));
+  } finally {
+    try { doc.destroy(); } catch(e) { /* egal */ }
+  }
+}
+
+/* Bibliotheken einmal in den Offline-Speicher holen, solange Netz da
+   ist. Der Service Worker legt ab, was hier durchlaeuft. Ohne diesen
+   Schritt wuerde die Texterkennung beim ersten Gebrauch am Pier
+   fehlen. Der Probelauf am Ende laedt genau den Rechenkern, den
+   dieses Geraet braucht. */
+async function vendorVorladen() {
+  try {
+    if (!navigator.onLine || !navigator.serviceWorker || !navigator.serviceWorker.controller) return;
+    if (localStorage.getItem('reisebegleiter_vendor') === OCR_FASSUNG) return;
+    for (const pfad of ['vendor/pdf.min.js', 'vendor/pdf.worker.min.js', 'vendor/ocr/tesseract.min.js', 'vendor/ocr/worker.min.js',
+      'vendor/ocr/lang/deu.traineddata.gz', 'vendor/ocr/lang/eng.traineddata.gz']) {
+      const r = await fetch(pfad);
+      if (!r.ok) return;
+      await r.arrayBuffer();
+    }
+    const w = await ocrArbeiter();
+    await w.terminate();
+    localStorage.setItem('reisebegleiter_vendor', OCR_FASSUNG);
+  } catch(e) { /* beim naechsten Start noch einmal */ }
+}
+
+/* ---------- Eingang ----------
+   Jede Datei wird in dem Moment gespeichert, in dem sie ankommt,
+   unter der Kennung "eingang". Erst danach wird gelesen und gefragt.
+   Wer am Schalter fotografiert und dann das Handy einsteckt, hat den
+   Beleg trotzdem. Zugeordnet wird spaeter. */
+const EINGANG = 'eingang';
+
+async function dokUmhaengen(meta, ticketId) {
+  if (!meta || meta.ticketId === ticketId) return;
+  const von = meta.ticketId;
+  /* Liegt dieselbe Datei schon an der Buchung, verschwindet nur der
+     Eintrag im Eingang. */
+  if (meta.hash && dokListe(ticketId).some(m => m.hash === meta.hash)) { await dokLoeschen(meta.id, von); return; }
+  const neu = Object.assign({}, meta, { ticketId: ticketId });
+  const db = await dokDb();
+  await new Promise((ok, fehler) => {
+    const tx = db.transaction('meta', 'readwrite');
+    tx.objectStore('meta').put(neu);
+    tx.oncomplete = () => ok();
+    tx.onabort = () => fehler(tx.error || new Error('Transaktion abgebrochen'));
+    tx.onerror = () => fehler(tx.error || new Error('Schreibfehler'));
+  });
+  dokIndex[von] = dokListe(von).filter(m => m.id !== meta.id);
+  (dokIndex[ticketId] = dokIndex[ticketId] || []).push(neu);
+}
+
+function eingangZeichnen() {
+  const liste = dokListe(EINGANG);
+  const heute = document.getElementById('todayEingang');
+  if (heute) {
+    heute.style.display = liste.length ? '' : 'none';
+    document.getElementById('todayEingangTitel').textContent =
+      liste.length + (liste.length === 1 ? ' Beleg noch nicht zugeordnet' : ' Belege noch nicht zugeordnet');
+  }
+  const box = document.getElementById('eingangBox');
+  if (!box) return;
+  box.innerHTML = '';
+  if (!liste.length) return;
+  const panel = document.createElement('div');
+  panel.className = 'doc-panel';
+  panel.id = 'eingangPanel';
+  panel.innerHTML = '<div class="doc-panel-kopf"><div class="doc-panel-titel">Eingang</div></div>' +
+    '<div class="doc-eintrag-zeile" style="margin-bottom: var(--sp-s);">Gespeichert, aber noch keiner Buchung zugeordnet.</div>';
+  liste.forEach(m => {
+    const zeile = document.createElement('div');
+    zeile.className = 'eingang-zeile';
+    zeile.appendChild(dokReihe({ id: EINGANG, titel: 'Eingang' }, [m]));
+    const mitte = document.createElement('div');
+    mitte.className = 'hist-main';
+    mitte.innerHTML = '<div class="hist-titel">' + esc(m.name) + '</div><div class="hist-sub">' + esc(datumKurz(m.erfasst)) + ' · ' + esc(mb(m.groesse)) + '</div>';
+    zeile.appendChild(mitte);
+    const knopf = document.createElement('button');
+    knopf.className = 'btn';
+    knopf.type = 'button';
+    knopf.textContent = 'Zuordnen';
+    knopf.addEventListener('click', () => eingangZuordnen(m));
+    zeile.appendChild(knopf);
+    panel.appendChild(zeile);
+  });
+  box.appendChild(panel);
+}
+
+function leseBlatt(name) {
+  const sheet = document.getElementById('sheet');
+  sheet.innerHTML = '';
+  planenOffen = false;
+  blattKopf(sheet, 'Beleg ist gespeichert', name || '');
+  const st = document.createElement('div');
+  st.className = 'lese-stand';
+  st.id = 'leseStand';
+  st.innerHTML = '<b>Text wird gelesen …</b>Das geschieht auf diesem Gerät und kann einige Sekunden dauern.';
+  sheet.appendChild(st);
+  blattAuf(sheet);
+}
+
+/* Liest einen Beleg und liefert, was sich daraus erkennen laesst.
+   Scheitert das Lesen, kommt ein Hinweis zurueck und kein Fehler:
+   der Beleg ist dann trotzdem gespeichert. */
+async function belegLesen(blob, name, typ) {
+  const istPdf = String(typ || '').indexOf('pdf') !== -1 || /\.pdf$/i.test(String(name || ''));
+  let erg = { typ: 'sonstiges', typSicher: 'tief', felder: {}, sicher: {}, hinweise: [] };
+  let text = '', perOcr = false;
+  if (istPdf) {
+    try { text = await pdfText(blob); }
+    catch(e) {
+      erg.hinweise.push('Das PDF liess sich nicht lesen (' + ((e && e.message) || 'unbekannter Fehler') + '). Es ist als Beleg gespeichert, die Angaben bitte von Hand ergänzen.');
+      return erg;
+    }
+    if (text.replace(/\s/g, '').length < 20) {
+      /* Kein Text im PDF: vermutlich ein Scan. Dann die erste Seite
+         als Bild lesen. */
+      try {
+        const bild = await pdfSeiteAlsBild(blob);
+        text = bild ? await ocrLesen(bild) : '';
+        perOcr = true;
+      } catch(e) { text = ''; }
+      if (text.replace(/\s/g, '').length < 20) {
+        erg.hinweise.push('Dieses PDF enthält keinen lesbaren Text. Es ist als Beleg gespeichert, die Angaben bitte von Hand ergänzen.');
+        return erg;
+      }
+    }
+  } else {
+    try { text = await ocrLesen(blob); perOcr = true; }
+    catch(e) {
+      erg.hinweise.push('Die Texterkennung steht gerade nicht zur Verfügung (' + ((e && e.message) || 'unbekannter Fehler') +
+        '). Das Bild ist als Beleg gespeichert, die Angaben bitte von Hand ergänzen.');
+      return erg;
+    }
+    if (text.replace(/\s/g, '').length < 20) {
+      erg.hinweise.push('Auf dem Bild wurde kein Text erkannt. Es ist als Beleg gespeichert, die Angaben bitte von Hand ergänzen.');
+      return erg;
+    }
+  }
+  erg = Kern.erkennen(text);
+  if (perOcr) {
+    Object.keys(erg.sicher).forEach(k => { if (erg.sicher[k] === 'hoch') erg.sicher[k] = 'mittel'; });
+    erg.hinweise.unshift('Der Text wurde aus einem Bild gelesen. Dabei können Ziffern und Buchstaben verwechselt werden, bitte Datum, Uhrzeit, Betrag und Buchungsnummer mit dem Beleg vergleichen.');
+  }
+  return erg;
+}
+
+async function eingangZuordnen(meta, blob) {
+  leseBlatt(meta.name);
+  let erg;
+  try {
+    const b = blob || await dokBlob(meta);
+    if (!b) throw new Error('Die Datei ist nicht mehr in der Ablage.');
+    erg = await belegLesen(b, meta.name, meta.typ);
+  } catch(e) {
+    erg = { typ: 'sonstiges', typSicher: 'tief', felder: {}, sicher: {}, hinweise: ['Der Beleg liess sich nicht lesen (' + ((e && e.message) || 'unbekannter Fehler') + ').'] };
+  }
+  const istPdf = String(meta.typ || '').indexOf('pdf') !== -1;
+  buchungBlatt({ neu: true, erg: erg, eingang: meta, quelle: { art: istPdf ? 'pdf' : 'bild', name: meta.name || '' } });
+}
+
 /* ---------- Reise planen ----------
-   Der zentrale Einstieg. Vier Wege fuehren hinein: Datei waehlen,
-   Datei hineinziehen, aus der Zwischenablage einfuegen, Text oder
-   Link tippen. Alle enden in derselben Vorschau, und erst die
-   Vorschau schreibt etwas in den Reiseplan. */
+   Der zentrale Einstieg. Foto aufnehmen, Datei waehlen, Datei
+   hineinziehen, aus der Zwischenablage einfuegen, aus einer anderen
+   App teilen, Text oder Link tippen. Eine Datei ist sofort
+   gespeichert. In den Reiseplan schreibt erst die Vorschau. */
 function planenBlatt() {
   const sheet = document.getElementById('sheet');
   sheet.innerHTML = '';
-  blattKopf(sheet, 'Reise planen', 'Buchung, Beleg oder Termin hinzufügen. Alles bleibt auf diesem Gerät.');
+  blattKopf(sheet, 'Reise planen', 'Ein Foto oder PDF ist sofort gespeichert. Der Text darauf wird auf diesem Gerät gelesen.');
 
-  const ablage = document.createElement('div');
-  ablage.className = 'ablage-flaeche';
-  ablage.id = 'planenAblage';
-  ablage.innerHTML = '<b>Datei wählen oder hierher ziehen</b>PDF, Foto oder Screenshot einer Bestätigung';
-  ablage.addEventListener('click', () => document.getElementById('planenDatei').click());
-  sheet.appendChild(ablage);
+  const wege = document.createElement('div');
+  wege.className = 'planen-wege';
+  wege.id = 'planenAblage';
+  const foto = document.createElement('button');
+  foto.className = 'btn planen-weg';
+  foto.type = 'button';
+  foto.id = 'planenFoto';
+  foto.innerHTML = icon('camera', 26) + 'Foto aufnehmen';
+  foto.addEventListener('click', () => document.getElementById('planenKamera').click());
+  const datei = document.createElement('button');
+  datei.className = 'btn btn-secondary planen-weg';
+  datei.type = 'button';
+  datei.id = 'planenWaehlen';
+  datei.innerHTML = icon('doc', 26) + 'PDF oder Bild wählen';
+  datei.addEventListener('click', () => document.getElementById('planenDatei').click());
+  wege.appendChild(foto);
+  wege.appendChild(datei);
+  sheet.appendChild(wege);
 
   const l1 = document.createElement('div');
   l1.className = 'sheet-label';
-  l1.textContent = 'Oder Text der Bestätigung einfügen, auch ein Link';
+  l1.textContent = 'Link oder Text der Bestätigung einfügen';
   sheet.appendChild(l1);
   const feld = document.createElement('textarea');
   feld.className = 'sheet-feld';
   feld.id = 'planenText';
-  feld.rows = 5;
-  feld.placeholder = 'Text aus der Bestätigungsmail hier einfügen';
+  feld.rows = 4;
+  feld.placeholder = 'Link oder Text aus der Bestätigungsmail';
   sheet.appendChild(feld);
   const erkennen = document.createElement('button');
   erkennen.className = 'btn';
@@ -6236,12 +6555,12 @@ function planenBlatt() {
 
   const hinweis = document.createElement('div');
   hinweis.className = 'badge-label';
-  hinweis.textContent = 'Erkannt wird Text: aus einem PDF oder eingefügt. Bilder und Screenshots werden als Beleg abgelegt, ihr Inhalt wird nicht gelesen. ' +
-    'Ein Link wird gespeichert, die Seite dahinter kann die App nicht abrufen.';
+  hinweis.textContent = 'Gelesen wird Deutsch und Englisch, aus Fotos, Screenshots und PDF. Ein Link wird gespeichert, die Seite dahinter kann die App nicht abrufen. ' +
+    'Aus Mail, Browser oder Galerie geht es auch über «Teilen», dann Travel-Mate.';
   sheet.appendChild(hinweis);
 
-  ['dragenter', 'dragover'].forEach(n => sheet.addEventListener(n, ev => { ev.preventDefault(); ablage.classList.add('drueber'); }));
-  ['dragleave', 'drop'].forEach(n => sheet.addEventListener(n, ev => { ev.preventDefault(); ablage.classList.remove('drueber'); }));
+  ['dragenter', 'dragover'].forEach(n => sheet.addEventListener(n, ev => { ev.preventDefault(); wege.classList.add('drueber'); }));
+  ['dragleave', 'drop'].forEach(n => sheet.addEventListener(n, ev => { ev.preventDefault(); wege.classList.remove('drueber'); }));
   sheet.ondrop = ev => {
     const dt = ev.dataTransfer;
     if (!dt) return;
@@ -6254,11 +6573,11 @@ function planenBlatt() {
   planenOffen = true;
 }
 document.getElementById('planenBtn').addEventListener('click', planenBlatt);
-document.getElementById('planenDatei').addEventListener('change', function(e) {
+['planenDatei', 'planenKamera'].forEach(id => document.getElementById(id).addEventListener('change', function(e) {
   const file = e.target.files[0];
   this.value = '';
   if (file) planenDatei(file);
-});
+}));
 /* Einfuegen aus der Zwischenablage, solange "Reise planen" offen ist.
    Ein kopierter Screenshot kommt als Datei, kopierter Text als Text. */
 document.addEventListener('paste', ev => {
@@ -6282,51 +6601,105 @@ function planenText(text) {
 }
 
 const DATEI_MAX = 25 * 1024 * 1024;
-async function planenDatei(file) {
-  if (!file) return;
+/* Legt eine Datei im Eingang ab. Liefert den Metasatz, oder null mit
+   einer Meldung, wenn sie nicht angenommen wurde. "schon" nennt eine
+   Buchung, an der genau diese Datei bereits liegt. */
+async function eingangAblegen(file, still) {
   const istPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
   const istBild = String(file.type || '').startsWith('image/');
-  if (!istPdf && !istBild) {
-    alert('Diese Dateiart kann nicht abgelegt werden. Möglich sind PDF und Bilder.');
-    return;
-  }
-  if (file.size > DATEI_MAX) {
-    alert('Die Datei ist grösser als 25 MB und wird nicht angenommen.');
-    return;
-  }
+  const sag = t => { if (!still) alert(t); };
+  if (!istPdf && !istBild) { sag('Diese Dateiart kann nicht abgelegt werden. Möglich sind PDF und Bilder.'); return null; }
+  if (file.size > DATEI_MAX) { sag('Die Datei ist grösser als 25 MB und wird nicht angenommen.'); return null; }
   if (dokAblageDefekt) {
-    alert('Die Dokumenten-Ablage ist in diesem Browser nicht verfügbar, meist wegen des privaten Modus. ' +
+    sag('Die Dokumenten-Ablage ist in diesem Browser nicht verfügbar, meist wegen des privaten Modus. ' +
       'Die Datei würde verloren gehen, deshalb wird sie nicht angenommen. Text einfügen funktioniert trotzdem.');
+    return null;
+  }
+  const schon = dokMitHash(await dateiHash(file));
+  if (schon && schon.ticketId !== EINGANG) return { schon: schon };
+  try {
+    const meta = schon || await dokSpeichern(EINGANG, file);
+    return { meta: dokListe(EINGANG).find(m => m.id === meta.id) || meta };
+  } catch(e) {
+    const voll = e && (e.name === 'QuotaExceededError' || /quota|speicher/i.test(String(e.message || '')));
+    sag(voll ? 'Speicher voll – der Beleg wurde NICHT gespeichert.\n\nÄltere Dokumente entfernen oder Gerätespeicher freigeben.'
+      : 'Der Beleg wurde NICHT gespeichert.\n\n' + ((e && e.message) || String(e)));
+    return null;
+  }
+}
+async function planenDatei(file) {
+  if (!file) return;
+  const r = await eingangAblegen(file, false);
+  if (!r) return;
+  if (r.schon) {
+    /* Genau diese Datei liegt schon an einer Buchung. Dann wird die
+       bestehende Buchung vorgeschlagen statt einer zweiten, und die
+       Datei wird kein zweites Mal gespeichert. */
+    leseBlatt(file.name);
+    const erg = await belegLesen(file, file.name, file.type);
+    const t = alleTickets().find(x => x.id === r.schon.ticketId);
+    erg.hinweise.unshift('Diese Datei liegt bereits in der Ablage' + (t ? ', bei «' + t.titel + '»' : '') + '. Sie wird kein zweites Mal gespeichert.');
+    const istPdf = String(r.schon.typ || '').indexOf('pdf') !== -1;
+    buchungBlatt({ neu: true, erg: erg, quelle: { art: istPdf ? 'pdf' : 'bild', name: file.name || '' }, vorschlag: buchungZu(r.schon.ticketId) });
     return;
   }
-  let erg = { typ: 'sonstiges', typSicher: 'tief', felder: {}, sicher: {}, hinweise: [] };
-  if (istPdf) {
-    try {
-      const text = await pdfText(file);
-      if (text.replace(/\s/g, '').length < 20) {
-        erg.hinweise.push('Dieses PDF enthält keinen lesbaren Text, vermutlich ist es ein Scan. Es wird als Beleg abgelegt, die Angaben bitte von Hand ergänzen.');
-      } else {
-        erg = Kern.erkennen(text);
+  renderDokumente();
+  speicherPruefen().then(renderSpeicherLage).catch(() => {});
+  await eingangZuordnen(r.meta, file);
+}
+
+/* ---------- Teilen aus anderen Apps ----------
+   Auf Android erscheint die installierte App im Teilen-Menue. Der
+   Service Worker nimmt das Geteilte an, legt es lokal in einen
+   eigenen Zwischenspeicher und oeffnet die App. Hier wird es
+   abgeholt. Nichts davon geht ins Netz. Bedingungen in CLAUDE.md,
+   "Praezisierung Teilen aus anderen Apps". */
+const TEILEN_CACHE = 'teilen-eingang';
+let teilenLaeuft = false;
+async function teilenAbholen() {
+  if (teilenLaeuft || !('caches' in window) || !appData) return;
+  teilenLaeuft = true;
+  try {
+    if (!(await caches.has(TEILEN_CACHE))) return;
+    const cache = await caches.open(TEILEN_CACHE);
+    const schluessel = await cache.keys();
+    if (!schluessel.length) return;
+    const abgelegt = [];
+    let text = '', abgewiesen = 0;
+    for (const k of schluessel) {
+      const antwort = await cache.match(k);
+      if (!antwort) continue;
+      if (/teilen-text/.test(k.url)) {
+        try {
+          const j = await antwort.json();
+          text = [j.titel, j.text, j.url].map(x => String(x || '').trim()).filter(Boolean).join('\n');
+        } catch(e) { /* unlesbar: verwerfen */ }
+        await cache.delete(k);
+        continue;
       }
-    } catch(e) {
-      erg.hinweise.push('Das PDF liess sich nicht lesen (' + ((e && e.message) || 'unbekannter Fehler') +
-        '). Es wird trotzdem als Beleg abgelegt, die Angaben bitte von Hand ergänzen.');
+      const blob = await antwort.blob();
+      let name = 'Geteilte Datei';
+      try { name = decodeURIComponent(antwort.headers.get('X-Dateiname') || name); } catch(e) { /* Name bleibt */ }
+      const file = new File([blob], name, { type: antwort.headers.get('Content-Type') || blob.type || '' });
+      const r = await eingangAblegen(file, true);
+      /* Erst loeschen, wenn die Datei sicher in der Ablage liegt oder
+         endgueltig nicht angenommen werden kann. */
+      if (r && r.meta) abgelegt.push({ meta: r.meta, file: file });
+      else if (r && r.schon) abgelegt.push({ schon: r.schon, file: file });
+      else abgewiesen++;
+      await cache.delete(k);
     }
-  } else {
-    erg.hinweise.push('Bilder und Screenshots werden als Beleg abgelegt, ihr Inhalt wird nicht gelesen. ' +
-      'Die Angaben bitte von Hand ergänzen oder zusätzlich den Text der Bestätigung einfügen.');
+    renderDokumente();
+    if (abgewiesen) alert(abgewiesen + (abgewiesen === 1 ? ' geteilte Datei wurde' : ' geteilte Dateien wurden') + ' nicht angenommen. Möglich sind PDF und Bilder bis 25 MB.');
+    if (abgelegt.length > 1) meldung(abgelegt.length + ' Belege gespeichert, weitere liegen im Eingang');
+    if (abgelegt.length && abgelegt[0].meta) await eingangZuordnen(abgelegt[0].meta, abgelegt[0].file);
+    else if (abgelegt.length) await planenDatei(abgelegt[0].file);
+    else if (text) planenText(text);
+  } catch(e) {
+    console.error('Geteiltes konnte nicht abgeholt werden', e);
+  } finally {
+    teilenLaeuft = false;
   }
-  /* Liegt genau diese Datei schon in der Ablage, gehoert sie fast
-     sicher zu derselben Buchung. Dann wird die bestehende Buchung
-     vorgeschlagen statt einer zweiten. */
-  const schon = dokMitHash(await dateiHash(file));
-  let vorschlag = null;
-  if (schon) {
-    vorschlag = buchungZu(schon.ticketId);
-    const t = alleTickets().find(x => x.id === schon.ticketId);
-    erg.hinweise.unshift('Diese Datei liegt bereits in der Ablage' + (t ? ', bei «' + t.titel + '»' : '') + '. Sie wird kein zweites Mal gespeichert.');
-  }
-  buchungBlatt({ neu: true, erg: erg, datei: file, quelle: { art: istPdf ? 'pdf' : 'bild', name: file.name || '' }, vorschlag: vorschlag });
 }
 
 /* ---------- Vorschau und Bearbeiten einer Buchung ----------
@@ -6485,10 +6858,10 @@ function buchungBlatt(o) {
       sheet.appendChild(z);
     }
 
-    if (o.datei) {
+    if (o.eingang) {
       const d = document.createElement('div');
       d.className = 'badge-label';
-      d.textContent = 'Der Beleg «' + (o.datei.name || 'Datei') + '» wird mit dieser Buchung abgelegt, unverändert.';
+      d.textContent = 'Der Beleg «' + (o.eingang.name || 'Datei') + '» ist bereits gespeichert und wird mit dieser Buchung verknüpft.';
       sheet.appendChild(d);
     }
 
@@ -6516,8 +6889,12 @@ function buchungBlatt(o) {
       akt.appendChild(l);
     } else {
       const a = document.createElement('button');
-      a.className = 'btn btn-secondary'; a.type = 'button'; a.textContent = 'Abbrechen';
-      a.addEventListener('click', sheetSchliessen);
+      a.className = 'btn btn-secondary'; a.type = 'button'; a.id = 'buchungSpaeter';
+      a.textContent = o.eingang ? 'Später zuordnen' : 'Abbrechen';
+      a.addEventListener('click', () => {
+        sheetSchliessen();
+        if (o.eingang) meldung('Beleg liegt im Eingang');
+      });
       akt.appendChild(a);
     }
     const ok = document.createElement('button');
@@ -6557,7 +6934,7 @@ function buchungBlatt(o) {
     } else {
       b = Kern.buchungSauber(Object.assign({}, werte, { id: ziel || undefined }));
     }
-    if (!b.titel && !b.datum && !b.nummer && !b.referenz && !b.vonOrt && !o.datei) {
+    if (!b.titel && !b.datum && !b.nummer && !b.referenz && !b.vonOrt && !o.eingang) {
       alert('Bitte mindestens eine Bezeichnung oder ein Datum angeben.');
       return;
     }
@@ -6587,11 +6964,10 @@ function buchungBlatt(o) {
     if (!datenSpeichern()) { appData.buchungen = vorher; return; }
 
     let dokFehler = '';
-    if (o.datei) {
-      try { await dokSpeichern(b.id, o.datei); }
+    if (o.eingang) {
+      try { await dokUmhaengen(o.eingang, b.id); }
       catch(e) {
-        dokFehler = 'Die Buchung ist gespeichert, der Beleg aber NICHT.\n\n' +
-          ((e && (e.name === 'QuotaExceededError' || /quota/i.test(String(e.message)))) ? 'Der Speicher ist voll.' : ((e && e.message) || String(e)));
+        dokFehler = 'Die Buchung ist gespeichert. Der Beleg konnte ihr aber nicht zugeordnet werden und liegt weiter im Eingang.\n\n' + ((e && e.message) || String(e));
       }
     }
     sheetSchliessen();
@@ -6682,17 +7058,11 @@ document.getElementById('dokSuche').addEventListener('input', dokSuchen);
    Abrechnung danach. Gerechnet wird jedes Mal aus den Daten, nichts
    davon ist gespeichert. Deshalb kann eine Korrektur an einer
    Ausgabe die Abrechnung nicht verfehlen. */
-let budgetZurueck = 'screenTools';
 function abrechnungJetzt() { return Kern.abrechnung(appData || {}, ausgaben, kurse); }
 
-function budgetOeffnen(von) {
-  budgetZurueck = von || 'screenTools';
-  renderBudget();
-  showScreen('screenBudget', budgetZurueck);
-}
-document.getElementById('budgetBackBtn').addEventListener('click', () => showScreen(budgetZurueck, budgetZurueck));
-document.getElementById('budgetOeffnen').addEventListener('click', () => budgetOeffnen('screenTools'));
-document.getElementById('todayBudget').addEventListener('click', () => budgetOeffnen('screenToday'));
+function budgetOeffnen() { showScreen('screenBudget'); }
+document.getElementById('todayBudget').addEventListener('click', budgetOeffnen);
+document.getElementById('todayEingang').addEventListener('click', () => showScreen('screenTickets'));
 
 /* Die Zeilen auf Heute und unter Mehr. */
 function budgetZeilen() {
@@ -6712,8 +7082,6 @@ function budgetZeilen() {
   }
   document.getElementById('todayBudgetTitel').textContent = titel;
   document.getElementById('todayBudgetSub').textContent = sub;
-  document.getElementById('budgetKarteTitel').textContent = hat ? titel : 'Noch nichts erfasst';
-  document.getElementById('budgetKarteSub').textContent = hat ? sub : 'Budget setzen, Übersicht und Abrechnung';
   if (document.getElementById('screenBudget').classList.contains('active')) renderBudget();
 }
 
@@ -6786,7 +7154,7 @@ function renderBudget() {
     const warn = document.createElement('div');
     warn.className = 'hinweis-box rot';
     warn.textContent = ab.ohneKurs.length + (ab.ohneKurs.length === 1 ? ' Posten fehlt' : ' Posten fehlen') + ' in der Summe, weil für die Währung kein Kurs hinterlegt ist: ' +
-      ab.ohneKurs.map(z => z.waehrung).filter((v, i, a) => a.indexOf(v) === i).join(', ') + '. Unter Mehr, Umrechner einen Kurs eintragen.';
+      ab.ohneKurs.map(z => z.waehrung).filter((v, i, a) => a.indexOf(v) === i).join(', ') + '. Oben im Umrechner einen Kurs eintragen.';
     box.appendChild(warn);
   }
 
@@ -6954,7 +7322,8 @@ function reiseBeenden() {
   if (!datenSpeichern()) { appData.reise = vorher; return; }
   loadUIFromAppData();
   renderBudget();
-  document.getElementById('screenBudget').scrollTop = 0;
+  const band = document.getElementById('abgeschlossenBand');
+  if (band && band.scrollIntoView) band.scrollIntoView({ block: 'start' });
   meldung('Reise abgeschlossen');
 }
 function reiseOeffnen() {
@@ -7094,7 +7463,7 @@ notizenLaden();
    Buchung mit hinterlegtem Foto beim Start noch "Foto noetig". Der
    zweite Aufbau kostet nichts und stellt den wahren Stand her. */
 dokIndexLaden()
-  .then(() => { renderDokumente(); heuteUnterwegsZeichnen(); return speicherPruefen(); })
+  .then(() => { renderDokumente(); heuteUnterwegsZeichnen(); teilenStart(); return speicherPruefen(); })
   .then(renderSpeicherLage)
   .catch(e => console.error('Dokumenten-Ablage beim Start', e));
 
@@ -7127,15 +7496,33 @@ document.addEventListener('visibilitychange', () => {
    hierher. Die Ausgabe-Eingabe bekommt sofort den Fokus, damit die
    Zahlentastatur ohne weiteren Tipp offen ist. */
 const start = new URLSearchParams(location.search).get('screen');
+/* Geteiltes abholen, sobald Reisedaten und Ablage bereit sind. Die
+   Demo-Reise laedt asynchron, deshalb wird kurz gewartet. Die Adresse
+   wird danach bereinigt, damit ein Neuladen nichts doppelt ausloest. */
+function teilenStart() {
+  let versuche = 0;
+  const lauf = () => {
+    if (appData) { teilenAbholen(); return; }
+    if (++versuche < 40) setTimeout(lauf, 150);
+  };
+  lauf();
+  if (start === 'teilen' && history.replaceState) history.replaceState(null, '', location.pathname);
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) teilenAbholen(); });
+setTimeout(vendorVorladen, 5000);
+/* Beim allerersten Besuch uebernimmt der Service Worker die Seite
+   erst nach dem Start. Dann noch einmal versuchen. */
+if (navigator.serviceWorker) navigator.serviceWorker.addEventListener('controllerchange', () => setTimeout(vendorVorladen, 2500));
+
 if (start === 'tickets') showScreen('screenTickets');
 if (start === 'ausgabe') {
-  showScreen('screenTools');
+  showScreen('screenBudget');
   const feld = document.getElementById('spendAmount');
   feld.scrollIntoView({ block: 'center' });
   setTimeout(() => feld.focus(), 120);
 }
 if (start === 'plan') showScreen('screenPlan');
-if (start === 'budget') budgetOeffnen('screenTools');
+if (start === 'budget') budgetOeffnen();
 
 /* Kurse nachziehen, wenn der Stand aelter als zwölf Stunden ist.
    Ohne Netz geschieht nichts, es gilt der letzte Stand. */

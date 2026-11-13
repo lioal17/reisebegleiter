@@ -119,7 +119,7 @@ Du brauchst:
 }
 ```
 
-**Was in `hinweise` gehört und was nicht.** Hier steht nur, was **an diesem Tag** zu tun oder zu wissen ist: früh raus, vorher Geld holen, Check-in schliesst um 18:30. Sätze, die an jedem Tag gelten, gehören in den Block `regeln` weiter unten. Die App zeigt `hinweise` im Tagesplan und `regeln` einmal unter «Mehr».
+**Was in `hinweise` gehört und was nicht.** Hier steht nur, was **an diesem Tag** zu tun oder zu wissen ist: früh raus, vorher Geld holen, Check-in schliesst um 18:30. Sätze, die an jedem Tag gelten, gehören in den Block `regeln` weiter unten. Die App zeigt `hinweise` im Tagesplan. `regeln` zeigt sie seit 13.11.2026 nicht mehr an.
 
 Steht eine allgemeine Regel in zwanzig Tagen, wird sie an keinem gelesen, und sie verdeckt das, was wirklich nur heute gilt. Zum Aufräumen gibt es ein Hilfsskript:
 
@@ -167,7 +167,7 @@ Für jeden Flug, Hotel, Boot, Einreiseformular:
 
 ### `regeln`-Block
 
-Sätze, die an **jedem** Tag gelten. Geldregeln, Betrugsmuster, Gewohnheiten. Die App zeigt sie einmal unter «Mehr» und nie im Tagesplan.
+Sätze, die an **jedem** Tag gelten. Geldregeln, Betrugsmuster, Gewohnheiten. **Seit 13.11.2026 zeigt die App diesen Block nicht mehr an.** Er darf in der Datei stehen bleiben und wird mitgesichert.
 
 ```json
 "regeln": [
@@ -176,7 +176,7 @@ Sätze, die an **jedem** Tag gelten. Geldregeln, Betrugsmuster, Gewohnheiten. Di
 ]
 ```
 
-Fehlt der Block oder ist er leer, verschwindet die Karte in «Mehr».
+
 
 ### `notfall`-Block
 
@@ -258,7 +258,7 @@ Der Preis einer Buchung zählt in der Abrechnung aus der Buchung. Er darf nicht 
 }
 ```
 
-Das Budget aus dem `budget`-Block (`gesamt_chf`) erscheint jetzt auf **Heute** und unter **Mehr, Budget und Abrechnung**. Es lässt sich dort auch ändern.
+Das Budget aus dem `budget`-Block (`gesamt_chf`) erscheint auf **Heute** und im Reiter **Budget**. Es lässt sich dort auch ändern.
 
 ### `favoriten`-Block
 

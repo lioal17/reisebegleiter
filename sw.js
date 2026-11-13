@@ -1,4 +1,20 @@
-const CACHE_NAME = 'reisebegleiter-v17';
+const CACHE_NAME = 'reisebegleiter-v18';
+
+/* Bibliotheken (pdf.js, Texterkennung) liegen in einem eigenen
+   Speicher, der einen Versionswechsel der App ueberlebt. Sie sind
+   zusammen rund 8 MB gross und aendern sich fast nie. Laegen sie im
+   Speicher der App, wuerde jedes Update sie neu herunterladen, im
+   Zweifel ueber das Mobilnetz im Ausland.
+
+   Gefuellt wird dieser Speicher nicht bei der Installation, sondern
+   wenn die Seite die Dateien zum ersten Mal holt (vendorVorladen in
+   index.html). So bleibt die Installation schnell, und es kommt nur
+   der Rechenkern aufs Geraet, den es wirklich braucht. */
+const VENDOR_CACHE = 'reisebegleiter-vendor-1';
+
+/* Was ueber "Teilen" aus einer anderen App hereinkommt, wartet hier,
+   bis die Seite es abholt. Rein lokal. */
+const TEILEN_CACHE = 'teilen-eingang';
 
 /* PFLICHT ist das Programm selbst. Schlaegt eine dieser Dateien beim
    Installieren fehl, bricht die Installation ab und der bisherige,
@@ -34,12 +50,7 @@ const KANN = [
   './assets/tile-hotel.jpg',
   './assets/tile-pass.jpg',
   './assets/tile-schutz.jpg',
-  './assets/tile-visa.jpg',
-  /* pdf.js: liest und zeigt PDF auf dem Geraet. Beiwerk, deshalb
-     hier und nicht unter PFLICHT. Fehlen die Dateien im Speicher,
-     laeuft die App weiter, PDF oeffnen dann in einem neuen Tab. */
-  './vendor/pdf.min.js',
-  './vendor/pdf.worker.min.js'
+  './assets/tile-visa.jpg'
 ];
 
 /* cache: 'reload' umgeht den HTTP-Zwischenspeicher des Browsers. Ohne
@@ -72,7 +83,8 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
     const namen = await caches.keys();
-    await Promise.all(namen.map(n => n === CACHE_NAME ? null : caches.delete(n)));
+    const bleibt = [CACHE_NAME, VENDOR_CACHE, TEILEN_CACHE];
+    await Promise.all(namen.map(n => bleibt.indexOf(n) !== -1 ? null : caches.delete(n)));
     await self.clients.claim();
   })());
 });
@@ -193,7 +205,58 @@ async function cacheZuerst(request) {
   }
 }
 
+/* Bibliotheken: aus dem Speicher, sonst aus dem Netz und dann in den
+   eigenen Speicher. */
+async function vendorZuerst(request) {
+  const treffer = await caches.match(request);
+  if (treffer) return treffer;
+  try {
+    const antwort = await holen(request, 0);
+    if (brauchbar(antwort)) {
+      const kopie = antwort.clone();
+      caches.open(VENDOR_CACHE).then(cache => cache.put(request, kopie)).catch(() => {});
+    }
+    return antwort;
+  } catch(e) {
+    return offlineAntwort();
+  }
+}
+
+/* Teilen-Ziel. Android schickt, was der Nutzer aus einer anderen App
+   teilt, als Formular an "./teilen". Diese Anfrage verlaesst das
+   Geraet nie: sie wird hier abgefangen, der Inhalt lokal abgelegt und
+   die App geoeffnet. Es gibt keinen Server, der sie annehmen koennte.
+   Bedingungen in CLAUDE.md, "Praezisierung Teilen aus anderen Apps". */
+async function teilenAnnehmen(request) {
+  try {
+    const form = await request.formData();
+    const cache = await caches.open(TEILEN_CACHE);
+    const stempel = Date.now();
+    const dateien = form.getAll('files').filter(f => f && typeof f === 'object' && f.size > 0).slice(0, 10);
+    let i = 0;
+    for (const f of dateien) {
+      await cache.put('./teilen-datei-' + stempel + '-' + (i++), new Response(f, {
+        headers: { 'Content-Type': f.type || 'application/octet-stream', 'X-Dateiname': encodeURIComponent(f.name || 'Geteilte Datei') }
+      }));
+    }
+    const text = {
+      titel: String(form.get('title') || '').slice(0, 300),
+      text: String(form.get('text') || '').slice(0, 20000),
+      url: String(form.get('url') || '').slice(0, 2000)
+    };
+    if (text.titel || text.text || text.url) {
+      await cache.put('./teilen-text-' + stempel, new Response(JSON.stringify(text), { headers: { 'Content-Type': 'application/json' } }));
+    }
+  } catch(e) { /* nichts abgelegt: die App oeffnet trotzdem */ }
+  return Response.redirect(new URL('./index.html?screen=teilen', self.location.href).href, 303);
+}
+
 self.addEventListener('fetch', event => {
+  const adresse = new URL(event.request.url);
+  if (event.request.method === 'POST' && adresse.origin === self.location.origin && adresse.pathname.endsWith('/teilen')) {
+    event.respondWith(teilenAnnehmen(event.request));
+    return;
+  }
   if (event.request.method !== 'GET') return;
 
   // Fremde Hosts fasst der Service Worker nicht an. Konkret: die
@@ -201,6 +264,11 @@ self.addEventListener('fetch', event => {
   // geholter Wert fuer immer stehen bleiben. Ihr Zwischenspeicher
   // liegt mit eigenem Zeitstempel in der App.
   if (new URL(event.request.url).origin !== self.location.origin) return;
+
+  if (adresse.pathname.indexOf('/vendor/') !== -1) {
+    event.respondWith(vendorZuerst(event.request));
+    return;
+  }
 
   if (event.request.mode === 'navigate' || istProgrammOderDaten(event.request.url)) {
     event.respondWith(netzZuerst(event.request));
