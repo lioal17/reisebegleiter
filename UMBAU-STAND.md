@@ -503,3 +503,65 @@ abgedeckt.
 - Uebersetzer-Knopf «DE – Thai» ist fest verdrahtet.
 - Ungeprueft am echten Geraet: Einfuegen eines Screenshots aus der
   Zwischenablage, Druckdialog auf Android.
+
+---
+
+## Ausbau vom 13.11.2026: Scannen, Eingang, Teilen, sechs Reiter
+
+PR #6 ist gemergt. Wiederherstellungspunkt davor:
+`sicherung-2026-11-13-1001` auf `main`.
+
+### Am Geraet bestaetigt, 13.11.2026
+
+- Die Fassung vom 12.11. laeuft auf dem Handy mit dem echten
+  Reiseplan.
+- **Der Kursdienst funktioniert.** «Kurs aktualisieren» lieferte einen
+  Referenzkurs mit Stand-Datum. Der offene Punkt vom 12.11. ist damit
+  erledigt.
+
+### Entscheide vom 13.11.2026
+
+| # | Entscheid | Begruendung |
+|---|---|---|
+| 16 | **Texterkennung fuer Fotos und Screenshots, auf dem Geraet.** Hebt Entscheid 12 in diesem Punkt auf | Probelauf mit erfundener Bestaetigung: alle Felder richtig, rund eine Sekunde auf dem Rechner. Die Einschaetzung vom 12.11. war zu pessimistisch |
+| 17 | **Jeder Worker startet ueber einen Blob** | Gemessen: ein Worker aus einer Datei unterliegt der Sicherheitsregel der Seite nicht, einer aus einem Blob erbt sie. Betraf auch pdf.js in der Fassung vom 12.11. |
+| 18 | **Eingang: jede Datei wird sofort gespeichert**, gelesen und zugeordnet wird danach | Wer am Schalter fotografiert und das Handy einsteckt, hat den Beleg trotzdem |
+| 19 | **Teilen aus anderen Apps** | Der kuerzeste Weg fuer Mail-Anhang, Galerie-Foto und Link. Nur eingehend, nur vom Geraet |
+| 20 | **Sechs Reiter:** Heute, Reiseplan, Dokumente, Budget, Translator, Mehr | Wunsch Lio. Hebt den Entscheid 6 vom 09.08. auf, Ausgaben liegen jetzt im Reiter Budget |
+| 21 | **«Regeln fuer unterwegs» ausgeblendet** | Wunsch Lio. Die Regeln bleiben in den Daten |
+
+### Fertig und geprueft
+
+`tests/kern.test.js` 92 Pruefungen, `tests/e2e.test.js` 111.
+
+- Foto aufnehmen, Bild oder PDF waehlen: sofort im Eingang, Text
+  wird gelesen, Vorschau, uebernehmen oder «Spaeter zuordnen».
+- Gescanntes PDF ohne Textschicht wird als Bild gelesen.
+- Eingang unter Dokumente, Zaehler auf Heute.
+- Teilen von Datei und Link ueber den Service Worker.
+- Die Sicherheitsregel gilt im Worker: der Test versucht aus einem
+  Blob-Worker einen dritten Host zu erreichen und scheitert.
+- Texterkennung ohne Netz, aus dem Geraetespeicher.
+- Bibliotheken liegen in einem eigenen Speicher, der ein Update der
+  App ueberlebt. Ein Update laedt die rund 8 MB nicht neu.
+
+### Offen
+
+- **Am echten Geraet ungeprueft:** Tempo und Trefferquote der
+  Texterkennung auf dem Handy, bei echten Fotos und bunten
+  App-Screenshots. Gemessen ist nur mit sauberen, erfundenen
+  Vorlagen auf dem Rechner. Dazu das Teilen-Menue von Android: im
+  Test wird die Uebergabe nachgestellt, nicht das Menue selbst.
+- **Teilen geht nur bei der installierten App auf Android.** Nach
+  dem Update muss Android das neue Manifest erst uebernehmen. Das
+  kann nach meinem Wissen bis zu einem Tag dauern, oder die App wird
+  neu installiert.
+- **Die Texterkennung braucht einmal Netz.** Nach dem ersten Start
+  der neuen Fassung laedt die App rund 8 MB nach. Erst danach geht
+  das Lesen offline. Vor der Abreise einmal mit WLAN oeffnen und ein
+  Foto probieren.
+- Gelesen wird Deutsch und Englisch, keine thailaendische Schrift.
+- Sechs Reiter sind bei 390 px rund 64 px breit. Das passt, auf
+  schmaleren Geraeten wird es eng.
+- Weiterhin offen vom 12.11.: mehrere Reisen mit Archiv, Karte und
+  Translator fuer andere Laender.

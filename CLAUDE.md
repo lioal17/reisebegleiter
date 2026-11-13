@@ -36,13 +36,30 @@ Der Währungsrechner darf Tageskurse holen. Die Ausnahme ist an vier Bedingungen
 
 **Kein dritter Host kommt dazu, egal wie nützlich er wäre.**
 
-Alles andere bleibt: `default-src 'none'`, `form-action 'none'`, kein Backend, kein Tracking, keine Telemetrie, kein Cloud-Sync.
+### Präzisierung Hintergrund-Skripte und Texterkennung (entschieden am 13.11.2026)
+
+Gemessen am 13.11.2026: Ein Hintergrund-Skript (Worker), das direkt aus einer Datei gestartet wird, unterliegt der Sicherheitsregel der Seite **nicht**. Ein Worker, der aus einem Blob gestartet wird, erbt sie. Daraus folgt:
+
+1. **Jeder Worker wird über einen Blob gestartet**, nie direkt aus einer Datei. Das gilt für pdf.js und für die Texterkennung. So gilt `connect-src` auch dort, und ein Worker erreicht keinen dritten Host.
+2. **Die CSP bekommt dafür genau zwei Ergänzungen:** `worker-src 'self' blob:` und in `script-src` zusätzlich `'wasm-unsafe-eval'`. Das zweite erlaubt, WebAssembly auszuführen, mehr nicht: es öffnet keinen Netzwerkpfad. Die Texterkennung ist WebAssembly.
+3. **Texterkennung nur auf dem Gerät.** tesseract.js 7.0.0 mit Sprachdaten Deutsch und Englisch liegt unter `vendor/ocr/`. Bilder, Screenshots und gescannte PDF werden lokal gelesen. Nichts davon verlässt das Gerät.
+4. **Das Ergebnis ist ein Vorschlag.** Erkannter Text füllt die Vorschau. In den Reiseplan kommt erst etwas nach «In Reiseplanung übernehmen».
+
+### Präzisierung Teilen aus anderen Apps (entschieden am 13.11.2026)
+
+Die installierte App darf als Ziel im «Teilen»-Menü von Android erscheinen (`share_target` im Manifest). Bedingungen:
+
+1. **Nur eingehend, nur vom Gerät, nur von Hand.** Die App nimmt an, was der Nutzer selbst aus einer anderen App auf demselben Gerät übergibt: eine Datei, einen Text, einen Link. Es gibt keinen Endpunkt im Netz, niemand von aussen kann etwas einliefern.
+2. **Nichts geht dabei hinaus.** Der Service Worker legt das Übergebene lokal ab und öffnet die App. Keine Anfrage an einen Server.
+3. **Die App teilt selbst nichts.** Es gibt kein «Teilen aus Travel-Mate heraus».
+
+Alles andere bleibt: `default-src 'none'`, `form-action 'none'`, `connect-src` mit genau zwei Hosts, kein Backend, kein Tracking, keine Telemetrie, kein Cloud-Sync.
 
 **Wer diese Ausnahmen erweitern will, ändert zuerst diese Datei und fragt zuerst nach.**
 
 **Pflicht-Checkliste bei JEDER Anpassung (vor Commit/PR zu bestätigen):**
 1. Bleibt die App vollständig **offline nutzbar** (kein neuer Netzwerkpfad ausser den beiden oben beschriebenen Ausnahmen Wetter und Wechselkurse)?
-2. Bleibt die **CSP unverändert restriktiv** (`default-src 'none'`, `form-action 'none'`, `connect-src` ohne weitere Hosts)?
+2. Bleibt die **CSP unverändert restriktiv** (`default-src 'none'`, `form-action 'none'`, `connect-src` ohne weitere Hosts, Worker nur über Blob)?
 3. Enthalten Commit/PR/Screenshots/Logs/ZIPs **keine echten Reisedaten** (nur erfundene)?
 4. Entsteht **kein Zugriffsweg von außen** auf Reisedaten (keine Freigabe, kein Endpoint)?
 
@@ -61,8 +78,8 @@ Ich (Claude) bin das **wachende Auge über die Reisedaten** und trage aktiv Mitv
 
 - Die gesamte App ist **eine `index.html`** (HTML + CSS + JS inline, kein Build, kein Server). Im Browser öffnen oder via GitHub Pages.
 - In `index.html` stehen zwei Skriptblöcke: `<script id="kern">` enthält die Logik ohne Oberfläche (Erkennung von Buchungen, Tagesansicht, Finanzen), der zweite Block die Oberfläche. Die Tests führen den Kern-Block direkt in Node aus.
-- **Einzige Zusatzdateien: `vendor/pdf.min.js` und `vendor/pdf.worker.min.js`** (pdf.js 3.11, Apache-2.0). Sie lesen PDF **auf dem Gerät** und senden nichts. Sie sind Beiwerk: fehlen sie, läuft die App weiter, nur ohne PDF-Text und PDF-Vorschau. Weitere Bibliotheken nur nach Rückfrage.
-- **Keine Texterkennung in der Cloud und keine Cloud-KI.** Buchungen werden regelbasiert aus eingefügtem Text und aus der Textschicht von PDF erkannt, alles lokal.
+- **Einzige Zusatzdateien liegen unter `vendor/`:** pdf.js 3.11 (`pdf.min.js`, `pdf.worker.min.js`, Apache-2.0) und die Texterkennung tesseract.js 7.0.0 (`vendor/ocr/`, Apache-2.0, Sprachdaten Deutsch und Englisch). Beide arbeiten **auf dem Gerät** und senden nichts. Sie sind Beiwerk: fehlen sie, läuft die App weiter, nur ohne PDF-Text, PDF-Vorschau und Texterkennung. Weitere Bibliotheken nur nach Rückfrage.
+- **Keine Texterkennung in der Cloud und keine Cloud-KI.** Buchungen werden regelbasiert aus Text erkannt. Der Text kommt aus der Eingabe, aus der Textschicht eines PDF oder aus der lokalen Texterkennung eines Bildes.
 - Tests: `node tests/kern.test.js` und `node tests/e2e.test.js` (braucht Playwright global, kein `node_modules` im Repo). Testdaten sind erfunden.
 - Daten liegen lokal in **`localStorage`** (Reiseplan, Ausgaben) und **`IndexedDB`** (Ticket-Dokumente/Blobs).
 - Service Worker (`sw.js`) cached das App-Shell für Offline-Betrieb.

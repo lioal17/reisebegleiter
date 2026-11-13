@@ -8,24 +8,27 @@ Reisebegleiter als Offline-PWA. Alles läuft lokal auf dem Handy: Reiseplan, Buc
 |---|---|
 | **Heute** | Reisetag, Ort, Unterkunft, alle Verbindungen des Tages, Programm, Budgetstand, Wetter, zwei Uhren |
 | **Reiseplan** | Stationen und Tage, Knopf **«Reise planen»**, Liste der Buchungen, Tagesplan mit Beleg an jeder Buchung |
-| **Dokumente** | Acht Kacheln, Suche, PDF und Bilder direkt in der App, alles offline |
-| **Mehr** | Umrechner mit Land und Währung, Ausgaben, Verlauf, Budget und Abrechnung, Notizen, Notfall, Datensicherung |
+| **Dokumente** | Eingang, acht Kacheln, Suche, PDF und Bilder direkt in der App, alles offline |
+| **Budget** | Umrechner mit Land und Währung, Ausgaben, Verlauf, Budget und Abrechnung |
+| **Translator** | Öffnet Google Translate, braucht Netz |
+| **Mehr** | Notizen, Notfall, Datensicherung |
 
 ### «Reise planen»
 
-Vier Wege führen hinein, alle enden in derselben Vorschau:
+Alle Wege enden in derselben Vorschau:
 
-1. Text der Bestätigung einfügen, zum Beispiel aus der Mail
-2. PDF wählen oder hineinziehen
-3. Foto oder Screenshot wählen, hineinziehen oder aus der Zwischenablage einfügen
-4. Von Hand erfassen
+1. **Foto aufnehmen:** öffnet direkt die Kamera
+2. **PDF oder Bild wählen**, hineinziehen oder aus der Zwischenablage einfügen
+3. **Teilen aus einer anderen App** (Android, installierte App): in Mail, Browser oder Galerie auf «Teilen», dann Travel-Mate
+4. Link oder Text der Bestätigung einfügen
+5. Von Hand erfassen
 
-Die Vorschau zeigt, was erkannt wurde, markiert jedes Feld mit «erkannt», «bitte prüfen» oder «unbekannt» und lässt sich korrigieren. Erst **«In Reiseplanung übernehmen»** schreibt etwas.
+**Ein Foto oder PDF ist sofort gespeichert**, im Eingang, noch bevor etwas gelesen ist. Danach zeigt die Vorschau, was erkannt wurde, markiert jedes Feld mit «erkannt», «bitte prüfen» oder «unbekannt» und lässt sich korrigieren. Erst **«In Reiseplanung übernehmen»** schreibt etwas in den Reiseplan. Mit «Später zuordnen» bleibt der Beleg im Eingang, Heute zeigt dann, wie viele dort liegen.
 
 **Was erkannt wird und was nicht:**
 
-- **Text und PDF mit Textschicht** werden gelesen: Art der Buchung, Datum, Zeit, Flugnummer, Flughäfen mit Zeitzone, Preis, Währung, Buchungsnummer, Bezahlstatus, Stornozeile.
-- **Bilder, Screenshots und gescannte PDF** werden als Beleg abgelegt. Ihr Inhalt wird nicht gelesen, die Felder füllst du von Hand.
+- **Text, PDF, Fotos und Screenshots** werden gelesen: Art der Buchung, Datum, Zeit, Flugnummer, Flughäfen mit Zeitzone, Preis, Währung, Buchungsnummer, Bezahlstatus, Stornozeile.
+- **Fotos, Screenshots und gescannte PDF** liest eine Texterkennung auf dem Gerät, auf Deutsch und Englisch. Sie kann Ziffern verwechseln. Was so gelesen wurde, trägt deshalb immer «bitte prüfen».
 - **Links** werden an der Buchung gespeichert und lassen sich öffnen. Die Seite dahinter kann die App nicht abrufen: Buchungsseiten verlangen eine Anmeldung, und der Browser verbietet einer lokalen App den Zugriff.
 - **Nichts wird erfunden.** Was im Text nicht steht, bleibt leer.
 - Eine Buchung, die es schon gibt, wird erkannt. Die App bietet «Bestehende aktualisieren» an statt einen zweiten Eintrag.
@@ -74,7 +77,9 @@ Oberstes Gebot, siehe `CLAUDE.md`.
 - Die Sicherheitsregel der Seite (CSP) steht auf `default-src 'none'`. Erlaubt sind genau zwei ausgehende Abfragen:
   - **Wetter** bei Open-Meteo: nur Koordinaten, auf eine Nachkommastelle gerundet.
   - **Wechselkurse** bei Frankfurter: nur «alle Kurse zu CHF», für jede Reise dieselbe Abfrage.
-- PDF werden von pdf.js auf dem Gerät gelesen (`vendor/`, Apache-2.0). Keine Texterkennung in der Cloud, keine Cloud-KI.
+- PDF liest pdf.js, Bilder liest tesseract.js, beides auf dem Gerät (`vendor/`, Apache-2.0). Keine Texterkennung in der Cloud, keine Cloud-KI.
+- Hintergrund-Skripte starten über einen Blob. Nur so gilt die Sicherheitsregel auch für sie.
+- «Teilen» nimmt nur an, was du selbst aus einer anderen App auf dem Gerät übergibst. Die App teilt selbst nichts.
 - Kein Sync zwischen Geräten, kein Zugriff von aussen.
 
 **Deshalb regelmässig sichern:** Mehr, Datensicherung. Reiseplan, Ausgaben und Dokumente sind drei getrennte Sicherungen. Wird das Handy neu aufgesetzt, sind die Daten sonst weg.
@@ -96,7 +101,7 @@ Der erste Lauf prüft die Logik ohne Browser, der zweite die App in Chromium in 
 - `index.html`: die ganze App. Der Block `<script id="kern">` enthält die Logik ohne Oberfläche.
 - `sw.js`: Service Worker für den Offline-Betrieb
 - `manifest.webmanifest`: macht die App installierbar
-- `vendor/`: pdf.js, Beiwerk. Ohne diese Dateien läuft die App weiter, PDF öffnen dann in einem neuen Tab.
+- `vendor/`: pdf.js und die Texterkennung (`vendor/ocr/`, rund 16 MB, aufs Gerät laden rund 8 MB). Beiwerk: ohne diese Dateien läuft die App weiter, nur ohne PDF-Vorschau und Texterkennung.
 - `demo-daten.json`: erfundene Beispielreise
 - `tests/`: die beiden Testläufe
 - `UMBAU-STAND.md`: Entscheide und offene Punkte

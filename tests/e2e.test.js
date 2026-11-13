@@ -108,6 +108,20 @@ async function pdfErzeugen(browser, zeilen, ziel) {
   await p.pdf({ path: ziel, format: 'A4' });
   await ctx.close();
 }
+/* Eine erfundene Bestaetigung als Bild, so wie ein Screenshot oder
+   ein Foto sie liefert. Optional als PDF ohne Textschicht (Scan). */
+async function bildErzeugen(browser, zeilen, ziel, alsScanPdf) {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 520 }, deviceScaleFactor: 2 });
+  const p = await ctx.newPage();
+  await p.setContent('<body style="margin:0;background:#fff;color:#111;font:15px system-ui;padding:16px">' + zeilen.map(z => '<p style="margin:9px 0">' + z + '</p>').join('') + '</body>');
+  const png = await p.screenshot({ type: 'png' });
+  if (!alsScanPdf) fs.writeFileSync(ziel, png);
+  else {
+    await p.setContent('<body style="margin:0"><img style="width:100%" src="data:image/png;base64,' + png.toString('base64') + '"></body>');
+    await p.pdf({ path: ziel, format: 'A4' });
+  }
+  await ctx.close();
+}
 async function tippeReiter(page, id) { await page.click('.nav-btn[data-screen="' + id + '"]'); }
 async function blattZu(page) { await page.waitForFunction(() => !document.getElementById('sheet').classList.contains('auf')); }
 const feld = (page, k) => page.inputValue('#bf-' + k);
@@ -128,6 +142,16 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
     const bild = path.join(tmp, 'screenshot-demo.png');
     fs.writeFileSync(bild, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR4nGNkYPj/n4GBgYGJAQoAHxcCAr7VvO4AAAAASUVORK5CYII=', 'base64'));
 
+    const FAEHRE = ['Speedboat Ticket', 'Von: Pier Demo Nord', 'Nach: Insel Demo', 'Abfahrt: 30.12.2026 13:30', 'Ankunft: 14:45', 'Preis: 600 THB', 'Booking reference: FERRY-7781'];
+    const FAEHRE2 = ['Ferry Ticket', 'Von: Pier Demo Süd', 'Nach: Insel Demo', 'Abfahrt: 03.01.2027 09:15', 'Preis: 450 THB', 'Booking reference: FERRY-9902'];
+    const TOUR = ['Buchungsbestätigung Aktivität', 'Aktivität: Schnorcheltour Demo', 'Datum: 29.12.2026 08:30', 'Gesamtpreis: THB 1,800.00', 'Buchungsnummer: TOUR-5521'];
+    const HOTEL2 = ['Buchungsbestätigung', 'Hotel: Lagunenhof Demo', 'Buchungsnummer: DEMO-330918', 'Check-in: 12.01.2027 ab 15:00', 'Check-out: 14.01.2027 bis 11:00', 'Gesamtpreis: CHF 180.00', 'bereits bezahlt'];
+    const fotoFaehre = path.join(tmp, 'foto-faehre.png'), fotoFaehre2 = path.join(tmp, 'foto-faehre2.png'), fotoTour = path.join(tmp, 'geteilt-tour.png'), scanPdf = path.join(tmp, 'scan-hotel.pdf');
+    await bildErzeugen(browser, FAEHRE, fotoFaehre);
+    await bildErzeugen(browser, FAEHRE2, fotoFaehre2);
+    await bildErzeugen(browser, TOUR, fotoTour);
+    await bildErzeugen(browser, HOTEL2, scanPdf, true);
+
     /* ============ Hauptlauf: ein Fenster, die Szenarien der Reihe nach ============ */
     const f = await fenster(browser, basis, { sw: true });
     const page = f.page;
@@ -138,6 +162,18 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
     wahr('Start: Reiseplan gezeichnet', (await page.locator('#dayList .ort-card').count()) > 3);
     gleich('Start: alte Daten ohne Buchungen unverändert', await page.evaluate(() => [ansicht.length, appData.tage.length]), [28, 28]);
     gleich('Start: acht Dokumenten-Kacheln', await page.locator('#docTiles .doc-tile').count(), 8);
+    gleich('Start: sechs Reiter in der Leiste', await page.locator('.nav .nav-btn .nav-label').allTextContents(), ['Heute', 'Reiseplan', 'Dokumente', 'Budget', 'Translator', 'Mehr']);
+    gleich('Leiste bei 390 px: kein Überlauf, jeder Knopf gross genug, keine Beschriftung abgeschnitten', await page.evaluate(() => {
+      const nav = document.querySelector('.nav'), k = Array.from(nav.querySelectorAll('.nav-btn'));
+      return [nav.scrollWidth <= nav.clientWidth, k.every(b => b.getBoundingClientRect().height >= 44 && b.getBoundingClientRect().width >= 44),
+        k.every(b => b.querySelector('.nav-label').getBoundingClientRect().width <= b.getBoundingClientRect().width + 0.5)];
+    }), [true, true, true]);
+    await tippeReiter(page, 'screenTools');
+    gleich('Mehr: Regeln für unterwegs sind ausgeblendet, Notizen und Notfall da', [await page.isVisible('#regelnKarte'), await page.isVisible('#notizFeld'), await page.isVisible('#notPolizei'), await page.isVisible('#spendCard')], [false, true, true, false]);
+    await tippeReiter(page, 'screenTranslator');
+    gleich('Translator: eigener Reiter mit beiden Knöpfen', [await page.isVisible('#trDeEn'), await page.isVisible('#trDeTh')], [true, true]);
+    await tippeReiter(page, 'screenBudget');
+    gleich('Budget: Umrechner und Ausgaben stehen hier', [await page.isVisible('#thbInput'), await page.isVisible('#spendCard'), await page.isVisible('#histOeffnen')], [true, true, true]);
 
     /* --- Szenario 1: Hotel-PDF --- */
     await tippeReiter(page, 'screenPlan');
@@ -215,6 +251,90 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
     await blattZu(page);
     gleich('S3: weiterhin zwei Buchungen', await page.evaluate(() => appData.buchungen.length), 2);
 
+    /* --- Foto aufnehmen: sofort gespeichert, Text auf dem Geraet gelesen --- */
+    await page.click('#planenBtn');
+    wahr('Foto: eigener Knopf, Feld öffnet die Kamera', (await page.isVisible('#planenFoto')) && (await page.getAttribute('#planenKamera', 'capture')) === 'environment');
+    await page.setInputFiles('#planenKamera', fotoFaehre);
+    await page.waitForSelector('#leseStand');
+    gleich('Foto: liegt schon im Eingang, während noch gelesen wird', await page.evaluate(() => (dokIndex.eingang || []).map(m => m.name)), ['foto-faehre.png']);
+    await page.waitForSelector('#buchungOk', { timeout: 90000 });
+    wahr('Foto: Worker laufen nur über Blob', page.workers().every(w => /^blob:/.test(w.url())));
+    gleich('Foto: Text erkannt', [await page.getAttribute('#artReihe .chip-wahl.an', 'data-typ'), await feld(page, 'vonOrt'), await feld(page, 'nachOrt'), await feld(page, 'datum'),
+      await feld(page, 'zeit'), await feld(page, 'bisZeit'), await feld(page, 'preis'), await feld(page, 'waehrung'), await feld(page, 'referenz')],
+      ['faehre', 'Pier Demo Nord', 'Insel Demo', '2026-12-30', '13:30', '14:45', '600', 'THB', 'FERRY-7781']);
+    wahr('Foto: aus dem Bild Gelesenes gilt nie als sicher', (await page.locator('#sheet .feld-marke.hoch').count()) === 0 && (await page.locator('#sheet .feld-marke.mittel').count()) >= 5);
+    wahr('Foto: Hinweis auf mögliche Lesefehler', /aus einem Bild gelesen/.test(await page.textContent('#sheet')));
+    await page.click('#buchungOk');
+    await blattZu(page);
+    gleich('Foto: nach dem Übernehmen an der Buchung, Eingang leer', await page.evaluate(() => { const b = appData.buchungen.find(x => x.referenz === 'FERRY-7781'); return [(dokIndex[b.id] || []).map(m => m.name), (dokIndex.eingang || []).length, b.quelle.art]; }),
+      [['foto-faehre.png'], 0, 'bild']);
+    gleich('Foto: Original unverändert gespeichert', await page.evaluate(() => { const b = appData.buchungen.find(x => x.referenz === 'FERRY-7781'); return [dokIndex[b.id][0].groesse, dokIndex[b.id][0].typ]; }), [fs.statSync(fotoFaehre).size, 'image/png']);
+
+    /* Später zuordnen: der Beleg bleibt im Eingang und ist auf Heute und unter Dokumente sichtbar */
+    await page.click('#planenBtn');
+    await page.setInputFiles('#planenKamera', fotoFaehre2);
+    await page.waitForSelector('#buchungOk', { timeout: 90000 });
+    await page.click('#buchungSpaeter');
+    await blattZu(page);
+    gleich('Später zuordnen: keine Buchung, Beleg im Eingang', await page.evaluate(() => [appData.buchungen.some(b => b.referenz === 'FERRY-9902'), (dokIndex.eingang || []).length]), [false, 1]);
+    await tippeReiter(page, 'screenToday');
+    wahr('Heute: Zeile nennt den offenen Beleg', (await page.isVisible('#todayEingang')) && /1 Beleg noch nicht zugeordnet/.test(await page.textContent('#todayEingangTitel')));
+    await page.click('#todayEingang');
+    wahr('Dokumente: Eingang mit Knopf «Zuordnen»', await page.isVisible('#eingangPanel .eingang-zeile .btn'));
+    gleich('Dokumente: Eingang gilt nicht als verwaiste Datei', /ohne Buchung/.test(await page.textContent('#ticketsList')), false);
+
+    /* Gescanntes PDF ohne Textschicht: erste Seite wird als Bild gelesen */
+    await tippeReiter(page, 'screenPlan');
+    await page.click('#planenBtn');
+    await page.setInputFiles('#planenDatei', scanPdf);
+    await page.waitForSelector('#buchungOk', { timeout: 90000 });
+    gleich('Scan-PDF: per Texterkennung gelesen', [await page.getAttribute('#artReihe .chip-wahl.an', 'data-typ'), await feld(page, 'titel'), await feld(page, 'datum'), await feld(page, 'bisDatum'),
+      await feld(page, 'preis'), await feld(page, 'waehrung'), await feld(page, 'referenz'), await feld(page, 'zahlung')],
+      ['unterkunft', 'Lagunenhof Demo', '2027-01-12', '2027-01-14', '180', 'CHF', 'DEMO-330918', 'bezahlt']);
+    await page.selectOption('#bf-zahlung', 'storniert');
+    await page.click('#buchungOk');
+    await blattZu(page);
+
+    /* --- Teilen aus einer anderen App: Datei, dann Link --- */
+    await page.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 20000 });
+    const tourB64 = fs.readFileSync(fotoTour).toString('base64');
+    const status = await page.evaluate(async b64 => {
+      const roh = atob(b64), bytes = new Uint8Array(roh.length);
+      for (let i = 0; i < roh.length; i++) bytes[i] = roh.charCodeAt(i);
+      const fd = new FormData();
+      fd.append('files', new File([bytes], 'geteilt-tour.png', { type: 'image/png' }));
+      const r = await fetch('./teilen', { method: 'POST', body: fd, redirect: 'manual' });
+      return r.type;
+    }, tourB64);
+    gleich('Teilen: der Service Worker nimmt an und leitet in die App', status, 'opaqueredirect');
+    gleich('Teilen: wartet lokal, bis die App es abholt', await page.evaluate(async () => (await (await caches.open('teilen-eingang')).keys()).length), 1);
+    await page.evaluate(() => { teilenAbholen(); });
+    await page.waitForSelector('#buchungOk', { timeout: 90000 });
+    gleich('Teilen: Datei gespeichert, gelesen und als Buchung vorgeschlagen', [await page.getAttribute('#artReihe .chip-wahl.an', 'data-typ'), await feld(page, 'titel'), await feld(page, 'datum'), await feld(page, 'zeit'), await feld(page, 'preis'), await feld(page, 'referenz')],
+      ['aktivitaet', 'Schnorcheltour Demo', '2026-12-29', '08:30', '1800', 'TOUR-5521']);
+    gleich('Teilen: Zwischenspeicher ist danach leer', await page.evaluate(async () => (await (await caches.open('teilen-eingang')).keys()).length), 0);
+    await page.selectOption('#bf-zahlung', 'storniert');
+    await page.click('#buchungOk');
+    await blattZu(page);
+    await page.evaluate(async () => {
+      const fd = new FormData();
+      fd.append('title', 'Hotel Demo');
+      fd.append('url', 'https://www.booking.com/hotel/xx/geteilt.html');
+      await fetch('./teilen', { method: 'POST', body: fd, redirect: 'manual' });
+      await teilenAbholen();
+    });
+    await page.waitForSelector('#buchungOk');
+    gleich('Teilen: ein Link kommt als Link an', [await feld(page, 'link'), await feld(page, 'anbieter')], ['https://www.booking.com/hotel/xx/geteilt.html', 'Booking.com']);
+    await page.click('#buchungSpaeter'); await blattZu(page);
+
+    /* Die Sicherheitsregel gilt im Worker: ein Blob-Worker erreicht keinen dritten Host */
+    const leck = await page.evaluate(() => new Promise(fertig => {
+      const w = new Worker(URL.createObjectURL(new Blob(["fetch('https://dritter-host.example/leck').then(() => postMessage('GESENDET')).catch(() => postMessage('blockiert'))"], { type: 'text/javascript' })));
+      w.onmessage = e => fertig(e.data);
+      setTimeout(() => fertig('keine Antwort'), 5000);
+    }));
+    gleich('Sicherheitsregel gilt auch im Hintergrund-Skript', leck, 'blockiert');
+
     /* --- Fehlerhafte und unvollstaendige Eingaben --- */
     await page.click('#planenBtn');
     await page.setInputFiles('#planenDatei', kaputtPdf);
@@ -224,7 +344,7 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
 
     await page.click('#planenBtn');
     await page.setInputFiles('#planenDatei', leerPdf);
-    await page.waitForSelector('#buchungOk');
+    await page.waitForSelector('#buchungOk', { timeout: 90000 });
     wahr('PDF ohne Text: Hinweis auf Scan', /keinen lesbaren Text/.test(await page.textContent('#sheet .hinweis-box')));
     await page.click('#sheet .doc-panel-zu'); await blattZu(page);
 
@@ -239,8 +359,8 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
     /* Screenshot: wird Beleg, Felder von Hand, als geplant markiert */
     await page.click('#planenBtn');
     await page.setInputFiles('#planenDatei', bild);
-    await page.waitForSelector('#buchungOk');
-    wahr('Bild: Hinweis, dass der Inhalt nicht gelesen wird', /Inhalt wird nicht gelesen/.test(await page.textContent('#sheet .hinweis-box')));
+    await page.waitForSelector('#buchungOk', { timeout: 90000 });
+    wahr('Bild ohne Text: verständlicher Hinweis, Beleg bleibt gespeichert', /kein Text erkannt|Texterkennung steht gerade nicht/.test(await page.textContent('#sheet .hinweis-box')));
     await page.click('#artReihe .chip-wahl[data-typ="aktivitaet"]');
     await page.fill('#bf-titel', 'Kochkurs Demo');
     await page.fill('#bf-datum', '2026-12-24');
@@ -265,10 +385,10 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
     await page.click('#buchungOk');
     wahr('Widerspruch: Enddatum vor Anfangsdatum wird abgewiesen', /Enddatum liegt vor dem Anfangsdatum/.test(f.log.dialoge[vorDialog] || ''));
     await page.click('#sheet .doc-panel-zu'); await blattZu(page);
-    gleich('Widerspruch: nichts gespeichert', await page.evaluate(() => appData.buchungen.length), 3);
+    gleich('Widerspruch: nichts gespeichert', await page.evaluate(() => appData.buchungen.length), 6);
 
     /* --- Szenario 5: Thailand, dann Japan --- */
-    await tippeReiter(page, 'screenTools');
+    await tippeReiter(page, 'screenBudget');
     await page.waitForFunction(() => /Referenzkurs|eigener Kurs/.test(document.getElementById('kursInfo').textContent));
     gleich('S5: Land und Währung aus der Reise', [await page.inputValue('#landWahl'), await page.inputValue('#waehrungWahl')], ['TH', 'THB']);
     wahr('S5: bisheriger Kurs 40 gilt weiter, als eigener Kurs ausgewiesen', /1 CHF = 40 THB · eigener Kurs/.test(await page.textContent('#kursInfo')));
@@ -316,18 +436,20 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
     await page.selectOption('#landWahl', 'TH');
 
     /* --- Szenario 6: Budget und Reiseabschluss --- */
-    await page.click('#budgetOeffnen');
+    await tippeReiter(page, 'screenBudget');
     await page.click('#zkBudget');
     await page.fill('#budgetFeld', '3000');
     await page.click('#budgetSpeichern');
     await blattZu(page);
     const soll = await page.evaluate(() => { const a = Kern.abrechnung(appData, ausgaben, kurse); return [a.bezahltBuchungen, a.unterwegs, a.tatsaechlich, a.offen, a.geplant, a.gesamt, a.verbleibend]; });
     /* Hotel 9600 THB offen zu Kurs 30 = 320. Flug 950 CHF bezahlt.
-       Kochkurs 1200 THB geplant = 40. Unterwegs 12.50 + 20 + 10.85. */
-    gleich('S6: Abrechnung ohne doppelte Kosten', soll, [950, 43.35, 993.35, 320, 40, 1353.35, 1646.65]);
+       Kochkurs 1200 THB geplant = 40. Fähre 600 THB offen = 20.
+       Unterwegs 12.50 + 20 + 10.85. Die zwei stornierten Buchungen
+       zaehlen nicht. */
+    gleich('S6: Abrechnung ohne doppelte Kosten', soll, [950, 43.35, 993.35, 340, 40, 1373.35, 1626.65]);
     /* Das Tausender-Zeichen haengt vom Browser ab, gerade oder typografisch. */
     gleich('S6: Anzeige stimmt mit der Rechnung überein', [await page.textContent('#zwBezahlt'), await page.textContent('#zwOffen'), (await page.textContent('#zwVerbleibend')).replace('’', "'")],
-      ['993.35', '360.00', "1'646.65"]);
+      ['993.35', '380.00', "1'626.65"]);
     const vorEnde = await page.evaluate(() => [appData.buchungen.length, ausgaben.length, Object.values(dokIndex).reduce((n, l) => n + l.length, 0), appData.tage.length]);
     await page.click('#reiseEndeBtn');
     await page.waitForSelector('#abgeschlossenBand');
@@ -338,26 +460,26 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
     await page.selectOption('#bf-zahlung', 'bezahlt');
     await page.click('#buchungOk');
     await blattZu(page);
-    gleich('S6: nach dem Bezahlen gleiche Gesamtsumme, nichts doppelt', await page.evaluate(() => { const a = Kern.abrechnung(appData, ausgaben, kurse); return [a.gesamt, a.offen, a.geplant, a.bezahltBuchungen]; }), [1353.35, 0, 40, 1270]);
+    gleich('S6: nach dem Bezahlen gleiche Gesamtsumme, nichts doppelt', await page.evaluate(() => { const a = Kern.abrechnung(appData, ausgaben, kurse); return [a.gesamt, a.offen, a.geplant, a.bezahltBuchungen]; }), [1373.35, 20, 40, 1270]);
     /* CSV */
     const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#budgetInhalt .btn >> text=CSV exportieren')]);
     const csvPfad = path.join(tmp, 'kosten.csv');
     await dl.saveAs(csvPfad);
     const csv = fs.readFileSync(csvPfad, 'utf8').split('\r\n').filter(Boolean);
-    gleich('S6: CSV hat Kopf und alle Posten', [csv[0].replace('﻿', '').split(';').length, csv.length - 1], [12, 6]);
+    gleich('S6: CSV hat Kopf und alle Posten', [csv[0].replace('﻿', '').split(';').length, csv.length - 1], [12, 9]);
     wahr('S6: CSV enthält Hotel und Ausgaben', csv.some(z => /Mangrovenblick Resort/.test(z) && /320\.00/.test(z)) && csv.some(z => /;Ausgabe;Essen;/.test(z)));
     /* Reisebericht fuer den Druck */
     await page.evaluate(() => { window.print = () => { window.__gedruckt = true; }; });
     await page.click('#budgetInhalt .btn >> text=Reisebericht drucken');
     const bericht = await page.textContent('#druckBericht');
-    wahr('S6: Reisebericht mit Route, Unterkünften und Summe', await page.evaluate(() => window.__gedruckt) && /Kosten nach Kategorie/.test(bericht) && /Mangrovenblick Resort/.test(bericht) && /1’353\.35|1'353\.35/.test(bericht));
+    wahr('S6: Reisebericht mit Route, Unterkünften und Summe', await page.evaluate(() => window.__gedruckt) && /Kosten nach Kategorie/.test(bericht) && /Mangrovenblick Resort/.test(bericht) && /1’373\.35|1'373\.35/.test(bericht));
     /* Wieder oeffnen */
     await page.click('#reiseEndeBtn');
     await page.waitForFunction(() => appData.reise.status === 'aktiv');
     gleich('S6: Reise lässt sich wieder öffnen', await page.isVisible('#abgeschlossenBand'), false);
 
     /* --- Bedienbarkeit auf dem Handy: nichts läuft seitlich aus dem Bild --- */
-    for (const id of ['screenToday', 'screenPlan', 'screenTickets', 'screenTools', 'screenBudget']) {
+    for (const id of ['screenToday', 'screenPlan', 'screenTickets', 'screenBudget', 'screenTranslator', 'screenTools']) {
       await page.evaluate(s => showScreen(s), id);
       const breit = await page.evaluate(s => { const e = document.getElementById(s); return [e.scrollWidth <= e.clientWidth + 1, document.documentElement.scrollWidth <= 391]; }, id);
       gleich('Handy 390 px, kein seitlicher Überlauf: ' + id, breit, [true, true]);
@@ -365,25 +487,30 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
 
     /* --- Szenario 4: offline --- */
     await page.evaluate(() => navigator.serviceWorker.ready);
+    /* Die Bibliotheken holt die Seite selbst in den Offline-Speicher
+       und merkt sich das. Erst danach darf das Netz weg. */
     await page.waitForFunction(async () => {
-      const namen = await caches.keys();
-      if (!namen.length) return false;
-      const c = await caches.open(namen[0]);
-      return !!(await c.match('./index.html')) && !!(await c.match('./vendor/pdf.worker.min.js'));
-    }, null, { timeout: 20000 });
+      return localStorage.getItem('reisebegleiter_vendor') === '7.0.0' && !!(await caches.match('./index.html')) &&
+        !!(await caches.match('./vendor/pdf.worker.min.js')) && !!(await caches.match('./vendor/ocr/lang/deu.traineddata.gz'));
+    }, null, { timeout: 60000 });
     await f.ctx.setOffline(true);
     await page.reload();
     await page.waitForFunction(() => typeof appData !== 'undefined' && appData && document.getElementById('dayList').children.length > 0);
     await page.waitForFunction(() => Object.keys(dokIndex).length > 0);
     gleich('S4 offline: Reiseplan, Buchungen, Ausgaben und Belege sind da',
-      await page.evaluate(() => [ansicht.length >= 28, appData.buchungen.length, ausgaben.length, Object.values(dokIndex).reduce((n, l) => n + l.length, 0)]), [true, 3, 3, 2]);
+      await page.evaluate(() => [ansicht.length >= 28, appData.buchungen.length, ausgaben.length, Object.values(dokIndex).reduce((n, l) => n + l.length, 0) >= 4]), [true, 6, 3, true]);
     wahr('S4 offline: Anzeige "offline"', await page.isVisible('#offlineBadge.show'));
-    await tippeReiter(page, 'screenTools');
+    await tippeReiter(page, 'screenBudget');
     wahr('S4 offline: Kurs gilt weiter, mit Stand', /Referenzkurs vom 23\.12\.2026|eigener Kurs/.test(await page.textContent('#kursInfo')));
     await page.fill('#spendAmount', '90');
     await page.click('#catGrid .cat-btn >> nth=0', { position: { x: 20, y: 40 } });
     gleich('S4 offline: Ausgabe erfassen geht', await page.evaluate(() => ausgaben.length), 4);
-    await page.click('#budgetOeffnen');
+    /* Texterkennung ohne Netz: ein Beleg aus dem Eingang wird gelesen */
+    await tippeReiter(page, 'screenTickets');
+    await page.click('#eingangPanel .eingang-zeile:has-text("foto-faehre2.png") .btn');
+    await page.waitForSelector('#buchungOk', { timeout: 90000 });
+    gleich('S4 offline: Texterkennung läuft aus dem Gerätespeicher', [await feld(page, 'vonOrt'), await feld(page, 'nachOrt'), await feld(page, 'datum')], ['Pier Demo Süd', 'Insel Demo', '2027-01-03']);
+    await page.click('#buchungSpaeter'); await blattZu(page);
     wahr('S4 offline: Budget wird gerechnet', /\d/.test(await page.textContent('#zwBezahlt')));
     await tippeReiter(page, 'screenTickets');
     await page.click('.doc-tile[data-kat="hotel"]');
@@ -407,7 +534,7 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
     /* ============ Kursdienst nicht erreichbar ============ */
     const g = await fenster(browser, basis, { kursAus: true, erwarteteFehler: /Failed to load resource|net::ERR/ });
     alleLogs.push(['Kursdienst aus', g.log]);
-    await tippeReiter(g.page, 'screenTools');
+    await tippeReiter(g.page, 'screenBudget');
     await g.page.click('#kursHolen');
     await g.page.waitForFunction(() => /konnte nicht geholt werden/.test(document.getElementById('kursInfo').textContent));
     wahr('Kursdienst aus: Meldung, und der eigene Kurs gilt weiter', /1 CHF = 40 THB/.test(await g.page.textContent('#kursInfo')));
