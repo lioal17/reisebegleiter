@@ -576,6 +576,8 @@ body.foto-an .palm-deco, body.foto-an .hero-bg { display: none; }
 }
 .dok-kachel img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .dok-kachel .dok-wort { font-size: var(--fs-mini); font-weight: var(--fw-bold); letter-spacing: 0.5px; }
+.dok-kachel.dok-link { flex-direction: column; gap: 2px; padding: 0 4px; }
+.dok-link-host { font-size: 10px; color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dok-weg {
   position: absolute; top: 2px; right: 2px; padding: 0;
   width: 22px; height: 22px; border-radius: 50%; border: none;
@@ -1152,15 +1154,12 @@ body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.92); } /* ohne Weichz
     <div class="doc-grid" id="docTiles"></div>
     <div id="docPanel"></div>
     <div id="ticketsList"></div>
-    <div class="upload-box" id="addTicketBox">
-      <div class="ic" data-icon="plus" style="margin-bottom: 6px; color: var(--teal);"></div>
-      <div class="subtitle" style="color: var(--text);">Dokument hinterlegen</div>
-      <div class="hint-line">Fragt zuerst, zu welcher Buchung – bleibt auf dem Gerät</div>
-    </div>
     <!-- Ohne "capture": mit diesem Attribut oeffnet Android nur die
          Kamera, und ein Screenshot oder ein PDF aus den Downloads ist
-         nicht waehlbar. Ohne es bietet das System Kamera und Dateien an. -->
+         nicht waehlbar. "accept" setzt dokArtWaehlen je nach Knopf. -->
     <input type="file" id="dokInput" accept="image/*,application/pdf" style="display: none;">
+    <!-- Mit "capture": dieses Feld oeffnet direkt die Kamera. -->
+    <input type="file" id="dokKamera" accept="image/*" capture="environment" style="display: none;">
     <input type="file" id="planenDatei" accept="image/*,application/pdf" style="display: none;">
     <!-- Mit "capture": dieses Feld oeffnet direkt die Kamera. -->
     <input type="file" id="planenKamera" accept="image/*" capture="environment" style="display: none;">
@@ -2568,6 +2567,8 @@ const ICONS = {
   utensils: '<path d="M7 3v18M4 3v5a3 3 0 0 0 6 0V3"/><path d="M17 3c-2 3-2 6.5 0 9v9"/>',
   car: '<path d="M5 15.5l1.4-4.6A2 2 0 0 1 8.3 9.5h7.4a2 2 0 0 1 1.9 1.4L19 15.5"/><rect x="4" y="15.5" width="16" height="3.5" rx="1.2"/><path d="M7 19v1.5M17 19v1.5"/>',
   map: '<path d="M9 4l6 2 5.4-1.8a.5.5 0 0 1 .6.5V18l-6 2-6-2-5.4 1.8a.5.5 0 0 1-.6-.5V6l6-2z"/><path d="M9 4v14M15 6v14"/>',
+  image: '<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5"/>',
+  link: '<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/>',
   camera: '<path d="M4 8a2 2 0 0 1 2-2h2l1.5-2h5L16 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z"/><circle cx="12" cy="13" r="3.5"/>',
   down: '<path d="M12 3v12m-4.5-4L12 15.5 16.5 11"/><path d="M4 20h16"/>',
   up: '<path d="M12 15V3.5M7.5 7.5L12 3l4.5 4.5"/><path d="M4 20h16"/>',
@@ -2834,18 +2835,51 @@ function zurueckSchritt() {
   try { showScreen(ziel.screen, ziel.nav); } finally { zurueckLaeuft = false; }
 }
 
+/* Chrome ueberspringt beim Zuruecknavigieren jeden Verlaufseintrag,
+   von dem aus ohne Nutzer-Interaktion ein neuer Eintrag angelegt
+   wurde (Schutz gegen Seiten, die den Zurueck-Knopf festhalten). Ein
+   Wach-Eintrag, der nur beim Start oder im popstate-Handler gesetzt
+   wird, ist damit wirkungslos: Chrome springt ueber alles hinweg und
+   die App geht zu. Genau das passierte nach dem ersten Einbau.
+
+   Deshalb wird bei jeder Beruehrung ein Wach-Eintrag nachgelegt,
+   sofern der oberste noch ohne Interaktion entstanden ist. Jeder
+   Eintrag traegt eine laufende Nummer; damit unterscheidet popstate
+   "zurueck" (kleinere Nummer) von "vorwaerts" (groessere). */
+let wacheZaehler = Date.now();
+let wacheAktuell = 0;
+let wacheMitGeste = false;
+
+function wachePushen(mitGeste) {
+  wacheZaehler++;
+  history.pushState({ travelMate: 'wache', n: wacheZaehler }, '');
+  wacheAktuell = wacheZaehler;
+  wacheMitGeste = mitGeste;
+}
 function wacheSetzen() {
   if (!history.pushState) return;
-  if (history.state && history.state.travelMate === 'wache') return;
-  history.pushState({ travelMate: 'wache' }, '');
+  const s = history.state;
+  if (s && s.travelMate === 'wache' && s.n === wacheAktuell) return;
+  wachePushen(false);
 }
+function wacheBestaetigen() {
+  if (!history.pushState || wacheMitGeste) return;
+  try { wachePushen(true); } catch (e) { /* zu viele pushState: egal */ }
+}
+/* click, touchend und keydown gelten im Browser als Interaktion,
+   pointerdown bei Beruehrung nicht. */
+['click', 'touchend', 'keydown'].forEach(art =>
+  document.addEventListener(art, wacheBestaetigen, { capture: true, passive: true }));
+
 window.addEventListener('popstate', ev => {
-  /* Vorwaerts auf den Wach-Eintrag: nichts tun. */
-  if (ev.state && ev.state.travelMate === 'wache') return;
+  const s = ev.state;
+  /* Vorwaerts auf einen neueren Wach-Eintrag: nichts tun. */
+  if (s && s.travelMate === 'wache' && s.n > wacheAktuell) { wacheAktuell = s.n; return; }
+  wacheAktuell = (s && s.n) || 0;
   try { zurueckSchritt(); } catch (e) { console.error('Zurueck-Schritt', e); }
-  wacheSetzen();
+  wachePushen(false);
 });
-if (history.replaceState) history.replaceState({ travelMate: 'basis' }, '');
+if (history.replaceState) history.replaceState({ travelMate: 'basis', n: 0 }, '');
 wacheSetzen();
 document.getElementById('mapBackBtn').addEventListener('click', () => { stopGeo(); showScreen(mapScreenReturn, mapScreenReturn); });
 document.getElementById('geoBtn').addEventListener('click', toggleGeo);
@@ -4202,7 +4236,7 @@ function renderDocPanel(scrollen) {
   if (!inhalt.length && !hotelTickets.length) {
     const leer = document.createElement('div');
     leer.className = 'doc-leer-text';
-    leer.textContent = 'Hier liegt noch nichts. Über "Dokument hinterlegen" kommt ein Foto oder PDF dazu.';
+    leer.textContent = 'Hier liegt noch nichts. Über das Plus oben kommt ein Foto, PDF oder Link dazu.';
     panel.appendChild(leer);
   } else if (kat.id === 'hotel') {
     inhalt.forEach(h => panel.appendChild(hotelEintrag(h)));
@@ -4293,7 +4327,7 @@ function ticketEintrag(t) {
   knopf.className = 'btn btn-secondary btn-inline';
   knopf.type = 'button';
   knopf.style.marginTop = 'var(--sp-s)';
-  knopf.innerHTML = icon('plus', 16) + (dokus.length ? 'Weiteres hinterlegen' : 'Foto oder PDF hinterlegen');
+  knopf.innerHTML = icon('plus', 16) + (dokus.length ? 'Weiteres hinzufügen' : 'Foto, PDF oder Link hinzufügen');
   knopf.addEventListener('click', () => dokAufnehmen(t.id));
   div.appendChild(knopf);
 
@@ -4400,7 +4434,10 @@ function dokReihe(t, dokus) {
     kachel.className = 'dok-kachel';
     const istBild = String(m.typ).startsWith('image/');
 
-    if (istBild) {
+    if (m.url) {
+      kachel.classList.add('dok-link');
+      kachel.innerHTML = '<span class="dok-wort">LINK</span><span class="dok-link-host">' + esc(m.name) + '</span>';
+    } else if (istBild) {
       const img = document.createElement('img');
       img.alt = m.name;
       img.loading = 'lazy';
@@ -4416,7 +4453,7 @@ function dokReihe(t, dokus) {
       kachel.innerHTML = '<span class="dok-wort">PDF</span>';
     }
 
-    kachel.addEventListener('click', () => dokZeigen(m));
+    kachel.addEventListener('click', () => m.url ? extern(m.url) : dokZeigen(m));
 
     const weg = document.createElement('button');
     weg.className = 'dok-weg';
@@ -5906,11 +5943,99 @@ function dokAufnehmen(ticketId) {
       'deshalb wird sie nicht angenommen.');
     return;
   }
-  dokZielTicket = ticketId;
-  document.getElementById('dokInput').click();
+  dokArtWaehlen(ticketId);
 }
 
-document.getElementById('dokInput').addEventListener('change', async function(e) {
+/* Was soll an die Buchung? Foto direkt mit der Kamera, ein Bild aus
+   der Galerie, ein PDF oder ein Link. Ein Link wird nur gespeichert
+   und erst auf Tippen im Browser geoeffnet; die App ruft ihn nie
+   selbst ab. */
+function dokArtWaehlen(ticketId) {
+  const t = alleTickets().find(x => x.id === ticketId);
+  const sheet = document.getElementById('sheet');
+  sheet.innerHTML = '';
+  blattKopf(sheet, 'Was hinzufügen?', t ? t.titel : 'Bleibt auf dem Gerät');
+
+  const wege = document.createElement('div');
+  wege.className = 'planen-wege';
+  const weg = (text, ikone, zweit, aktion) => {
+    const b = document.createElement('button');
+    b.className = 'btn planen-weg' + (zweit ? ' btn-secondary' : '');
+    b.type = 'button';
+    b.innerHTML = icon(ikone, 26) + esc(text);
+    b.addEventListener('click', aktion);
+    wege.appendChild(b);
+  };
+  const datei = (id, accept) => {
+    dokZielTicket = ticketId;
+    const inp = document.getElementById(id);
+    if (accept) inp.accept = accept;
+    sheetSchliessen();
+    inp.click();
+  };
+  const feld = document.createElement('input');
+  weg('Foto aufnehmen', 'camera', false, () => datei('dokKamera'));
+  weg('Bild aus Galerie', 'image', true, () => datei('dokInput', 'image/*'));
+  weg('PDF wählen', 'doc', true, () => datei('dokInput', 'application/pdf,.pdf'));
+  weg('Link einfügen', 'link', true, () => feld.focus());
+  sheet.appendChild(wege);
+
+  const l1 = document.createElement('div');
+  l1.className = 'sheet-label';
+  l1.textContent = 'Link';
+  sheet.appendChild(l1);
+  feld.type = 'url';
+  feld.className = 'sheet-feld';
+  feld.placeholder = 'https://…';
+  feld.autocomplete = 'off';
+  sheet.appendChild(feld);
+  const speichern = document.createElement('button');
+  speichern.className = 'btn';
+  speichern.type = 'button';
+  speichern.style.cssText = 'width:100%;margin-top:var(--sp-s);';
+  speichern.innerHTML = icon('link', 18) + 'Link speichern';
+  speichern.addEventListener('click', async () => {
+    const treffer = /https?:\/\/[^\s<>"']+/i.exec(feld.value.trim());
+    if (!treffer) { alert('Bitte einen Link einfügen, der mit http:// oder https:// beginnt.'); feld.focus(); return; }
+    try {
+      await dokLinkSpeichern(ticketId, treffer[0].replace(/[).,;]+$/, ''));
+      sheetSchliessen();
+      renderDokumente();
+    } catch(err) {
+      alert('Der Link wurde NICHT gespeichert.\n\n' + (err && err.message ? err.message : String(err)));
+    }
+  });
+  sheet.appendChild(speichern);
+
+  document.getElementById('sheetBg').classList.add('auf');
+  requestAnimationFrame(() => { sheet.classList.add('auf'); sheet.scrollTop = 0; });
+}
+
+async function dokLinkSpeichern(ticketId, url) {
+  let host = url;
+  try { host = new URL(url).hostname.replace(/^www\./, ''); } catch(e) {}
+  const meta = {
+    id: 'dok-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+    ticketId: ticketId,
+    name: host,
+    typ: 'text/uri-list',
+    url: url,
+    groesse: 0,
+    erfasst: new Date().toISOString()
+  };
+  const db = await dokDb();
+  await new Promise((ok, fehler) => {
+    const tx = db.transaction('meta', 'readwrite');
+    tx.objectStore('meta').put(meta);
+    tx.oncomplete = () => ok();
+    tx.onabort = () => fehler(tx.error || new Error('Transaktion abgebrochen'));
+    tx.onerror = () => fehler(tx.error || new Error('Schreibfehler'));
+  });
+  (dokIndex[ticketId] = dokIndex[ticketId] || []).push(meta);
+  return meta;
+}
+
+async function dokDateiGewaehlt(e) {
   const file = e.target.files[0];
   const ticketId = dokZielTicket;
   this.value = '';
@@ -5933,11 +6058,13 @@ document.getElementById('dokInput').addEventListener('change', async function(e)
       ? 'Speicher voll – das Dokument wurde NICHT hinterlegt.\n\nÄltere Dokumente entfernen oder Gerätespeicher freigeben.'
       : 'Das Dokument wurde NICHT hinterlegt.\n\n' + (err && err.message ? err.message : String(err)));
   }
-});
+}
+document.getElementById('dokInput').addEventListener('change', dokDateiGewaehlt);
+document.getElementById('dokKamera').addEventListener('change', dokDateiGewaehlt);
 
-/* Der Plus-Knopf oben und der Kasten unten kennen keine Buchung.
-   Sie fragen deshalb zuerst. Reihenfolge der Liste: erst was noch
-   fehlt, dann der Rest. Wer 21 Belege abarbeitet, sieht oben immer
+/* Der Plus-Knopf oben kennt keine Buchung. Er fragt deshalb zuerst,
+   danach kommt die Auswahl Foto, Galerie, PDF oder Link. Reihenfolge
+   der Liste: erst was noch fehlt, dann der Rest. Wer 21 Belege abarbeitet, sieht oben immer
    das Naechste. */
 function dokZielWaehlen() {
   const alle = alleTickets().slice();
@@ -5984,7 +6111,6 @@ function dokZielWaehlen() {
   document.getElementById('sheetBg').classList.add('auf');
   requestAnimationFrame(() => { sheet.classList.add('auf'); sheet.scrollTop = 0; });
 }
-document.getElementById('addTicketBox').addEventListener('click', dokZielWaehlen);
 document.getElementById('addTicketTop').addEventListener('click', dokZielWaehlen);
 document.getElementById('dokVollZu').addEventListener('click', dokVollSchliessen);
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape') dokVollSchliessen(); });
@@ -6234,6 +6360,12 @@ document.getElementById('exportDokBtn').addEventListener('click', async function
   try {
     const raus = [];
     for (const m of alle) {
+      /* Ein Link hat keine Datei, nur die Adresse. */
+      if (m.url) {
+        raus.push({ id: m.id, ticketId: m.ticketId, name: m.name, typ: m.typ,
+                    groesse: 0, erfasst: m.erfasst, url: m.url });
+        continue;
+      }
       const b = await dokBlob(m);
       if (!b) continue;
       raus.push({ id: m.id, ticketId: m.ticketId, name: m.name, typ: m.typ,
@@ -6275,6 +6407,20 @@ document.getElementById('importDokInput').addEventListener('change', function(e)
                        typ: d.typ || 'application/octet-stream',
                        groesse: d.groesse || 0, erfasst: d.erfasst || new Date().toISOString(),
                        hash: d.hash || '' };
+        if (meta.id && meta.ticketId && d.url && /^https?:\/\//i.test(d.url)) {
+          meta.url = String(d.url);
+          meta.groesse = 0;
+          const db1 = await dokDb();
+          await new Promise((ok, schief) => {
+            const tx = db1.transaction('meta', 'readwrite');
+            tx.objectStore('meta').put(meta);
+            tx.oncomplete = () => ok();
+            tx.onabort = () => schief(tx.error || new Error('Transaktion abgebrochen'));
+            tx.onerror = () => schief(tx.error || new Error('Schreibfehler'));
+          });
+          neu++;
+          continue;
+        }
         if (!meta.id || !meta.ticketId || !d.data) { fehler++; continue; }
         const blob = base64NachBlob(d.data, meta.typ);
         meta.groesse = blob.size;
