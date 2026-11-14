@@ -2774,6 +2774,7 @@ function extern(url) {
 
 /* ---------- Navigation ---------- */
 function showScreen(screenId, navScreenId) {
+  screenMerken(screenId);
   if (screenId !== 'screenMap' && typeof stopGeo === 'function') stopGeo();
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(screenId).classList.add('active');
@@ -2788,6 +2789,64 @@ function showScreen(screenId, navScreenId) {
 document.querySelectorAll('.nav-btn').forEach(btn => {
   btn.addEventListener('click', function() { showScreen(this.dataset.screen); });
 });
+
+/* ---------- Zurueck-Taste und Zurueck-Wischen (Android) ----------
+   Die Zurueck-Taste der Navigationsleiste und die Wischgeste vom Rand
+   loesen im Browser "eine Seite zurueck" aus. Ohne eigene Behandlung
+   schliesst sich die installierte App dabei sofort, egal wo man ist.
+
+   Deshalb liegt ueber dem Startzustand immer ein Wach-Eintrag im
+   Verlauf. Geht der Nutzer zurueck, landet der Browser auf dem
+   Grundeintrag, die App macht selbst einen Schritt zurueck und legt
+   den Wach-Eintrag sofort wieder hin. Auf "Heute" ohne offenes
+   Fenster passiert nichts: Die App bleibt offen.
+
+   Reihenfolge eines Schritts: Vollbild-Dokument, Blatt von unten,
+   offene Dokumentkachel, dann der vorige Bildschirm. */
+let screenVerlauf = [];
+let zurueckLaeuft = false;
+
+function screenMerken(screenId) {
+  if (zurueckLaeuft) return;
+  const aktiv = document.querySelector('.screen.active');
+  if (!aktiv || aktiv.id === screenId) return;
+  /* Kommt man auf einen Bildschirm zurueck, der schon im Verlauf
+     steht, wird ab dort abgeschnitten. So entstehen keine Schleifen
+     und der Weg zurueck bleibt kurz. */
+  const i = screenVerlauf.findIndex(e => e.screen === screenId);
+  if (i >= 0) { screenVerlauf.length = i; return; }
+  const navBtn = document.querySelector('.nav-btn.active');
+  screenVerlauf.push({ screen: aktiv.id, nav: navBtn ? navBtn.dataset.screen : aktiv.id });
+  if (screenVerlauf.length > 20) screenVerlauf.shift();
+}
+
+function zurueckSchritt() {
+  if (document.getElementById('dokVoll').classList.contains('auf')) { dokVollSchliessen(); return; }
+  if (document.getElementById('sheet').classList.contains('auf')) { sheetSchliessen(); return; }
+  const aktiv = document.querySelector('.screen.active');
+  const id = aktiv ? aktiv.id : 'screenToday';
+  if (id === 'screenTickets' && offeneKachel) { offeneKachel = null; renderDocPanel(); return; }
+  let ziel = screenVerlauf.pop();
+  while (ziel && ziel.screen === id) ziel = screenVerlauf.pop();
+  if (!ziel && id !== 'screenToday') ziel = { screen: 'screenToday', nav: 'screenToday' };
+  if (!ziel) return;
+  zurueckLaeuft = true;
+  try { showScreen(ziel.screen, ziel.nav); } finally { zurueckLaeuft = false; }
+}
+
+function wacheSetzen() {
+  if (!history.pushState) return;
+  if (history.state && history.state.travelMate === 'wache') return;
+  history.pushState({ travelMate: 'wache' }, '');
+}
+window.addEventListener('popstate', ev => {
+  /* Vorwaerts auf den Wach-Eintrag: nichts tun. */
+  if (ev.state && ev.state.travelMate === 'wache') return;
+  try { zurueckSchritt(); } catch (e) { console.error('Zurueck-Schritt', e); }
+  wacheSetzen();
+});
+if (history.replaceState) history.replaceState({ travelMate: 'basis' }, '');
+wacheSetzen();
 document.getElementById('mapBackBtn').addEventListener('click', () => { stopGeo(); showScreen(mapScreenReturn, mapScreenReturn); });
 document.getElementById('geoBtn').addEventListener('click', toggleGeo);
 document.getElementById('dayBackBtn').addEventListener('click', () => showScreen(dayScreenReturn, dayScreenReturn));
@@ -7708,7 +7767,7 @@ function teilenStart() {
     if (++versuche < 40) setTimeout(lauf, 150);
   };
   lauf();
-  if (start === 'teilen' && history.replaceState) history.replaceState(null, '', location.pathname);
+  if (start === 'teilen' && history.replaceState) history.replaceState(history.state, '', location.pathname);
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) teilenAbholen(); });
 /* Vorladen erst, wenn der Browser Luft hat (requestIdleCallback), damit
