@@ -29,8 +29,12 @@ function umgebung(gecacht, netz, sofortAbbrechen) {
       this.headers = init.headers || {};
     }
     clone() {
+      /* Wie im Browser: Eine Antwort, die schon an die Seite ging, ist
+         verbraucht und laesst sich nicht mehr klonen. */
+      if (this.verbraucht) throw new TypeError('Response body is already used');
       return new Resp(this.body, { status: this.status, type: this.type, url: this.url });
     }
+    async text() { return String(this.body); }
   }
 
   class Req {
@@ -93,11 +97,15 @@ function umgebung(gecacht, netz, sofortAbbrechen) {
   };
 
   const horcher = {};
+  const nachrichten = [];
   const self = {
     addEventListener: (art, fn) => { horcher[art] = fn; },
     location: { origin: ORIGIN },
     skipWaiting: async () => {},
-    clients: { claim: async () => {} }
+    clients: {
+      claim: async () => {},
+      matchAll: async () => [{ postMessage: m => nachrichten.push(m) }]
+    }
   };
 
   const fakeSetTimeout = sofortAbbrechen
@@ -105,7 +113,7 @@ function umgebung(gecacht, netz, sofortAbbrechen) {
     : ECHTES_SET_TIMEOUT;
 
   const src = fs.readFileSync(QUELLE, 'utf8') +
-    '\nreturn { netzZuerst, cacheZuerst, ausSpeicher, brauchbar, istProgrammOderDaten, CACHE_NAME };';
+    '\nreturn { netzZuerst, cacheZuerst, sofortUndImHintergrund, ausSpeicher, brauchbar, istProgrammOderDaten, CACHE_NAME };';
 
   const bauen = new Function(
     'self', 'caches', 'fetch', 'Response', 'Request', 'AbortController', 'URL',
@@ -126,7 +134,7 @@ function umgebung(gecacht, netz, sofortAbbrechen) {
     await Promise.all(zusagen);
   }
 
-  return { api: api, Req: Req, Resp: Resp, v13: v13, speicher: speicher, ereignis: ereignis };
+  return { api: api, Req: Req, Resp: Resp, v13: v13, speicher: speicher, ereignis: ereignis, nachrichten: nachrichten };
 }
 
 /* ---------- Netz-Verhalten der einzelnen Faelle ---------- */
@@ -300,6 +308,45 @@ const faelle = [
       !u.speicher.has(ALTER_CACHE) &&
       u.speicher.get(AKTUELLER_CACHE).get(BASE + 'index.html').body === 'NEU'
   );
+
+  /* ---------- Start: sofort aus dem Speicher, Netz im Hintergrund ---------- */
+
+  async function startPruefung(name, gecacht, netz, pruefen) {
+    const u = umgebung(gecacht, netz);
+    const zusagen = [];
+    const ev = { request: new u.Req('./index.html', { mode: 'navigate' }), waitUntil: p => zusagen.push(p) };
+    let ok = false;
+    try {
+      const t0 = Date.now();
+      const r = await u.api.sofortUndImHintergrund(ev);
+      const dauer = Date.now() - t0;
+      r.verbraucht = true; /* die Seite liest die Antwort */
+      await Promise.all(zusagen);
+      ok = !!pruefen(r, u, dauer);
+    } catch(e) { ok = false; }
+    console.log((ok ? 'bestanden  ' : 'FEHLER     ') + name);
+    if (ok) gut++; else schlecht++;
+  }
+
+  await startPruefung('12. Start mit Speicher, Netz haengt -> App sofort, ohne Warten',
+    APP, haengendesNetz,
+    (r, u, dauer) => r.body === 'APP' && dauer < 40);
+  await startPruefung('13. Start mit Speicher, neue Fassung im Netz -> alte sofort, neue abgelegt, Hinweis gesendet',
+    APP, gutesNetz,
+    (r, u) => r.body === 'APP' && u.v13.get(BASE + 'index.html').body === 'NEUE FASSUNG' &&
+      u.nachrichten.length === 1 && u.nachrichten[0].typ === 'neue-fassung');
+  await startPruefung('14. Start im Hotel-WLAN mit Anmeldeseite -> App, Speicher unberuehrt, kein Hinweis',
+    APP, portal,
+    (r, u) => r.body === 'APP' && u.v13.get(BASE + 'index.html').body === 'APP' && u.nachrichten.length === 0);
+  await startPruefung('15. Start, Netz liefert dieselbe Fassung -> kein Hinweis',
+    APP, (r, init, Resp) => Promise.resolve(new Resp('APP', { status: 200, url: BASE + 'index.html' })),
+    (r, u) => r.body === 'APP' && u.nachrichten.length === 0);
+  await startPruefung('16. Erster Start, nichts im Speicher, gutes Netz -> wartet und liefert die App',
+    {}, gutesNetz,
+    (r, u) => r.body === 'NEUE FASSUNG' && u.nachrichten.length === 0);
+  await startPruefung('17. Erster Start, nichts im Speicher, kein Netz -> ehrliche Meldung',
+    {}, keinNetz,
+    r => r.status === 503);
 
   console.log('\n' + gut + ' bestanden, ' + schlecht + ' gescheitert.');
   process.exit(schlecht ? 1 : 0);

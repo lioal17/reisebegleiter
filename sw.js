@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reisebegleiter-v18';
+const CACHE_NAME = 'reisebegleiter-v19';
 
 /* Bibliotheken (pdf.js, Texterkennung) liegen in einem eigenen
    Speicher, der einen Versionswechsel der App ueberlebt. Sie sind
@@ -41,8 +41,9 @@ const KANN = [
   './reisedaten-thailand.json',
   './demo-daten.json',
   './assets/icon-192.png',
-  './assets/icon-512.png',
-  './assets/icon-maskable-512.png',
+  /* Die 512er Symbole (je rund 300 KB) holt sich der Browser bei der
+     Installation selbst. Im Vorrat kosteten sie bei jedem Versionswechsel
+     unnoetig Daten. Performance 14.11.2026. */
   './assets/hero.jpg',
   './assets/bg-mobile.jpg',
   './assets/tile-flug.jpg',
@@ -190,6 +191,71 @@ async function netzZuerst(request) {
   }
 }
 
+/* Performance (14.11.2026): Das Programm selbst (index.html, Startseite,
+   manifest) kommt jetzt SOFORT aus dem Cache, das Netz aktualisiert im
+   Hintergrund. Vorher wartete jeder Start bis zu vier Sekunden aufs Netz,
+   in schwachem Hotel-WLAN fuehlte sich die App dadurch langsam an.
+
+   Der Fehler bis v9 ("dauerhaft die alte Fassung") kommt damit nicht
+   zurueck: Jeder Start holt im Hintergrund die neue Fassung und legt sie
+   in den Cache. Ist sie anders als die angezeigte, bekommt die Seite eine
+   Nachricht und zeigt "Neue Version - tippen zum Laden". Daten-Dateien
+   (*.json) bleiben bei "Netz zuerst", dort zaehlt Aktualitaet.
+
+   Ohne Cache-Treffer (erster Start) wird wie bisher aufs Netz gewartet. */
+async function sofortUndImHintergrund(event) {
+  const request = event.request;
+  const alt = await ausSpeicher(request);
+  /* Kopie JETZT ziehen: alt geht gleich an die Seite, danach ist sein
+     Inhalt verbraucht und laesst sich nicht mehr klonen. */
+  const altKopie = alt ? alt.clone() : null;
+  /* Promise.resolve().then: auch ein sofort geworfener Fehler landet im
+     catch unten und nicht ungefangen im Service Worker. */
+  const netz = Promise.resolve().then(() => holen(request, 0)).then(async antwort => {
+    if (!brauchbar(antwort)) return antwort;
+    let anders = false;
+    if (altKopie) {
+      try {
+        const [a, b] = await Promise.all([altKopie.text(), antwort.clone().text()]);
+        anders = a !== b;
+      } catch(e) {}
+    }
+    try {
+      const cache = await caches.open(CACHE_NAME);
+      await cache.put(request, antwort.clone());
+    } catch(e) {}
+    if (anders) {
+      /* Die Nachricht muss an die NEUE Seite gehen, nicht an die gerade
+         schliessende. clients.get(resultingClientId) wartet, bis die neue
+         Seite bereit ist. Ohne diese Kennung an alle Fenster. */
+      const nachricht = { typ: 'neue-fassung' };
+      let neu = null;
+      if (event.resultingClientId && self.clients.get) {
+        try { neu = await self.clients.get(event.resultingClientId); } catch(e) {}
+      }
+      if (neu) neu.postMessage(nachricht);
+      else {
+        const fenster = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        fenster.forEach(f => f.postMessage(nachricht));
+      }
+    }
+    return antwort;
+  });
+  if (alt) {
+    event.waitUntil(netz.catch(() => {}));
+    return alt;
+  }
+  try {
+    return await netz;
+  } catch(e) {
+    return offlineAntwort();
+  }
+}
+
+function istDaten(url) {
+  return new URL(url).pathname.endsWith('.json');
+}
+
 async function cacheZuerst(request) {
   const treffer = await caches.match(request);
   if (treffer) return treffer;
@@ -270,8 +336,12 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  if (event.request.mode === 'navigate' || istProgrammOderDaten(event.request.url)) {
+  if (istDaten(event.request.url)) {
     event.respondWith(netzZuerst(event.request));
+    return;
+  }
+  if (event.request.mode === 'navigate' || istProgrammOderDaten(event.request.url)) {
+    event.respondWith(sofortUndImHintergrund(event));
     return;
   }
 

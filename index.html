@@ -178,14 +178,16 @@ h1, h2, h3 { font-size: inherit; font-weight: inherit; }
    sonst sieht man vom Bild nichts. 0.88 ist die Grenze: darunter
    leidet Kleintext bei Sonnenlicht, und genau das war der Grund
    fuer die Kontrastkorrektur am 09.08. */
+/* Performance (14.11.2026): KEIN backdrop-filter mehr auf Karten und
+   Bedienelementen. Das Foto ist position:fixed, also musste das Handy bei
+   jedem Scroll-Frame jede sichtbare Karte neu weichzeichnen, das ruckelte.
+   Ohne Weichzeichner gleicht mehr Deckkraft (0.92 statt 0.88) den Kontrast
+   aus. Der Weichzeichner bleibt nur auf .nav und .sheet (je eine Flaeche). */
 body.foto-an .card,
 body.foto-an .ort-card,
 body.foto-an .doc-panel {
-  background: rgba(21, 29, 30, 0.88);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
+  background: rgba(21, 29, 30, 0.92);
 }
-body.foto-an .wx,
 body.foto-an .sheet {
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
@@ -196,9 +198,7 @@ body.foto-an .input-field,
 body.foto-an .cat-btn,
 body.foto-an .sheet-feld,
 body.foto-an .chip-wahl {
-  background: rgba(8, 18, 22, 0.55);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  background: rgba(8, 18, 22, 0.72);
 }
 /* Der aufgeklappte Ortstag und die Kachel-Eintraege liegen bereits
    in einer Milchglaskarte. Ein zweiter Weichzeichner darin macht
@@ -909,7 +909,7 @@ a { color: var(--teal); }
 .liste-zeile .hist-ic { flex: 0 0 auto; }
 .zahl-raster { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap-card); margin-bottom: var(--gap-card); }
 .zahl-kachel { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: var(--sp-m); }
-body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.88); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.92); } /* ohne Weichzeichner, siehe .card */
 .zahl-wort { font-size: var(--fs-mini); color: var(--muted); }
 .zahl-wert { font-size: var(--fs-h2); font-weight: var(--fw-bold); font-variant-numeric: tabular-nums; margin-top: 2px; }
 .zahl-wert.minus { color: var(--red); }
@@ -950,6 +950,15 @@ body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.88); backdrop-filter:
   #druckBericht td, #druckBericht th { text-align: left; padding: 2pt 6pt 2pt 0; vertical-align: top; border-bottom: 1px solid #ddd; }
   #druckBericht td.z, #druckBericht th.z { text-align: right; white-space: nowrap; }
   #druckBericht .klein { font-size: 9pt; color: #444; }
+}
+/* Hinweis des Service Workers: neue Fassung liegt bereit */
+.update-hinweis {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  background: var(--teal); color: #071214; border: 0;
+  padding: 10px 16px; border-radius: 20px;
+  font: inherit; font-size: var(--fs-sub); font-weight: var(--fw-semi);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35); z-index: 102; cursor: pointer;
 }
 </style>
 </head>
@@ -2636,8 +2645,93 @@ function datenSpeichern() {
    waren fuenf Kopien in einem Speicher, der bei 5 MB voll ist. */
 function fotoVon(hotel) {
   const name = String((hotel && hotel.name) || '').trim();
+  /* Seit 14.11.2026 zuerst die Foto-Ablage in IndexedDB (Blob-URL). */
+  if (name && hotelFotoUrls[name]) return hotelFotoUrls[name];
   const f = (appData && appData.fotos && appData.fotos[name]) || (hotel && hotel.foto) || '';
   return String(f).indexOf('data:image/') === 0 ? f : '';
+}
+
+/* ---------- Hotel-Fotos in IndexedDB ----------
+   Performance (14.11.2026): appData.fotos hielt jedes Foto als Text
+   (data-URI) im Reiseplan in localStorage. Dieser Datensatz wird beim
+   Start synchron gelesen und bei JEDER Aenderung (datenSpeichern) komplett
+   neu geschrieben, die Fotos jedes Mal mit. Jetzt liegt jedes Foto einmal
+   als Blob in einer eigenen IndexedDB (getrennt von der Dokumenten-Ablage,
+   damit deren Datenbank keine neue Version braucht).
+   Umzug: erst sicher in IndexedDB ablegen, DANACH aus dem Plan entfernen.
+   Scheitert das Ablegen, bleibt der Plan unveraendert und fotoVon liest
+   weiter aus appData.fotos. Die Sicherung (exportBtn) nimmt die Fotos
+   wieder als appData.fotos mit, der Import zieht sie erneut um. */
+const HF_DB = 'reisebegleiter-hotelfoto';
+let hfDbCache = null;
+let hotelFotoUrls = {};
+
+function hfDb() {
+  if (hfDbCache) return hfDbCache;
+  hfDbCache = new Promise((ok, fehler) => {
+    const anf = indexedDB.open(HF_DB, 1);
+    anf.onupgradeneeded = () => {
+      const db = anf.result;
+      if (!db.objectStoreNames.contains('fotos')) db.createObjectStore('fotos', { keyPath: 'name' });
+    };
+    anf.onsuccess = () => ok(anf.result);
+    anf.onerror = () => fehler(anf.error);
+  });
+  hfDbCache.catch(() => { hfDbCache = null; });
+  return hfDbCache;
+}
+async function hfAlle() {
+  const db = await hfDb();
+  return await new Promise((ok, fehler) => {
+    const a = db.transaction('fotos', 'readonly').objectStore('fotos').getAll();
+    a.onsuccess = () => ok(a.result || []);
+    a.onerror = () => fehler(a.error);
+  });
+}
+async function hfSpeichern(liste) {
+  const db = await hfDb();
+  await new Promise((ok, fehler) => {
+    const tx = db.transaction('fotos', 'readwrite');
+    liste.forEach(f => tx.objectStore('fotos').put({ name: f.name, blob: f.blob }));
+    tx.oncomplete = () => ok();
+    tx.onabort = () => fehler(tx.error || new Error('Transaktion abgebrochen'));
+    tx.onerror = () => fehler(tx.error || new Error('Schreibfehler'));
+  });
+}
+async function hotelFotosLaden() {
+  Object.keys(hotelFotoUrls).forEach(n => URL.revokeObjectURL(hotelFotoUrls[n]));
+  hotelFotoUrls = {};
+  const alle = await hfAlle();
+  alle.forEach(f => { if (f && f.name && f.blob) hotelFotoUrls[f.name] = URL.createObjectURL(f.blob); });
+  return alle.length;
+}
+/* Gibt true zurueck, wenn der Plan veraendert wurde. */
+async function hotelFotosUmziehen() {
+  if (!appData) return false;
+  fotosUmziehen(); /* falls noch Fotos an einzelnen Tagen haengen */
+  const fotos = appData.fotos;
+  if (!fotos || typeof fotos !== 'object') return false;
+  const liste = [];
+  Object.keys(fotos).forEach(name => {
+    const v = String(fotos[name] || '');
+    if (v.indexOf('data:image/') !== 0) return;
+    const komma = v.indexOf(',');
+    const typ = (v.slice(0, komma).match(/^data:([^;,]+)/) || [])[1] || 'image/jpeg';
+    liste.push({ name: name, blob: base64NachBlob(v.slice(komma + 1), typ) });
+  });
+  if (liste.length) await hfSpeichern(liste); /* wirft bei Fehler: Plan bleibt */
+  delete appData.fotos;
+  try { localStorage.setItem('reisebegleiter_data', JSON.stringify(appData)); } catch(e) {}
+  return true;
+}
+/* Start und nach Import: umziehen, laden, Anzeige einmal nachziehen. */
+async function hotelFotosBereitstellen() {
+  let neu = false;
+  try { neu = await hotelFotosUmziehen(); } catch(e) { console.error('Hotel-Fotos umziehen', e); }
+  try {
+    const anzahl = await hotelFotosLaden();
+    if ((anzahl || neu) && appData) loadUIFromAppData();
+  } catch(e) { console.error('Hotel-Fotos laden', e); }
 }
 function fotosUmziehen() {
   if (!appData || !Array.isArray(appData.tage)) return false;
@@ -3831,6 +3925,8 @@ async function dokSpeichern(ticketId, file) {
     erfasst: new Date().toISOString(),
     hash: hash
   };
+  const vorschau = await dokVorschauErzeugen(blob);
+  if (vorschau) meta.vorschau = vorschau;
   const db = await dokDb();
   await new Promise((ok, fehler) => {
     const tx = db.transaction(['dateien', 'meta'], 'readwrite');
@@ -4006,7 +4102,10 @@ function docInhalt(katId) {
   return alleTickets().filter(t => ticketKat(t.gruppe) === katId);
 }
 
-function renderDocPanel() {
+/* scrollen = true nur beim Antippen einer Kachel. Bei jedem anderen
+   Neuaufbau (Tageswechsel, Upload, Start) sprang die Seite sonst
+   ungefragt mit einer Scroll-Animation. */
+function renderDocPanel(scrollen) {
   const box = document.getElementById('docPanel');
   box.innerHTML = '';
   document.querySelectorAll('.doc-tile').forEach(el => {
@@ -4063,7 +4162,7 @@ function renderDocPanel() {
   /* Tippt man die unterste Kachel an, liegt das Aufgeklappte auf
      dem Handy unter dem Bildrand. Ohne diesen Sprung sieht es aus,
      als haette der Tipp nichts bewirkt. */
-  if (panel.scrollIntoView) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  if (scrollen && panel.scrollIntoView) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function hotelEintrag(h) {
@@ -4179,6 +4278,61 @@ function dokVorschauFreigeben() {
   dokVorschauUrls = [];
 }
 
+/* Performance (14.11.2026): Die Kachel ist 72 Pixel gross, geladen und
+   dekodiert wurde aber jedes Mal die ganze Datei (bis 3 MB bzw. 1800 px),
+   bei jedem Neuaufbau der Liste. Jetzt liegt im Metasatz ein kleines
+   Vorschaubild (meta.vorschau, wenige KB). Aeltere Eintraege und Verweise
+   bekommen es beim ersten Anzeigen einmalig nachgeruestet. Die Sicherung
+   ("Dokumente sichern") nimmt nur ausgewaehlte Felder mit, die Vorschau
+   gehoert nicht dazu. */
+const DOK_VORSCHAU_PX = 160;
+const dokVorschauLaeuft = {};
+
+function dokVorschauErzeugen(blob) {
+  return new Promise(ok => {
+    if (!blob || !String(blob.type || '').startsWith('image/')) return ok(null);
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, DOK_VORSCHAU_PX / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * s)), h = Math.max(1, Math.round(img.height * s));
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      c.toBlob(b => ok(b || null), 'image/jpeg', 0.7);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); ok(null); };
+    img.src = url;
+  });
+}
+
+function dokVorschauHolen(m) {
+  if (m.vorschau) return Promise.resolve(m.vorschau);
+  if (dokVorschauLaeuft[m.id]) return dokVorschauLaeuft[m.id];
+  const p = (async () => {
+    const b = await dokBlob(m);
+    if (!b) return null;
+    const v = await dokVorschauErzeugen(b);
+    if (!v) return b; /* Vorschau ging nicht, dann wie frueher das Original */
+    m.vorschau = v;
+    /* Nur den Metasatz ergaenzen. Scheitert das, wird die Vorschau beim
+       naechsten Mal neu erzeugt, mehr passiert nicht. */
+    try {
+      const db = await dokDb();
+      await new Promise(ok => {
+        const tx = db.transaction('meta', 'readwrite');
+        tx.objectStore('meta').put(m);
+        tx.oncomplete = ok; tx.onabort = ok; tx.onerror = ok;
+      });
+    } catch(e) {}
+    return v;
+  })();
+  dokVorschauLaeuft[m.id] = p;
+  p.finally(() => { delete dokVorschauLaeuft[m.id]; });
+  return p;
+}
+
 function dokReihe(t, dokus) {
   const reihe = document.createElement('div');
   reihe.className = 'dok-reihe';
@@ -4190,7 +4344,9 @@ function dokReihe(t, dokus) {
     if (istBild) {
       const img = document.createElement('img');
       img.alt = m.name;
-      dokBlob(m).then(b => {
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      dokVorschauHolen(m).then(b => {
         if (!b) return;
         const u = URL.createObjectURL(b);
         dokVorschauUrls.push(u);
@@ -4312,7 +4468,7 @@ function renderDokumente() {
       '<div class="art">' + icon(kat.ic, 96) + '</div>';
     tile.addEventListener('click', () => {
       offeneKachel = offeneKachel === kat.id ? null : kat.id;
-      renderDocPanel();
+      renderDocPanel(true);
     });
     if (kat.bild) withAsset('assets/' + kat.cls + '.jpg', () => {
       tile.style.backgroundImage = 'linear-gradient(160deg, rgba(8,18,22,0.1), rgba(8,18,22,0.55)), url("assets/' + kat.cls + '.jpg")';
@@ -5642,7 +5798,8 @@ function renderNotfall() {
 document.getElementById('hotelPhotoBtn').addEventListener('click', () => document.getElementById('hotelPhotoInput').click());
 document.getElementById('hotelPhotoInput').addEventListener('change', function(e) {
   const file = e.target.files[0];
-  if (!file || !currentHotelName) return;
+  const hotelName = currentHotelName;
+  if (!file || !hotelName) return;
   const img = new Image();
   const url = URL.createObjectURL(file);
   img.onload = () => {
@@ -5653,19 +5810,22 @@ document.getElementById('hotelPhotoInput').addEventListener('change', function(e
     c.width = w; c.height = h;
     c.getContext('2d').drawImage(img, 0, 0, w, h);
     URL.revokeObjectURL(url);
-    const dataUri = c.toDataURL('image/jpeg', 0.8);
-    if (!appData.fotos) appData.fotos = {};
-    const vorher = appData.fotos[currentHotelName];
-    appData.fotos[currentHotelName] = dataUri;
-    try {
-      localStorage.setItem('reisebegleiter_data', JSON.stringify(appData));
-    } catch(err) {
-      alert('Speicher voll – Foto konnte nicht gespeichert werden.');
-      if (vorher) appData.fotos[currentHotelName] = vorher; else delete appData.fotos[currentHotelName];
-      return;
-    }
-    loadUIFromAppData();
+    /* Seit 14.11.2026 als Blob in die Foto-Ablage (IndexedDB), nicht mehr
+       als Text in den Reiseplan. Siehe hotelFotosUmziehen. */
+    c.toBlob(async blob => {
+      if (!blob) { alert('Das Foto konnte nicht gelesen werden.'); return; }
+      try {
+        await hfSpeichern([{ name: hotelName, blob: blob }]);
+      } catch(err) {
+        alert('Foto konnte nicht gespeichert werden: ' + (err && err.message ? err.message : err));
+        return;
+      }
+      if (hotelFotoUrls[hotelName]) URL.revokeObjectURL(hotelFotoUrls[hotelName]);
+      hotelFotoUrls[hotelName] = URL.createObjectURL(blob);
+      loadUIFromAppData();
+    }, 'image/jpeg', 0.8);
   };
+  img.onerror = () => { URL.revokeObjectURL(url); alert('Das Foto konnte nicht gelesen werden.'); };
   img.src = url;
   this.value = '';
 });
@@ -5944,6 +6104,8 @@ document.getElementById('importInput').addEventListener('change', function(e) {
         '\n\nMeist fehlt bei einem Tag das Feld "datum" (Format JJJJ-MM-TT).');
       return;
     }
+    /* Fotos aus der Sicherung in die Foto-Ablage umziehen (im Hintergrund). */
+    hotelFotosBereitstellen();
     showScreen('screenToday');
     alert('Reiseplan importiert: ' + appData.tage.length + ' Tage.\n' +
       'Deine ' + ausgaben.length + ' erfassten Ausgaben sind unverändert geblieben.' +
@@ -5953,12 +6115,26 @@ document.getElementById('importInput').addEventListener('change', function(e) {
   reader.readAsText(file);
   this.value = '';
 });
-document.getElementById('exportBtn').addEventListener('click', function() {
+document.getElementById('exportBtn').addEventListener('click', async function() {
   const kopie = JSON.parse(JSON.stringify(appData || {}));
   delete kopie.ausgaben;
   /* Das alte, nie gelesene Feld nicht mitschleppen. Sonst wandert der
      Muell aus der Zeit vor der Ablage bei jedem Export weiter. */
   delete kopie.dokumente;
+  /* Hotel-Fotos liegen seit 14.11.2026 in IndexedDB. Die Sicherung nimmt
+     sie im bisherigen Format mit (appData.fotos, einmal pro Hotel), damit
+     sie wie vorher wieder eingelesen werden koennen. */
+  try {
+    const fotos = await hfAlle();
+    if (fotos.length) {
+      kopie.fotos = Object.assign({}, kopie.fotos || {});
+      for (const f of fotos) {
+        kopie.fotos[f.name] = 'data:' + (f.blob.type || 'image/jpeg') + ';base64,' + await blobNachBase64(f.blob);
+      }
+    }
+  } catch(e) {
+    console.error('Hotel-Fotos fuer die Sicherung', e);
+  }
   dateiSchreiben(kopie, 'reiseplan-sicherung');
 });
 
@@ -6342,6 +6518,14 @@ async function vendorVorladen() {
   try {
     if (!navigator.onLine || !navigator.serviceWorker || !navigator.serviceWorker.controller) return;
     if (localStorage.getItem('reisebegleiter_vendor') === OCR_FASSUNG) return;
+    /* Performance (14.11.2026): Scheiterte ein Vorladen (schwaches Netz),
+       lief bisher nach JEDEM Start wieder der ganze Download von rund 7 MB
+       samt Probelauf der Texterkennung. Jetzt hoechstens alle sechs Stunden,
+       und nie bei aktivem Datensparmodus. */
+    if (navigator.connection && navigator.connection.saveData) return;
+    const letzter = Number(localStorage.getItem('reisebegleiter_vendor_versuch') || 0);
+    if (Date.now() - letzter < 6 * 3600 * 1000) return;
+    localStorage.setItem('reisebegleiter_vendor_versuch', String(Date.now()));
     for (const pfad of ['vendor/pdf.min.js', 'vendor/pdf.worker.min.js', 'vendor/ocr/tesseract.min.js', 'vendor/ocr/worker.min.js',
       'vendor/ocr/lang/deu.traineddata.gz', 'vendor/ocr/lang/eng.traineddata.gz']) {
       const r = await fetch(pfad);
@@ -7406,12 +7590,28 @@ if (!navigator.onLine) document.getElementById('offlineBadge').classList.add('sh
 /* ---------- Service Worker ---------- */
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(e => console.log('SW error:', e));
+  /* Der Service Worker startet die App sofort aus dem Speicher und laedt
+     im Hintergrund nach. Ist dabei eine neue Fassung gekommen, meldet er
+     sich hier. Neu geladen wird nur auf Antippen, nie ungefragt. */
+  navigator.serviceWorker.addEventListener('message', ev => {
+    if (!ev.data || ev.data.typ !== 'neue-fassung') return;
+    if (document.querySelector('.update-hinweis')) return;
+    const knopf = document.createElement('button');
+    knopf.type = 'button';
+    knopf.className = 'update-hinweis';
+    knopf.textContent = 'Neue Version · tippen zum Laden';
+    knopf.addEventListener('click', () => location.reload());
+    document.body.appendChild(knopf);
+  });
 }
 
 /* ---------- Start ---------- */
 einstLaden();
 kurseLaden();
-renderCatGrid();
+/* renderCatGrid() und ausgabenNeuZeichnen() laufen beim gespeicherten
+   Stand bereits in loadUIFromAppData (ueber finanzenNeuZeichnen). Nur der
+   Weg ueber die Datendatei braucht sie sofort, weil deren Aufbau erst
+   nach dem fetch kommt. Performance 14.11.2026: kein doppelter Aufbau. */
 /* Ein gespeicherter Stand hat Vorrang, aber nur wenn er echt ist.
    Grund: Der Ticket- und der Hotelfoto-Knopf schreiben den ganzen
    Datensatz nach localStorage. Wer vor dem Import ein Bild hochlaedt,
@@ -7453,10 +7653,12 @@ if (gespeichert && gespeichert.datenstand) {
 } else {
   if (gespeichert) console.log('Gespeicherter Stand ohne Datenstand-Block, wird durch die Datei ersetzt');
   ausgabenLaden();
+  renderCatGrid();
+  ausgabenNeuZeichnen();
   loadDemoData();
 }
-ausgabenNeuZeichnen();
 notizenLaden();
+hotelFotosBereitstellen();
 
 /* Die Dokumenten-Ablage laedt asynchron, der erste Aufbau der
    Oberflaeche laeuft synchron. Ohne diesen Nachzug stuende bei einer
@@ -7509,10 +7711,16 @@ function teilenStart() {
   if (start === 'teilen' && history.replaceState) history.replaceState(null, '', location.pathname);
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) teilenAbholen(); });
-setTimeout(vendorVorladen, 5000);
+/* Vorladen erst, wenn der Browser Luft hat (requestIdleCallback), damit
+   Download und Probelauf nicht mit dem Bedienen der App konkurrieren. */
+function vendorVorladenWennRuhig() {
+  if (window.requestIdleCallback) requestIdleCallback(() => vendorVorladen(), { timeout: 15000 });
+  else vendorVorladen();
+}
+setTimeout(vendorVorladenWennRuhig, 5000);
 /* Beim allerersten Besuch uebernimmt der Service Worker die Seite
    erst nach dem Start. Dann noch einmal versuchen. */
-if (navigator.serviceWorker) navigator.serviceWorker.addEventListener('controllerchange', () => setTimeout(vendorVorladen, 2500));
+if (navigator.serviceWorker) navigator.serviceWorker.addEventListener('controllerchange', () => setTimeout(vendorVorladenWennRuhig, 2500));
 
 if (start === 'tickets') showScreen('screenTickets');
 if (start === 'ausgabe') {
