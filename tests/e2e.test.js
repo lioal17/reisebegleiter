@@ -172,6 +172,25 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
     gleich('Mehr: Regeln für unterwegs sind ausgeblendet, Notizen und Notfall da', [await page.isVisible('#regelnKarte'), await page.isVisible('#notizFeld'), await page.isVisible('#notPolizei'), await page.isVisible('#spendCard')], [false, true, true, false]);
     await tippeReiter(page, 'screenTranslator');
     gleich('Translator: eigener Reiter mit beiden Knöpfen', [await page.isVisible('#trDeEn'), await page.isVisible('#trDeTh')], [true, true]);
+    gleich('Translator: zweite Sprache folgt dem Reiseland Thailand', [await page.textContent('#trDeThText'), /Reiseland: Thailand/.test(await page.textContent('#trHinweis'))], ['DE – Thai', true]);
+    await page.evaluate(() => { window.__extern = []; window.__externAlt = extern; extern = u => window.__extern.push(u); });
+    await page.click('#trDeEn');
+    await page.click('#trDeTh');
+    await page.evaluate(() => { einst.land = 'JP'; uebersetzerZeichnen(); });
+    gleich('Translator: Japan gewählt, Knopf heisst Japanisch', await page.textContent('#trDeThText'), 'DE – Japanisch');
+    await page.click('#trDeTh');
+    await page.evaluate(() => { einst.land = 'CH'; uebersetzerZeichnen(); });
+    gleich('Translator: Schweiz, zweiter Knopf fällt weg', await page.isVisible('#trDeTh'), false);
+    await page.evaluate(() => { delete einst.land; uebersetzerZeichnen(); extern = window.__externAlt; });
+    gleich('Translator: DeepL, Google nur als Rückfall, kein Text in der Adresse', await page.evaluate(() => window.__extern),
+      ['https://www.deepl.com/translator#de/en/', 'https://translate.google.com/?sl=de&tl=th', 'https://www.deepl.com/translator#de/ja/']);
+    /* Plus oben in Dokumente: derselbe Einstieg wie "Reise planen" */
+    await tippeReiter(page, 'screenTickets');
+    await page.click('#addTicketTop');
+    await page.waitForSelector('#planenErkennen');
+    gleich('Dokumente-Plus: Foto, Datei, Text und Handeingabe stehen bereit', [await page.isVisible('#planenFoto'), await page.isVisible('#planenWaehlen'), await page.isVisible('#planenText'), (await page.locator('#sheet .chip-wahl').count()) > 3], [true, true, true, true]);
+    await page.keyboard.press('Escape');
+    await blattZu(page);
     await tippeReiter(page, 'screenBudget');
     gleich('Budget: Umrechner und Ausgaben stehen hier', [await page.isVisible('#thbInput'), await page.isVisible('#spendCard'), await page.isVisible('#histOeffnen')], [true, true, true]);
 
@@ -309,7 +328,9 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
     gleich('Teilen: der Service Worker nimmt an und leitet in die App', status, 'opaqueredirect');
     gleich('Teilen: wartet lokal, bis die App es abholt', await page.evaluate(async () => (await (await caches.open('teilen-eingang')).keys()).length), 1);
     await page.evaluate(() => { teilenAbholen(); });
-    await page.waitForSelector('#buchungOk', { timeout: 90000 });
+    /* Auf das neue Blatt warten: der Knopf des vorigen Blatts steht
+       noch im Dokument, solange die Texterkennung laeuft. */
+    await page.waitForFunction(() => { const f = document.getElementById('bf-referenz'); return !!f && f.value === 'TOUR-5521' && document.getElementById('sheet').classList.contains('auf'); }, null, { timeout: 90000 });
     gleich('Teilen: Datei gespeichert, gelesen und als Buchung vorgeschlagen', [await page.getAttribute('#artReihe .chip-wahl.an', 'data-typ'), await feld(page, 'titel'), await feld(page, 'datum'), await feld(page, 'zeit'), await feld(page, 'preis'), await feld(page, 'referenz')],
       ['aktivitaet', 'Schnorcheltour Demo', '2026-12-29', '08:30', '1800', 'TOUR-5521']);
     gleich('Teilen: Zwischenspeicher ist danach leer', await page.evaluate(async () => (await (await caches.open('teilen-eingang')).keys()).length), 0);
@@ -561,7 +582,7 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
       [[450, 'THB', 11.25, 'geschaetzt', 'Essen', 'Abendessen', '2026-12-22'], [60, 'THB', 1.5, 'geschaetzt', 'Aktivitäten', 'Jetski', '2026-12-23']]);
     gleich('Umstellung: Sicherungskopien liegen vor', await m.page.evaluate(() => [JSON.parse(localStorage.getItem('reisebegleiter_ausgaben_vor_v2')).length,
       JSON.parse(localStorage.getItem('reisebegleiter_data_vor_v2')).tage.length]), [2, 3]);
-    gleich('Umstellung: Hotelfoto einmal statt dreimal', await m.page.evaluate(() => [Object.keys(appData.fotos), appData.tage.filter(t => t.hotel.foto).length, appData.schema]), [['Sandmond Resort'], 0, 2]);
+    gleich('Umstellung: Hotelfoto einmal statt dreimal', await m.page.evaluate(async () => { await hotelFotosBereitstellen(); return [Object.keys(hotelFotoUrls), appData.fotos === undefined, appData.tage.filter(t => t.hotel.foto).length, appData.schema]; }), [['Sandmond Resort'], true, 0, 2]);
     gleich('Umstellung: Reiseplan unverändert lesbar', await m.page.evaluate(() => [ansicht.length, ansicht[0].hotel.name, alleTickets().length]), [3, 'Sandmond Resort', 1]);
     wahr('Umstellung: Budget aus den Reisedaten wird jetzt angezeigt', /von 500\.00 CHF/.test(await m.page.textContent('#todayBudgetSub')));
     /* Ein Import der Reiseplan-Datei darf in der App erfasste

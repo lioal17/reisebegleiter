@@ -192,5 +192,23 @@ gleich('CSV: negative Zahl bleibt Zahl', K.csvFeld(-5), '-5');
 const aus = K.auswertung(plan);
 gleich('Auswertung', [aus.tage, aus.naechte, aus.verkehr.map(v => v.name + v.anzahl).sort()], [9, 4, ['Flug2', 'Fähre1']]);
 
+/* ---------- Uebersetzer und Zeitzone (16.11.2026) ---------- */
+gleich('Übersetzer: ohne Land nur DE - EN über DeepL', K.uebersetzer('').map(u => [u.name, u.dienst]), [['EN', 'DeepL']]);
+gleich('Übersetzer: Schweiz braucht keine zweite Sprache', K.uebersetzer('CH').length, 1);
+gleich('Übersetzer: Japan über DeepL', K.uebersetzer('JP')[1], { name: 'Japanisch', dienst: 'DeepL', url: 'https://www.deepl.com/translator#de/ja/' });
+gleich('Übersetzer: Thai über Google, bis DeepL geprüft ist', K.uebersetzer('TH')[1], { name: 'Thai', dienst: 'Google Translate', url: 'https://translate.google.com/?sl=de&tl=th' });
+wahr('Übersetzer: keine Adresse enthält mehr als Sprachcodes', K.LAENDER.every(l => K.uebersetzer(l.code).every(u => /^https:\/\/(www\.deepl\.com\/translator#de\/[a-z-]+\/|translate\.google\.com\/\?sl=de&tl=[a-zA-Z-]+)$/.test(u.url))));
+const zPlan = { reise: { zeitzone: 'Asia/Tokyo' }, buchungen: [
+  { typ: 'flug', datum: '2026-12-20', bisDatum: '2026-12-21', bisZeit: '06:10', nachTz: 'Asia/Bangkok' },
+  { typ: 'flug', datum: '2026-12-28', bisZeit: '11:00', nachTz: 'Asia/Ho_Chi_Minh' },
+  { typ: 'flug', datum: '2026-12-25', nachTz: 'Asia/Dubai', zahlung: 'storniert' }] };
+gleich('Zone: Angabe am Tag gewinnt', K.zoneAmTag(zPlan, '2026-12-22', 'Asia/Seoul', 'TH', 'TH'), 'Asia/Seoul');
+gleich('Zone: Land des Tages vor dem Flug', K.zoneAmTag(zPlan, '2026-12-22', '', 'LA', 'TH'), 'Asia/Vientiane');
+gleich('Zone: Ankunft des letzten Flugs', K.zoneAmTag(zPlan, '2026-12-22', '', '', ''), 'Asia/Bangkok');
+gleich('Zone: wechselt mit dem nächsten Flug, storniert zählt nicht', [K.zoneAmTag(zPlan, '2026-12-27', '', '', ''), K.zoneAmTag(zPlan, '2026-12-28', '', '', '')], ['Asia/Bangkok', 'Asia/Ho_Chi_Minh']);
+gleich('Zone: vor der Ankunft gilt das Reiseland', K.zoneAmTag(zPlan, '2026-12-20', '', '', 'TH'), 'Asia/Bangkok');
+gleich('Zone: ohne alles die Angabe an der Reise', K.zoneAmTag(zPlan, '2026-12-20', '', '', 'US'), 'Asia/Tokyo');
+gleich('Zone: gar nichts bekannt', K.zoneAmTag({}, '2026-12-20', '', '', ''), '');
+
 console.log(ok + ' Prüfungen bestanden, ' + fehler + ' fehlgeschlagen');
 process.exit(fehler ? 1 : 0);

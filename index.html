@@ -1327,9 +1327,9 @@ body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.92); } /* ohne Weichz
       <div class="card-label">Übersetzer</div>
       <div class="row-2">
         <button class="btn btn-secondary" id="trDeEn"><span class="ic" data-icon="translate" data-size="17"></span>DE – ENG</button>
-        <button class="btn btn-secondary" id="trDeTh"><span class="ic" data-icon="translate" data-size="17"></span>DE – Thai</button>
+        <button class="btn btn-secondary" id="trDeTh"><span class="ic" data-icon="translate" data-size="17"></span><span id="trDeThText">DE – Thai</span></button>
       </div>
-      <div class="badge-label">Öffnet Google Translate im Browser. Braucht Netz.</div>
+      <div class="badge-label" id="trHinweis">Öffnet DeepL im Browser. Braucht Netz.</div>
     </div>
 
   </div>
@@ -2522,11 +2522,64 @@ var Kern = (function () {
   }
 
   function landInfo(code) { return LAENDER.find(function (l) { return l.code === code; }) || null; }
+  /* Landessprache je Land: Code fuer Google | Name | Code fuer DeepL.
+     Laender mit Deutsch oder Englisch stehen nicht drin, dafuer gibt
+     es den festen Knopf DE - EN. Der dritte Wert ist leer, wenn DeepL
+     die Sprache nicht sicher anbietet: dann oeffnet der Knopf Google
+     Translate. Thai ist bewusst leer, bis am Geraet geprueft ist, ob
+     DeepL es auf der Webseite anbietet (Stand 16.11.2026). */
+  const SPRACHEN = {};
+  ('FR|fr|Französisch|fr;IT|it|Italienisch|it;ES|es|Spanisch|es;PT|pt|Portugiesisch|pt-pt;NL|nl|Niederländisch|nl;' +
+    'BE|nl|Niederländisch|nl;GR|el|Griechisch|el;HR|hr|Kroatisch|;DK|da|Dänisch|da;SE|sv|Schwedisch|sv;NO|no|Norwegisch|nb;' +
+    'FI|fi|Finnisch|fi;IS|is|Isländisch|;PL|pl|Polnisch|pl;CZ|cs|Tschechisch|cs;HU|hu|Ungarisch|hu;RO|ro|Rumänisch|ro;' +
+    'BG|bg|Bulgarisch|bg;TR|tr|Türkisch|tr;TH|th|Thai|;JP|ja|Japanisch|ja;VN|vi|Vietnamesisch|vi;KH|km|Khmer|;LA|lo|Laotisch|;' +
+    'MY|ms|Malaiisch|;ID|id|Indonesisch|id;PH|tl|Filipino|;MM|my|Birmanisch|;CN|zh-CN|Chinesisch|zh;HK|zh-TW|Chinesisch|;' +
+    'TW|zh-TW|Chinesisch|;KR|ko|Koreanisch|ko;IN|hi|Hindi|;LK|si|Singhalesisch|;NP|ne|Nepali|;MV|dv|Dhivehi|;' +
+    'AE|ar|Arabisch|ar;QA|ar|Arabisch|ar;OM|ar|Arabisch|ar;JO|ar|Arabisch|ar;EG|ar|Arabisch|ar;MA|ar|Arabisch|ar;' +
+    'TN|ar|Arabisch|ar;IL|iw|Hebräisch|he;KE|sw|Swahili|;TZ|sw|Swahili|;MX|es|Spanisch|es;CU|es|Spanisch|es;' +
+    'DO|es|Spanisch|es;CR|es|Spanisch|es;CO|es|Spanisch|es;PE|es|Spanisch|es;AR|es|Spanisch|es;CL|es|Spanisch|es;' +
+    'BR|pt|Portugiesisch|pt-br').split(';').forEach(function (z) {
+      const p = z.split('|');
+      SPRACHEN[p[0]] = { google: p[1], name: p[2], deepl: p[3] || '' };
+    });
+  /* Wohin der Uebersetzer-Knopf fuehrt. Es wird nur eine Adresse
+     gebaut, nie ein Text uebergeben. ohne Land: nur DE - EN. */
+  function uebersetzer(land) {
+    const liste = [{ name: 'EN', dienst: 'DeepL', url: 'https://www.deepl.com/translator#de/en/' }];
+    const s = SPRACHEN[land];
+    if (s) liste.push(s.deepl
+      ? { name: s.name, dienst: 'DeepL', url: 'https://www.deepl.com/translator#de/' + s.deepl + '/' }
+      : { name: s.name, dienst: 'Google Translate', url: 'https://translate.google.com/?sl=de&tl=' + s.google });
+    return liste;
+  }
+  /* Zeitzone vor Ort an einem Tag (Entscheid 24, 16.11.2026).
+     Reihenfolge: Angabe am Tag, Land des Tages, Ankunftszone der
+     letzten Buchung, die bis zu diesem Tag angekommen ist, das
+     eingestellte Reiseland, Angabe an der Reise. Stornierte Buchungen
+     zaehlen nicht. */
+  function zoneAmTag(daten, datum, tagTz, tagLand, land) {
+    if (tagTz) return tagTz;
+    const tl = landInfo(tagLand);
+    if (tl && tl.tz) return tl.tz;
+    let beste = null;
+    ((daten && daten.buchungen) || []).forEach(function (b) {
+      if (!b || !b.nachTz || b.zahlung === 'storniert') return;
+      const an = b.bisDatum || b.datum || '';
+      if (!istIso(an) || (datum && an > datum)) return;
+      const schluessel = an + ' ' + (b.bisZeit || b.zeit || '');
+      if (!beste || schluessel >= beste.schluessel) beste = { schluessel: schluessel, tz: b.nachTz };
+    });
+    if (beste) return beste.tz;
+    const l = landInfo(land);
+    if (l && l.tz) return l.tz;
+    const r = (daten && daten.reise) || {};
+    return r.zeitzone || r.zielZeitzone || '';
+  }
   function landAusZone(tz) { const l = LAENDER.find(function (x) { return x.tz && x.tz === tz; }); return l ? l.code : ''; }
 
   return {
     LAENDER: LAENDER, FLUGHAEFEN: FLUGHAEFEN, AIRLINES: AIRLINES, TYPEN: TYPEN, ZAHLUNG: ZAHLUNG, KATEGORIEN: KATEGORIEN,
-    WEG: WEG, CODES: CODES,
+    WEG: WEG, CODES: CODES, SPRACHEN: SPRACHEN, uebersetzer: uebersetzer, zoneAmTag: zoneAmTag,
     typInfo: typInfo, felderFuer: felderFuer, istIso: istIso, plusTage: plusTage, tageDiff: tageDiff, wochentag: wochentag,
     tagAusZeit: tagAusZeit, alleDaten: alleDaten, alleZeiten: alleZeiten, betragLesen: betragLesen, geldStellen: geldStellen,
     dauerMin: dauerMin, dauerText: dauerText, ortszeitAlsUtc: ortszeitAlsUtc,
@@ -2998,7 +3051,12 @@ function zoneName(tz) {
 }
 function zielZone(tag) {
   const reise = (appData && appData.reise) || {};
-  const kandidaten = [tag && tag.tz, reise.zeitzone, reise.zielZeitzone];
+  /* Ohne Tag gilt heute. Das Land kommt vom Tag, sonst aus der
+     Einstellung unter Budget. */
+  const datum = (tag && tag.datum) || heuteLokal();
+  const kandidaten = [
+    Kern.zoneAmTag(appData, datum, tag && tag.tz, tag && tag.land, aktLand()),
+    reise.zeitzone, reise.zielZeitzone];
   return kandidaten.find(zoneOk) || '';
 }
 let uhrenTag = null;
@@ -5841,8 +5899,25 @@ function notizenLaden() {
 /* ---------- Uebersetzer ----------
    Braucht Netz. Ein eingebauter Uebersetzer laesst sich in einer
    PWA nicht offline betreiben, deshalb der ehrliche Umweg. */
-document.getElementById('trDeEn').addEventListener('click', () => extern('https://translate.google.com/?sl=de&tl=en'));
-document.getElementById('trDeTh').addEventListener('click', () => extern('https://translate.google.com/?sl=de&tl=th'));
+/* Entscheid 23 (16.11.2026): DeepL statt Google. Die zweite Sprache
+   folgt dem Reiseland (Budget, "Reiseland waehlen"). Kennt DeepL die
+   Sprache nicht sicher, fuehrt der Knopf zu Google Translate. Es wird
+   nur ein Link geoeffnet, die App uebergibt keinen Text. */
+function uebersetzerZeichnen() {
+  const liste = Kern.uebersetzer(aktLand());
+  const zweit = liste[1];
+  const knopf = document.getElementById('trDeTh');
+  knopf.style.display = zweit ? '' : 'none';
+  if (zweit) document.getElementById('trDeThText').textContent = 'DE – ' + zweit.name;
+  const land = Kern.landInfo(aktLand());
+  document.getElementById('trHinweis').textContent =
+    (zweit && zweit.dienst !== 'DeepL'
+      ? 'DE – EN öffnet DeepL. ' + zweit.name + ' öffnet Google Translate, weil DeepL die Sprache nicht sicher anbietet. '
+      : 'Öffnet DeepL im Browser. ') + 'Braucht Netz.' +
+    (land ? ' Reiseland: ' + land.name + '.' : ' Ohne Reiseland (unter Budget wählbar) gibt es nur DE – EN.');
+}
+document.getElementById('trDeEn').addEventListener('click', () => extern(Kern.uebersetzer(aktLand())[0].url));
+document.getElementById('trDeTh').addEventListener('click', () => { const z = Kern.uebersetzer(aktLand())[1]; if (z) extern(z.url); });
 
 /* ---------- Regeln fuer unterwegs ----------
    Stehen im Datenblock "regeln", einer Liste von Saetzen. Fehlt der
@@ -6111,7 +6186,12 @@ function dokZielWaehlen() {
   document.getElementById('sheetBg').classList.add('auf');
   requestAnimationFrame(() => { sheet.classList.add('auf'); sheet.scrollTop = 0; });
 }
-document.getElementById('addTicketTop').addEventListener('click', dokZielWaehlen);
+/* Entscheid 22 (16.11.2026): Das Plus oben in Dokumente oeffnet
+   denselben Einstieg wie "Reise planen": Foto, PDF, Bild, Link, Text
+   oder Handeingabe, mit Texterkennung und Zuordnung. Vorher fragte es
+   zuerst nach einer Buchung und tat ohne Buchung gar nichts.
+   dokZielWaehlen bleibt fuer "Beleg an eine bestehende Buchung". */
+document.getElementById('addTicketTop').addEventListener('click', planenBlatt);
 document.getElementById('dokVollZu').addEventListener('click', dokVollSchliessen);
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape') dokVollSchliessen(); });
 
@@ -7478,6 +7558,8 @@ function budgetZeilen() {
    abhaengt. */
 function finanzenNeuZeichnen() {
   waehlerFuellen();
+  uebersetzerZeichnen();
+  uhrenZeichnen();
   const w = aktWaehrung();
   document.getElementById('thbInput').placeholder = w;
   document.getElementById('chfInput').placeholder = heimat();
