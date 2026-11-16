@@ -1215,10 +1215,17 @@ body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.92); } /* ohne Weichz
       <div class="notfall-liste" id="notfallListe"></div>
     </div>
 
+    <!-- Archiv: abgeschlossene Reisen, nur zum Lesen -->
+    <div class="card" id="archivKarte" style="display: none;">
+      <div class="card-label">Archiv</div>
+      <div id="archivListe"></div>
+      <div class="badge-label">Frühere Reisen mit Plan, Abrechnung und Dokumenten. Liegt nur auf diesem Gerät.</div>
+    </div>
+
     <!-- Datensicherung -->
     <div class="card">
       <div class="card-label">Datensicherung</div>
-      <div class="badge-label" style="margin-top: 10px;">Reiseplan und Ausgaben sind zwei getrennte Sicherungen. Ein Import des Reiseplans rührt die Ausgaben nicht an.</div>
+      <div class="badge-label" style="margin-top: 10px;">Reiseplan und Ausgaben sind zwei getrennte Sicherungen. Ein Import des Reiseplans rührt die Ausgaben nicht an. Das Archiv früherer Reisen steckt in der Reiseplan-Sicherung, ihre Belege in der Dokumenten-Sicherung.</div>
       <div class="grp-head">Reiseplan</div>
       <div class="row" style="margin-top: 0;">
         <button class="btn btn-secondary btn-inline" id="importBtn"><span class="ic" data-icon="down" data-size="16"></span>Importieren</button>
@@ -1318,7 +1325,7 @@ body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.92); } /* ohne Weichz
     <div class="topbar">
       <div style="flex: 1;">
         <h1 class="h1">Translator</h1>
-        <div class="topbar-sub">Öffnet Google Translate</div>
+        <div class="topbar-sub">Öffnet DeepL, Sprache nach Reiseland</div>
       </div>
     </div>
 
@@ -3296,6 +3303,24 @@ function renderAusserhalbReise(lage, reise, heute) {
     return;
   }
 
+  /* Frisch angelegte Reise ohne einen einzigen Tag: keine Luecke,
+     sondern der Anfang. */
+  if (!ansicht.length && !reise.start) {
+    kopf.textContent = reise.titel || 'Neue Reise';
+    datum.textContent = formatDateFull(heute);
+    labelEl.textContent = 'Noch leer';
+    ikonEl.innerHTML = icon('calendar', 20);
+    subEl.textContent = 'Mit «Reise planen» die erste Buchung erfassen: Foto, PDF, Link, Text oder von Hand.';
+    const planen = document.createElement('button');
+    planen.className = 'btn btn-secondary';
+    planen.type = 'button';
+    planen.style.cssText = 'width:100%;margin-top:var(--sp-m);';
+    planen.innerHTML = icon('plus', 16) + 'Reise planen';
+    planen.addEventListener('click', planenBlatt);
+    listeEl.appendChild(planen);
+    return;
+  }
+
   /* Datenluecke. Der Tag wird ausdruecklich nicht durch einen anderen
      ersetzt, sonst entsteht genau die stille Falschanzeige zurueck,
      die dieser Block behebt. */
@@ -3945,6 +3970,10 @@ const DOK_VERSION = 1;
 let dokDbCache = null;
 /* ticketId -> Liste der Metadaten. Einzige Quelle fuer die Anzeige. */
 let dokIndex = {};
+/* reiseId -> Liste der Metadaten archivierter Reisen (Entscheid 25,
+   16.11.2026). Diese Belege erscheinen nicht unter Dokumente, sondern
+   nur im Archiv. Die Dateien bleiben in derselben Ablage liegen. */
+let dokArchiv = {};
 let dokAblageDefekt = false;
 
 function dokDb() {
@@ -3969,6 +3998,7 @@ function dokDb() {
 
 async function dokIndexLaden() {
   dokIndex = {};
+  dokArchiv = {};
   try {
     const db = await dokDb();
     const alle = await new Promise((ok, fehler) => {
@@ -3977,7 +4007,10 @@ async function dokIndexLaden() {
       a.onerror = () => fehler(a.error);
     });
     alle.sort((a, b) => String(a.erfasst).localeCompare(String(b.erfasst)));
-    alle.forEach(m => { (dokIndex[m.ticketId] = dokIndex[m.ticketId] || []).push(m); });
+    alle.forEach(m => {
+      if (m.reiseId) (dokArchiv[m.reiseId] = dokArchiv[m.reiseId] || []).push(m);
+      else (dokIndex[m.ticketId] = dokIndex[m.ticketId] || []).push(m);
+    });
   } catch(e) {
     /* Ohne IndexedDB laeuft die App weiter, nur ohne Ablage. Das darf
        nicht still bleiben, sonst wiederholt sich der alte Fehler:
@@ -6251,6 +6284,24 @@ document.getElementById('importInput').addEventListener('change', function(e) {
       if (alt) d.tage = d[alt];
     }
 
+    /* Sicherung einer noch leeren Reise: Sie bringt keinen Tag mit,
+       aber vielleicht das Archiv. Dann wird nur das Archiv
+       uebernommen, die aktive Reise bleibt, wie sie ist. */
+    if (d && typeof d === 'object' && Array.isArray(d.tage) && d.tage.length === 0 && Array.isArray(d.archiv) && d.archiv.some(archivGueltig)) {
+      const nurArchiv = d.archiv.filter(archivGueltig);
+      (async () => {
+        try {
+          for (const e of nurArchiv) await archivSchreiben(e);
+          await archivZeichnen();
+          alert('Die Datei enthält keinen Reiseplan, aber ' + (nurArchiv.length === 1 ? '1 archivierte Reise' : nurArchiv.length + ' archivierte Reisen') +
+            '. Das Archiv wurde übernommen, die aktive Reise ist unverändert.');
+        } catch(err) {
+          alert('Das Archiv aus der Datei wurde NICHT übernommen.\n\n' + (err && err.message ? err.message : String(err)));
+        }
+      })();
+      return;
+    }
+
     if (!d || typeof d !== 'object' || !Array.isArray(d.tage) || d.tage.length === 0) {
       const gefunden = d && typeof d === 'object' ? Object.keys(d).join(', ') : '(keine)';
       alert('Datei gelesen, aber kein Reiseplan gefunden – deshalb bleibt alles leer.\n\n' +
@@ -6305,6 +6356,11 @@ document.getElementById('importInput').addEventListener('change', function(e) {
        Sie haben ihre eigene Sicherung. */
     const hatteAusgaben = Array.isArray(d.ausgaben) && d.ausgaben.length > 0;
     delete d.ausgaben;
+    /* Das Archiv gehoert nicht in den aktiven Plan. Es wird nach dem
+       gelungenen Import in seine eigene Ablage geschrieben. Bringt die
+       Datei keines mit, bleibt das vorhandene Archiv unberuehrt. */
+    const archivAusDatei = Array.isArray(d.archiv) ? d.archiv.filter(archivGueltig) : [];
+    delete d.archiv;
 
     /* Ein importierter Plan ohne "datenstand" wurde von der Weiche am
        Dateiende als Demo-Rest eingeordnet und beim naechsten Start
@@ -6372,6 +6428,17 @@ document.getElementById('importInput').addEventListener('change', function(e) {
     /* Fotos aus der Sicherung in die Foto-Ablage umziehen (im Hintergrund). */
     hotelFotosBereitstellen();
     showScreen('screenToday');
+    if (archivAusDatei.length) {
+      (async () => {
+        try {
+          for (const e of archivAusDatei) await archivSchreiben(e);
+          await archivZeichnen();
+          meldung(archivAusDatei.length === 1 ? '1 Reise im Archiv übernommen' : archivAusDatei.length + ' Reisen im Archiv übernommen');
+        } catch(err) {
+          alert('Das Archiv aus der Datei wurde NICHT übernommen.\n\n' + (err && err.message ? err.message : String(err)));
+        }
+      })();
+    }
     alert('Reiseplan importiert: ' + appData.tage.length + ' Tage.\n' +
       'Deine ' + ausgaben.length + ' erfassten Ausgaben sind unverändert geblieben.' +
       (uebernommen ? '\n' + uebernommen + (uebernommen === 1 ? ' in der App erfasste Buchung ist' : ' in der App erfasste Buchungen sind') + ' erhalten geblieben.' : '') +
@@ -6399,6 +6466,15 @@ document.getElementById('exportBtn').addEventListener('click', async function() 
     }
   } catch(e) {
     console.error('Hotel-Fotos fuer die Sicherung', e);
+  }
+  /* Das Archiv frueherer Reisen als eigener Teil der Datei. Scheitert
+     das Lesen, wird das gesagt: eine Sicherung, die still etwas
+     weglaesst, ist keine. */
+  try {
+    const archiv = await archivAlle();
+    if (archiv.length) kopie.archiv = archiv;
+  } catch(e) {
+    alert('Achtung: Das Archiv früherer Reisen konnte nicht gelesen werden und fehlt in dieser Sicherung.');
   }
   dateiSchreiben(kopie, 'reiseplan-sicherung');
 });
@@ -6432,6 +6508,7 @@ function base64NachBlob(b64, typ) {
 document.getElementById('exportDokBtn').addEventListener('click', async function() {
   const alle = [];
   Object.keys(dokIndex).forEach(k => dokIndex[k].forEach(m => alle.push(m)));
+  Object.keys(dokArchiv).forEach(k => dokArchiv[k].forEach(m => alle.push(m)));
   if (!alle.length) {
     alert('Es ist noch kein Dokument hinterlegt. Eine Sicherung wäre leer.');
     return;
@@ -6443,13 +6520,13 @@ document.getElementById('exportDokBtn').addEventListener('click', async function
       /* Ein Link hat keine Datei, nur die Adresse. */
       if (m.url) {
         raus.push({ id: m.id, ticketId: m.ticketId, name: m.name, typ: m.typ,
-                    groesse: 0, erfasst: m.erfasst, url: m.url });
+                    groesse: 0, erfasst: m.erfasst, url: m.url, reiseId: m.reiseId || undefined });
         continue;
       }
       const b = await dokBlob(m);
       if (!b) continue;
       raus.push({ id: m.id, ticketId: m.ticketId, name: m.name, typ: m.typ,
-                  groesse: m.groesse, erfasst: m.erfasst, hash: m.hash || '', data: await blobNachBase64(b) });
+                  groesse: m.groesse, erfasst: m.erfasst, hash: m.hash || '', reiseId: m.reiseId || undefined, data: await blobNachBase64(b) });
     }
     if (raus.length < alle.length) {
       alert('Achtung: ' + (alle.length - raus.length) + ' von ' + alle.length +
@@ -6487,6 +6564,7 @@ document.getElementById('importDokInput').addEventListener('change', function(e)
                        typ: d.typ || 'application/octet-stream',
                        groesse: d.groesse || 0, erfasst: d.erfasst || new Date().toISOString(),
                        hash: d.hash || '' };
+        if (d.reiseId && /^reise-[a-z0-9-]+$/.test(String(d.reiseId))) meta.reiseId = String(d.reiseId);
         if (meta.id && meta.ticketId && d.url && /^https?:\/\//i.test(d.url)) {
           meta.url = String(d.url);
           meta.groesse = 0;
@@ -6518,6 +6596,7 @@ document.getElementById('importDokInput').addEventListener('change', function(e)
     }
     await dokIndexLaden();
     renderDokumente();
+    archivZeichnen();
     await speicherPruefen();
     renderSpeicherLage();
     alert(neu + ' von ' + liste.length + ' Dokumenten übernommen.' +
@@ -7025,6 +7104,7 @@ function planenBlatt() {
   const hinweis = document.createElement('div');
   hinweis.className = 'badge-label';
   hinweis.textContent = 'Gelesen wird Deutsch und Englisch, aus Fotos, Screenshots und PDF. Ein Link wird gespeichert, die Seite dahinter kann die App nicht abrufen. ' +
+    'Was noch zu keiner Buchung passt, bleibt mit «Später zuordnen» im Eingang unter Dokumente. ' +
     'Aus Mail, Browser oder Galerie geht es auch über «Teilen», dann Travel-Mate.';
   sheet.appendChild(hinweis);
 
@@ -7693,6 +7773,16 @@ function renderBudget() {
     ? 'Wieder öffnen hebt nur die Markierung auf.'
     : '«Reise beenden» markiert die Reise als abgeschlossen und zeigt die Abrechnung. Es wird nichts gelöscht.';
   knoepfe.appendChild(erkl);
+  const r3 = document.createElement('div');
+  r3.className = 'row';
+  const insArchiv = tagKnopf('Ins Archiv verschieben, neue Reise anlegen', 'doc', reiseArchivieren, true);
+  insArchiv.id = 'reiseArchivBtn';
+  r3.appendChild(insArchiv);
+  knoepfe.appendChild(r3);
+  const erkl2 = document.createElement('div');
+  erkl2.className = 'badge-label';
+  erkl2.textContent = 'Die Reise wandert mit Plan, Ausgaben, Notizen und Dokumenten ins Archiv unter Mehr. Danach ist die App leer für die nächste Reise.';
+  knoepfe.appendChild(erkl2);
   box.appendChild(knoepfe);
 }
 
@@ -7805,6 +7895,274 @@ function reiseOeffnen() {
   loadUIFromAppData();
   renderBudget();
   meldung('Reise wieder geöffnet');
+}
+
+/* ---------- Archiv: mehrere Reisen ----------
+   Entscheid 25 (16.11.2026): Es ist immer genau eine Reise aktiv.
+   Eine fertige Reise wandert als Ganzes ins Archiv, danach ist die
+   App leer fuer die naechste. Das Archiv liegt in einer eigenen
+   IndexedDB auf dem Geraet, nicht in localStorage (dort sind rund
+   5 MB Schluss). Es gibt keinen Weg nach draussen ausser der
+   Sicherungsdatei, die der Nutzer selbst schreibt.
+
+   Reihenfolge beim Verschieben: erst sicher ins Archiv schreiben,
+   dann die Belege markieren, erst danach die aktive Reise leeren.
+   Scheitert ein Schritt, bleibt die aktive Reise, wie sie war. */
+const ARCHIV_DB = 'reisebegleiter-archiv';
+const NEUSTART_KOPIE = 'reisebegleiter_data_vor_archiv';
+let archivDbCache = null;
+function archivDb() {
+  if (archivDbCache) return archivDbCache;
+  archivDbCache = new Promise((ok, fehler) => {
+    const anf = indexedDB.open(ARCHIV_DB, 1);
+    anf.onupgradeneeded = () => {
+      const db = anf.result;
+      if (!db.objectStoreNames.contains('reisen')) db.createObjectStore('reisen', { keyPath: 'id' });
+    };
+    anf.onsuccess = () => ok(anf.result);
+    anf.onerror = () => fehler(anf.error);
+  });
+  archivDbCache.catch(() => { archivDbCache = null; });
+  return archivDbCache;
+}
+function archivTx(modus, arbeit) {
+  return archivDb().then(db => new Promise((ok, fehler) => {
+    const tx = db.transaction('reisen', modus);
+    const erg = arbeit(tx.objectStore('reisen'));
+    tx.oncomplete = () => ok(erg && 'result' in erg ? erg.result : undefined);
+    tx.onabort = () => fehler(tx.error || new Error('Transaktion abgebrochen'));
+    tx.onerror = () => fehler(tx.error || new Error('Fehler in der Archiv-Ablage'));
+  }));
+}
+async function archivAlle() {
+  const alle = (await archivTx('readonly', st => st.getAll())) || [];
+  return alle.filter(archivGueltig).sort((a, b) => String(b.start || b.archiviertAm).localeCompare(String(a.start || a.archiviertAm)));
+}
+function archivSchreiben(eintrag) { return archivTx('readwrite', st => st.put(eintrag)); }
+function archivEntfernen(id) { return archivTx('readwrite', st => st.delete(id)); }
+function archivGueltig(e) {
+  return !!e && typeof e === 'object' && /^reise-[a-z0-9-]+$/.test(String(e.id || '')) &&
+    !!e.daten && typeof e.daten === 'object' && Array.isArray(e.daten.tage) && Array.isArray(e.ausgaben);
+}
+/* Belege einer Reise zuordnen oder wieder freigeben, in einer
+   Transaktion: alle oder keiner. von/nach '' heisst aktive Reise. */
+async function dokReiseSetzen(von, nach) {
+  const db = await dokDb();
+  await new Promise((ok, fehler) => {
+    const tx = db.transaction('meta', 'readwrite');
+    const st = tx.objectStore('meta');
+    const a = st.getAll();
+    a.onsuccess = () => (a.result || []).forEach(m => {
+      if ((m.reiseId || '') !== (von || '')) return;
+      if (nach) m.reiseId = nach; else delete m.reiseId;
+      st.put(m);
+    });
+    tx.oncomplete = () => ok();
+    tx.onabort = () => fehler(tx.error || new Error('Transaktion abgebrochen'));
+    tx.onerror = () => fehler(tx.error || new Error('Schreibfehler'));
+  });
+  await dokIndexLaden();
+}
+function aktiveReiseLeer() {
+  if (!appData || !appData.datenstand) return true; /* Demo-Reise zaehlt nicht */
+  return !(appData.tage || []).length && !(appData.buchungen || []).length && !(appData.tickets || []).length &&
+    !ausgaben.length && !Object.keys(dokIndex).some(k => dokIndex[k].length);
+}
+function archivEintragBauen() {
+  const aw = Kern.auswertung(appData);
+  const ab = abrechnungJetzt();
+  const daten = JSON.parse(JSON.stringify(appData));
+  delete daten.fotos; delete daten.ausgaben; delete daten.dokumente; delete daten.archiv;
+  let notizen = '';
+  try { notizen = localStorage.getItem(NOTIZ_KEY) || ''; } catch(e) {}
+  return {
+    id: 'reise-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8),
+    archiviertAm: new Date().toISOString(),
+    titel: aw.titel, start: aw.start, ende: aw.ende, tage: aw.tage,
+    summeChf: ab.gesamt, heimat: heimat(),
+    daten: daten, ausgaben: JSON.parse(JSON.stringify(ausgaben)), notizen: notizen,
+    einst: JSON.parse(JSON.stringify(einst))
+  };
+}
+async function reiseArchivieren() {
+  if (!appData || !appData.datenstand) { alert('Die Demo-Reise lässt sich nicht archivieren. Erst einen eigenen Reiseplan anlegen oder importieren.'); return; }
+  if (aktiveReiseLeer()) { alert('Die aktive Reise ist leer. Es gibt nichts zu archivieren.'); return; }
+  if (dokAblageDefekt) { alert('Die Ablage ist in diesem Browser nicht verfügbar (meist privater Modus). Ohne Ablage gibt es kein Archiv.'); return; }
+  if (!confirm('Reise ins Archiv verschieben?\n\n' +
+    'Plan, Buchungen, Ausgaben, Notizen und Dokumente dieser Reise wandern ins Archiv unter Mehr. ' +
+    'Dort bleiben sie lesbar, und die Reise lässt sich wieder aktiv machen. Danach ist die App leer für die nächste Reise.\n\n' +
+    'Empfehlung: vorher unter Mehr, Datensicherung einmal sichern.')) return;
+  const name = prompt('Name der neuen Reise', 'Neue Reise');
+  if (name === null) return;
+
+  const eintrag = archivEintragBauen();
+  try {
+    await archivSchreiben(eintrag);
+  } catch(err) {
+    alert('Die Reise wurde NICHT archiviert.\n\n' + (err && err.message ? err.message : String(err)) + '\n\nEs gilt weiterhin die bisherige Reise.');
+    return;
+  }
+  try {
+    await dokReiseSetzen('', eintrag.id);
+  } catch(err) {
+    try { await archivEntfernen(eintrag.id); } catch(e2) {}
+    alert('Die Reise wurde NICHT archiviert, die Dokumente liessen sich nicht zuordnen.\n\n' + (err && err.message ? err.message : String(err)));
+    return;
+  }
+  /* Kopie des Plans, einmalig ueberschrieben bei jedem Archivieren.
+     Reicht der Platz nicht, ist das kein Abbruch: die Reise liegt
+     bereits vollstaendig im Archiv. */
+  try { localStorage.setItem(NEUSTART_KOPIE, JSON.stringify(eintrag.daten)); } catch(e) {}
+  const r = appData.reise || {};
+  const neu = {
+    schema: 2,
+    datenstand: { quelle: 'In der App angelegt', stand: heuteLokal() },
+    reise: { titel: String(name).trim().slice(0, 80) || 'Neue Reise' },
+    tage: [], tickets: [], buchungen: []
+  };
+  ['heimatWaehrung', 'heimatZeitzone', 'heimatOrt'].forEach(k => { if (r[k]) neu.reise[k] = r[k]; });
+  /* Kategorien sind eine Gewohnheit des Nutzers und bleiben. Land,
+     Waehrung und Budget gehoeren zur alten Reise. */
+  const neuEinst = {};
+  if (Array.isArray(einst.kategorien)) neuEinst.kategorien = einst.kategorien;
+  try {
+    localStorage.setItem('reisebegleiter_data', JSON.stringify(neu));
+    localStorage.setItem(SPEND_KEY, '[]');
+    localStorage.setItem(NOTIZ_KEY, '');
+    localStorage.setItem(EINST_KEY, JSON.stringify(neuEinst));
+    localStorage.removeItem('reisebegleiter_wetter');
+  } catch(err) {
+    /* Die neuen Staende sind kleiner als die alten, das sollte nicht
+       scheitern. Falls doch: zurueck auf den alten Zustand. */
+    try { await dokReiseSetzen(eintrag.id, ''); await archivEntfernen(eintrag.id); } catch(e2) {}
+    alert('Die Reise wurde NICHT archiviert.\n\n' + (err && err.message ? err.message : String(err)));
+    return;
+  }
+  location.reload();
+}
+async function reiseAusArchivHolen(eintrag) {
+  if (!aktiveReiseLeer()) {
+    alert('Es ist noch eine Reise aktiv.\n\nErst die aktive Reise unter Budget ins Archiv verschieben, dann lässt sich diese wieder aktiv machen. So landen nie zwei Reisen ineinander.');
+    return;
+  }
+  if (!confirm('«' + eintrag.titel + '» wieder zur aktiven Reise machen?\n\nPlan, Ausgaben, Notizen und Dokumente kommen zurück. Der Eintrag verschwindet aus dem Archiv.')) return;
+  const alt = {};
+  ['reisebegleiter_data', SPEND_KEY, NOTIZ_KEY, EINST_KEY].forEach(k => { try { alt[k] = localStorage.getItem(k); } catch(e) {} });
+  try {
+    await dokReiseSetzen(eintrag.id, '');
+    localStorage.setItem('reisebegleiter_data', JSON.stringify(eintrag.daten));
+    localStorage.setItem(SPEND_KEY, JSON.stringify(eintrag.ausgaben || []));
+    localStorage.setItem(NOTIZ_KEY, String(eintrag.notizen || ''));
+    localStorage.setItem(EINST_KEY, JSON.stringify(eintrag.einst || {}));
+    localStorage.removeItem('reisebegleiter_wetter');
+  } catch(err) {
+    Object.keys(alt).forEach(k => { try { if (alt[k] === null) localStorage.removeItem(k); else localStorage.setItem(k, alt[k]); } catch(e) {} });
+    try { await dokReiseSetzen('', eintrag.id); } catch(e2) {}
+    alert('Die Reise wurde NICHT zurückgeholt.\n\n' + (err && err.message ? err.message : String(err)) + '\n\nSie liegt weiterhin im Archiv.');
+    return;
+  }
+  /* Erst wenn die Reise wieder aktiv gespeichert ist, verschwindet
+     der Archiv-Eintrag. Scheitert das Entfernen, steht sie doppelt
+     da, aber nichts fehlt. */
+  try { await archivEntfernen(eintrag.id); } catch(e) { console.error('Archiv-Eintrag entfernen', e); }
+  location.reload();
+}
+
+function zeitraumText(e) {
+  if (e.start && e.ende) return datumKurz(e.start) + ' bis ' + datumKurz(e.ende);
+  return e.start ? 'ab ' + datumKurz(e.start) : 'ohne Datum';
+}
+async function archivZeichnen() {
+  const karte = document.getElementById('archivKarte');
+  const liste = document.getElementById('archivListe');
+  if (!karte || !liste) return;
+  let alle = [];
+  try { alle = await archivAlle(); } catch(e) { console.error('Archiv nicht lesbar', e); }
+  karte.style.display = alle.length ? '' : 'none';
+  liste.innerHTML = '';
+  alle.forEach(e => {
+    const b = document.createElement('button');
+    b.className = 'btn btn-secondary archiv-zeile';
+    b.type = 'button';
+    b.style.cssText = 'width:100%;text-align:left;margin-top:6px;display:block;';
+    b.innerHTML = '<div>' + esc(e.titel || 'Reise') + '</div>' +
+      '<div class="hint-line">' + esc(zeitraumText(e)) + ' · ' + esc(geld(e.summeChf) + ' ' + (e.heimat || 'CHF')) + '</div>';
+    b.addEventListener('click', () => archivBlatt(e));
+    liste.appendChild(b);
+  });
+}
+/* Eine archivierte Reise ansehen. Nur lesen: gerechnet wird mit
+   denselben Funktionen wie fuer die aktive Reise, aber auf den Daten
+   des Eintrags. Nichts davon beruehrt die aktive Reise. */
+function archivBlatt(e) {
+  const sheet = document.getElementById('sheet');
+  sheet.innerHTML = '';
+  blattKopf(sheet, e.titel || 'Reise', zeitraumText(e) + ' · archiviert am ' + datumKurz(e.archiviertAm));
+  const h = e.heimat || 'CHF';
+  const ab = Kern.abrechnung(e.daten, e.ausgaben || [], kurse);
+  const aw = Kern.auswertung(e.daten);
+  const tage = Kern.tagesAnsicht(e.daten);
+  const kopf = t => { const d = document.createElement('div'); d.className = 'grp-head'; d.textContent = t; sheet.appendChild(d); };
+  const zeile = (links, rechts) => {
+    const d = document.createElement('div');
+    d.className = 'archiv-reihe';
+    d.style.cssText = 'display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--line);';
+    d.innerHTML = '<span style="min-width:0;">' + esc(links) + '</span><span style="white-space:nowrap;color:var(--muted);">' + esc(rechts) + '</span>';
+    sheet.appendChild(d);
+  };
+
+  kopf('Abrechnung');
+  zeile('Gesamtkosten', geld(ab.gesamt) + ' ' + h);
+  zeile('davon bezahlt', geld(ab.tatsaechlich) + ' ' + h);
+  if (ab.budget) zeile('Budget', geld(ab.budget) + ' ' + h);
+  ab.kategorien.forEach(k => zeile(k.name, geld(k.chf) + ' ' + h));
+
+  kopf('Überblick');
+  zeile('Tage', String(aw.tage));
+  zeile('Übernachtungen', String(aw.naechte));
+  if (aw.laender.length) zeile('Länder', aw.laender.join(', '));
+  if (aw.orte.length) zeile('Orte', String(aw.orte.length));
+  zeile('Ausgaben erfasst', String((e.ausgaben || []).length));
+
+  if (tage.length) {
+    kopf('Reiseplan');
+    tage.forEach(t => zeile(datumKurz(t.datum) + ' · ' + (t.ort || '–'), (t.hotel && t.hotel.name) || ''));
+  }
+
+  const doks = dokArchiv[e.id] || [];
+  kopf('Dokumente');
+  if (!doks.length) zeile('Keine Dokumente hinterlegt', '');
+  doks.forEach(m => {
+    const b = document.createElement('button');
+    b.className = 'btn btn-secondary archiv-dok';
+    b.type = 'button';
+    b.style.cssText = 'width:100%;text-align:left;margin-top:6px;';
+    b.innerHTML = icon(m.url ? 'link' : 'doc', 16) + esc(m.name || 'Dokument');
+    b.addEventListener('click', () => { if (m.url) extern(m.url); else { sheetSchliessen(); dokZeigen(m); } });
+    sheet.appendChild(b);
+  });
+
+  if (e.notizen) {
+    kopf('Notizen');
+    const n = document.createElement('div');
+    n.style.cssText = 'white-space:pre-wrap;padding:6px 0;';
+    n.textContent = e.notizen;
+    sheet.appendChild(n);
+  }
+
+  const zurueck = document.createElement('button');
+  zurueck.className = 'btn btn-secondary';
+  zurueck.type = 'button';
+  zurueck.id = 'archivHolen';
+  zurueck.style.cssText = 'width:100%;margin-top:var(--sp-m);';
+  zurueck.innerHTML = icon('pencil', 16) + 'Wieder aktiv machen';
+  zurueck.addEventListener('click', () => reiseAusArchivHolen(e));
+  sheet.appendChild(zurueck);
+  const hinweis = document.createElement('div');
+  hinweis.className = 'badge-label';
+  hinweis.textContent = 'Geht nur, wenn gerade keine andere Reise aktiv ist.';
+  sheet.appendChild(hinweis);
+  blattAuf(sheet);
 }
 
 function textDateiSchreiben(text, name, typ) {
@@ -7952,7 +8310,7 @@ hotelFotosBereitstellen();
    Buchung mit hinterlegtem Foto beim Start noch "Foto noetig". Der
    zweite Aufbau kostet nichts und stellt den wahren Stand her. */
 dokIndexLaden()
-  .then(() => { renderDokumente(); heuteUnterwegsZeichnen(); teilenStart(); return speicherPruefen(); })
+  .then(() => { renderDokumente(); heuteUnterwegsZeichnen(); teilenStart(); archivZeichnen(); return speicherPruefen(); })
   .then(renderSpeicherLage)
   .catch(e => console.error('Dokumenten-Ablage beim Start', e));
 

@@ -565,3 +565,54 @@ PR #6 ist gemergt. Wiederherstellungspunkt davor:
   schmaleren Geraeten wird es eng.
 - Weiterhin offen vom 12.11.: mehrere Reisen mit Archiv, Karte und
   Translator fuer andere Laender.
+
+---
+
+## Ausbau vom 16.11.2026: Plus in Dokumente, DeepL, Zeitzone, Archiv
+
+Branch `claude/epic-feynman-vrd04b`. Kein Pull Request ohne Auftrag.
+
+### Entscheide vom 16.11.2026
+
+| # | Entscheid | Begruendung |
+|---|---|---|
+| 22 | **Das Plus oben in Dokumente oeffnet «Reise planen».** | Vorher fragte es zuerst nach einer Buchung und tat ohne Buchung nichts. Texterkennung und Zuordnung gab es nur im Reiter Reiseplan, dort hat Lio sie nicht gesucht |
+| 23 | **DeepL statt Google Translate.** Zweite Sprache folgt dem Reiseland. Google bleibt Rueckfall fuer Sprachen, die DeepL nicht sicher anbietet | Wunsch Lio. Es wird nur ein Link geoeffnet, kein Text uebergeben, CSP unveraendert |
+| 24 | **Zeitzone ergibt sich selbst:** Angabe am Tag, Land des Tages, Ankunft des letzten Flugs, Reiseland, Angabe an der Reise | Die zweite Uhr fiel weg, wenn in den Daten keine Zeitzone stand |
+| 25 | **Aktive Reise plus Archiv.** Immer genau eine Reise aktiv, fertige Reisen liegen im Archiv unter Mehr | Entscheid Lio. Eine Ausgabe kann so nie in der falschen Reise landen |
+| 26 | **Karte fuer andere Laender gestrichen** | Entscheid Lio: Google Maps reicht |
+
+### Fertig und geprueft
+
+`tests/kern.test.js` 104 Pruefungen, `tests/e2e.test.js` 129.
+
+- Plus in Dokumente: Foto, Datei, Link, Text, Handeingabe.
+- Translator: DE – EN ueber DeepL, zweite Sprache nach Land.
+- Zeitzone aus Flug und Land.
+- Archiv: verschieben, ansehen, zurueckholen, Sicherung und Import.
+  Belege tragen eine `reiseId` und bleiben in derselben Ablage.
+- Leere neue Reise zeigt auf Heute «Noch leer» mit Einstieg statt
+  «Datenluecke».
+- Zwei veraltete Pruefungen korrigiert: Hotelfotos liegen seit PR #8
+  in IndexedDB, und der Teilen-Test las das Blatt zu frueh.
+
+### Offen
+
+- **Thai bei DeepL am Geraet pruefen.** DeepL hat Thai im Juni 2025
+  angekuendigt, zuerst nur fuer die Schnittstelle. Ob es auf der
+  Webseite waehlbar ist, ist nicht bestaetigt. Bis dahin fuehrt
+  «DE – Thai» zu Google Translate. Ist Thai bei DeepL waehlbar: in
+  `SPRACHEN` bei `TH` den dritten Wert auf `th` setzen.
+- Die Liste der DeepL-Sprachen ist vorsichtig gefuehrt. Kroatisch,
+  Hindi, Malaiisch und weitere laufen ueber Google, bis geprueft.
+- **Archiv:** Eine Reise laesst sich nicht endgueltig loeschen.
+  Hotelfotos liegen weiter in ihrer eigenen Ablage nach Hotelname und
+  werden nicht mit archiviert. Eine neue Reise hat weder Start noch
+  Ende, bis Buchungen erfasst sind; Titel und Zeitraum lassen sich in
+  der App nicht von Hand setzen.
+- Laender mit mehreren Zeitzonen (USA, Brasilien, Australien,
+  Indonesien): die Uhr stimmt nur ueber den Flughafen der Ankunft.
+- Weiterhin am Geraet ungeprueft: Texterkennung mit echten Fotos,
+  Teilen-Menue von Android, Screenshot aus der Zwischenablage,
+  Druckdialog.
+- Texterkennung liest keine thailaendische Schrift.

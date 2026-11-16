@@ -623,6 +623,62 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
     wahr('Vor der Reise: Einstieg «Reise planen» auf Heute', await v.page.isVisible('#vorReiseListe .btn >> text=Reise planen'));
     await v.ctx.close();
 
+    /* ============ Archiv: aktive Reise plus Archiv ============ */
+    const bereit = pg => pg.waitForFunction(() => typeof appData !== 'undefined' && appData && appData.datenstand && document.readyState === 'complete');
+    const ar = await fenster(browser, basis, { vorher: 'if (!localStorage.getItem("reisebegleiter_data")) { localStorage.setItem("reisebegleiter_data", ' + JSON.stringify(JSON.stringify(altPlan)) +
+      '); localStorage.setItem("reisebegleiter_ausgaben", ' + JSON.stringify(JSON.stringify(altAusgaben)) + '); localStorage.setItem("reisebegleiter_notizen", "Notiz Demo"); }' });
+    alleLogs.push(['Archiv', ar.log]);
+    const ap = ar.page;
+    await ap.evaluate(async () => { await dokLinkSpeichern('boot-demo', 'https://example.org/demo-beleg'); renderDokumente(); });
+    await tippeReiter(ap, 'screenTools');
+    gleich('Archiv: ohne archivierte Reise keine Karte', await ap.isVisible('#archivKarte'), false);
+    await tippeReiter(ap, 'screenBudget');
+    await ap.click('#reiseArchivBtn');
+    await ap.waitForFunction(() => typeof appData !== 'undefined' && appData && appData.reise && appData.reise.titel === 'Neue Reise');
+    await bereit(ap);
+    await ap.waitForFunction(() => document.getElementById('archivListe').children.length === 1);
+    gleich('Archiv: aktive Reise ist danach leer', await ap.evaluate(() => [appData.tage.length, (appData.buchungen || []).length, alleTickets().length, ausgaben.length, Object.keys(dokIndex).length,
+      localStorage.getItem('reisebegleiter_notizen'), !!localStorage.getItem('reisebegleiter_data_vor_archiv')]), [0, 0, 0, 0, 0, '', true]);
+    gleich('Archiv: Heute zeigt die neue, leere Reise mit Einstieg', [await ap.textContent('#todayHeading'), await ap.isVisible('#vorReiseListe .btn >> text=Reise planen')], ['Neue Reise', true]);
+    await tippeReiter(ap, 'screenTools');
+    wahr('Archiv: Eintrag mit Titel, Zeitraum und Summe', /Alt-Reise Demo/.test(await ap.textContent('#archivListe')) && /20\.12\.2026 bis 26\.12\.2026/.test(await ap.textContent('#archivListe')) && /12\.75 CHF/.test(await ap.textContent('#archivListe')));
+    await ap.click('#archivListe .archiv-zeile');
+    await ap.waitForSelector('#archivHolen');
+    gleich('Archiv: Blatt zeigt Abrechnung, Plan, Dokument und Notiz', await ap.evaluate(() => { const t = document.getElementById('sheet').textContent;
+      return [/Gesamtkosten/.test(t), /Sandmond Resort/.test(t), document.querySelectorAll('#sheet .archiv-dok').length, /Notiz Demo/.test(t)]; }), [true, true, 1, true]);
+    /* Solange eine Reise aktiv ist, kommt keine zweite dazu */
+    await ap.evaluate(() => { appData.buchungen.push(Kern.buchungSauber({ typ: 'aktivitaet', titel: 'Probe Demo', datum: '2027-03-01' })); datenSpeichern(); });
+    await ap.click('#archivHolen');
+    wahr('Archiv: zurückholen gesperrt, solange eine Reise aktiv ist', ar.log.dialoge.some(d => /Es ist noch eine Reise aktiv/.test(d)));
+    gleich('Archiv: gesperrt heisst unverändert', await ap.evaluate(() => [appData.reise.titel, appData.buchungen.length]), ['Neue Reise', 1]);
+    /* Sicherung mit Archiv, dann Archiv verlieren und aus der Datei zurückholen */
+    await ap.keyboard.press('Escape');
+    await blattZu(ap);
+    const [laden] = await Promise.all([ap.waitForEvent('download'), ap.click('#exportBtn')]);
+    const sicherung = path.join(tmp, 'sicherung-mit-archiv.json');
+    await laden.saveAs(sicherung);
+    const gesichert = JSON.parse(fs.readFileSync(sicherung, 'utf8'));
+    gleich('Archiv: steckt in der Reiseplan-Sicherung', [gesichert.archiv.length, gesichert.archiv[0].titel, gesichert.archiv[0].ausgaben.length, gesichert.archiv[0].daten.tage.length], [1, 'Alt-Reise Demo', 2, 3]);
+    await ap.evaluate(async () => { const a = await archivAlle(); await archivEntfernen(a[0].id); await archivZeichnen(); });
+    gleich('Archiv: zum Test entfernt', await ap.isVisible('#archivKarte'), false);
+    gesichert.tage = [];
+    gesichert.buchungen = [];
+    fs.writeFileSync(sicherung, JSON.stringify(gesichert));
+    await ap.setInputFiles('#importInput', sicherung);
+    await ap.waitForFunction(() => document.getElementById('archivListe').children.length === 1);
+    gleich('Archiv: aus der Sicherung zurück, aktive Reise unberührt', await ap.evaluate(() => [appData.reise.titel, appData.buchungen.length]), ['Neue Reise', 1]);
+    /* Aktive Reise leeren, dann zurückholen */
+    await ap.evaluate(() => { appData.buchungen = []; datenSpeichern(); });
+    await ap.click('#archivListe .archiv-zeile');
+    await ap.waitForSelector('#archivHolen');
+    await ap.click('#archivHolen');
+    await ap.waitForFunction(() => typeof appData !== 'undefined' && appData && appData.reise && appData.reise.titel === 'Alt-Reise Demo' && typeof dokIndex !== 'undefined' && !!dokIndex['boot-demo']);
+    await bereit(ap);
+    gleich('Archiv: Reise wieder aktiv, mit Ausgaben, Dokument und Notiz', await ap.evaluate(() => [appData.tage.length, ausgaben.map(e => e.chf), dokListe('boot-demo').length, localStorage.getItem('reisebegleiter_notizen'), Object.keys(dokArchiv).length]),
+      [3, [11.25, 1.5], 1, 'Notiz Demo', 0]);
+    gleich('Archiv: danach leer', await ap.evaluate(async () => (await archivAlle()).length), 0);
+    await ar.ctx.close();
+
     alleLogs.forEach(p => gleich('Keine Konsolenfehler, keine CSP-Verletzung: ' + p[0], p[1].fehler, []));
   } catch (e) {
     fehler++;

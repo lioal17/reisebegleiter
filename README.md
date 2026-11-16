@@ -8,10 +8,10 @@ Reisebegleiter als Offline-PWA. Alles läuft lokal auf dem Handy: Reiseplan, Buc
 |---|---|
 | **Heute** | Reisetag, Ort, Unterkunft, alle Verbindungen des Tages, Programm, Budgetstand, Wetter, zwei Uhren |
 | **Reiseplan** | Stationen und Tage, Knopf **«Reise planen»**, Liste der Buchungen, Tagesplan mit Beleg an jeder Buchung |
-| **Dokumente** | Eingang, acht Kacheln, Suche, PDF und Bilder direkt in der App, alles offline |
+| **Dokumente** | Eingang, acht Kacheln, Suche, PDF und Bilder direkt in der App, alles offline. Das Plus oben öffnet «Reise planen» |
 | **Budget** | Umrechner mit Land und Währung, Ausgaben, Verlauf, Budget und Abrechnung |
-| **Translator** | Öffnet Google Translate, braucht Netz |
-| **Mehr** | Notizen, Notfall, Datensicherung |
+| **Translator** | Öffnet DeepL: DE – EN und die Sprache des Reiselands. Für Sprachen, die DeepL nicht sicher anbietet, Google Translate. Braucht Netz |
+| **Mehr** | Notizen, Notfall, Archiv früherer Reisen, Datensicherung |
 
 ### «Reise planen»
 
@@ -43,6 +43,14 @@ Alle Wege enden in derselben Vorschau:
 - **Budget und Abrechnung:** Budget, bezahlt, offen, verbleibend, nach Kategorie, Land, Ort und Tag.
 - **«Reise beenden»** markiert die Reise als abgeschlossen und zeigt die Abrechnung. Es wird nichts gelöscht, und die Markierung lässt sich wieder aufheben.
 - Export als **CSV** und als **Reisebericht** über den Druckdialog («Als PDF speichern»).
+
+### Mehrere Reisen
+
+Es ist immer genau eine Reise aktiv. **«Ins Archiv verschieben, neue Reise anlegen»** unter Budget legt die Reise mit Plan, Ausgaben, Notizen und Dokumenten ins Archiv, danach ist die App leer für die nächste. Das Archiv steht unter Mehr: Abrechnung, Reiseplan und Dokumente zum Lesen. **«Wieder aktiv machen»** holt eine Reise zurück, solange keine andere aktiv ist. Das Archiv liegt nur auf dem Gerät und steckt in der Reiseplan-Sicherung, seine Belege in der Dokumenten-Sicherung.
+
+### Reiseland stellt die App ein
+
+Das Reiseland (Budget, «Reiseland wählen») bestimmt die Währung, die zweite Sprache im Translator und die Zeitzone der zweiten Uhr. Die Zeitzone folgt zusätzlich der Ankunft des letzten Flugs, bei mehreren Ländern wechselt sie also mit.
 
 ## Installation auf Android (Chrome)
 
