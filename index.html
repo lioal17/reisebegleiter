@@ -1303,14 +1303,14 @@ body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.92); } /* ohne Weichz
     <div class="topbar">
       <div style="flex: 1;">
         <h1 class="h1">Translator</h1>
-        <div class="topbar-sub">DeepL zuerst, sonst Google Translate</div>
+        <div class="topbar-sub">DeepL und Google Translate</div>
       </div>
     </div>
 
     <!-- Übersetzer -->
     <div class="card">
       <div class="card-label">Übersetzer</div>
-      <div class="row-2" id="trKnoepfe"></div>
+      <div id="trKnoepfe"></div>
       <div class="badge-label" id="trHinweis">Öffnet die Übersetzung im Browser. Braucht Netz.</div>
       <button class="btn btn-secondary btn-inline" id="trEinrichten" type="button" style="margin-top: var(--sp-s);"><span class="ic" data-icon="pencil" data-size="16"></span>Sprachen ändern</button>
     </div>
@@ -2615,18 +2615,24 @@ var Kern = (function () {
     'JO:ar;EG:ar;MA:ar;TN:ar;IL:he;KE:sw;TZ:sw;MX:es;CU:es;DO:es;CR:es;CO:es;PE:es;AR:es;CL:es;BR:pt')
     .split(';').forEach(function (z) { const p = z.split(':'); LAND_SPRACHE[p[0]] = p[1]; });
   function landSprache(land) { return LAND_SPRACHE[land] || ''; }
-  /* Wohin der Knopf fuer ein Sprachpaar fuehrt. DeepL, wenn beide
-     Sprachen dort gefuehrt sind, sonst Google Translate. Es wird nur
-     eine Adresse gebaut, nie ein Text uebergeben. */
-  function uebersetzer(von, nach) {
+  /* Wohin der Knopf fuer ein Sprachpaar bei einem Dienst fuehrt
+     (Entscheid 34, 18.11.2026: DeepL und Google nebeneinander, jedes
+     Paar bei beiden). Bei DeepL steht "bestaetigt: false", wenn
+     DeepL eine der beiden Sprachen nicht sicher anbietet; der Knopf
+     fuehrt trotzdem hin und sagt es dazu. Es wird nur eine Adresse
+     gebaut, nie ein Text uebergeben. */
+  function uebersetzer(von, nach, dienst) {
     const a = sprachInfo(von), b = sprachInfo(nach);
     if (!a || !b || a.code === b.code) return null;
-    const name = a.kurz + ' – ' + b.kurz;
-    if (a.deepl && b.deepl) {
-      return { name: name, dienst: 'DeepL', url: 'https://www.deepl.com/translator#' + a.deepl + '/' + b.deepl + '/' };
+    const name = a.kurz + ' / ' + b.kurz;
+    if (dienst === 'google') {
+      return { name: name, dienst: 'Google Translate', bestaetigt: true, url: 'https://translate.google.com/?sl=' + a.google + '&tl=' + b.google };
     }
-    return { name: name, dienst: 'Google Translate', url: 'https://translate.google.com/?sl=' + a.google + '&tl=' + b.google };
+    const d = function (x) { return x.deepl || x.google.toLowerCase(); };
+    return { name: name, dienst: 'DeepL', bestaetigt: !!(a.deepl && b.deepl), url: 'https://www.deepl.com/translator#' + d(a) + '/' + d(b) + '/' };
   }
+  /* Hoechstens vier Sprachen zusammen, die Muttersprache mitgezaehlt. */
+  const ZIELE_MAX = 3;
   /* Zeitzone vor Ort an einem Tag (Entscheid 24, 16.11.2026).
      Reihenfolge: Angabe am Tag, Land des Tages, Ankunftszone der
      letzten Buchung, die bis zu diesem Tag angekommen ist, das
@@ -2654,7 +2660,7 @@ var Kern = (function () {
 
   return {
     LAENDER: LAENDER, FLUGHAEFEN: FLUGHAEFEN, AIRLINES: AIRLINES, TYPEN: TYPEN, ZAHLUNG: ZAHLUNG, KATEGORIEN: KATEGORIEN,
-    WEG: WEG, CODES: CODES, SPRACHEN: SPRACHEN, sprachInfo: sprachInfo, landSprache: landSprache, uebersetzer: uebersetzer, zoneAmTag: zoneAmTag,
+    WEG: WEG, CODES: CODES, SPRACHEN: SPRACHEN, ZIELE_MAX: ZIELE_MAX, sprachInfo: sprachInfo, landSprache: landSprache, uebersetzer: uebersetzer, zoneAmTag: zoneAmTag,
     typInfo: typInfo, felderFuer: felderFuer, istIso: istIso, plusTage: plusTage, tageDiff: tageDiff, wochentag: wochentag,
     tagAusZeit: tagAusZeit, alleDaten: alleDaten, alleZeiten: alleZeiten, betragLesen: betragLesen, geldStellen: geldStellen,
     dauerMin: dauerMin, dauerText: dauerText, ortszeitAlsUtc: ortszeitAlsUtc,
@@ -5905,7 +5911,7 @@ function sprachWahl() {
   try {
     const w = JSON.parse(localStorage.getItem(SPRACH_KEY) || 'null');
     if (w && Kern.sprachInfo(w.mutter) && Array.isArray(w.ziele)) {
-      return { mutter: w.mutter, ziele: w.ziele.filter(z => Kern.sprachInfo(z) && z !== w.mutter) };
+      return { mutter: w.mutter, ziele: w.ziele.filter(z => Kern.sprachInfo(z) && z !== w.mutter).slice(0, Kern.ZIELE_MAX) };
     }
   } catch(e) {}
   return null;
@@ -5920,16 +5926,28 @@ function uebersetzerZeichnen() {
     document.getElementById('trHinweis').textContent = 'Noch nicht eingerichtet. Wähle deine Muttersprache und die Sprachen, in die du übersetzen willst.';
     return;
   }
-  w.ziele.forEach(z => {
-    const u = Kern.uebersetzer(w.mutter, z);
-    if (!u) return;
-    const b = document.createElement('button');
-    b.className = 'btn btn-secondary tr-paar';
-    b.type = 'button';
-    b.dataset.ziel = z;
-    b.innerHTML = '<span class="tr-paar-name">' + icon('translate', 17) + esc(u.name) + '</span><span class="tr-paar-dienst">' + esc(u.dienst) + '</span>';
-    b.addEventListener('click', () => extern(u.url));
-    box.appendChild(b);
+  [['deepl', 'DeepL'], ['google', 'Google Translate']].forEach(([dienst, titel]) => {
+    const kopf = document.createElement('div');
+    kopf.className = 'grp-head';
+    kopf.textContent = titel;
+    box.appendChild(kopf);
+    const raster = document.createElement('div');
+    raster.className = 'row-2 tr-raster';
+    raster.id = 'tr-' + dienst;
+    raster.style.marginTop = '0';
+    w.ziele.forEach(z => {
+      const u = Kern.uebersetzer(w.mutter, z, dienst);
+      if (!u) return;
+      const b = document.createElement('button');
+      b.className = 'btn btn-secondary tr-paar';
+      b.type = 'button';
+      b.dataset.ziel = z;
+      b.innerHTML = '<span class="tr-paar-name">' + icon('translate', 17) + esc(u.name) + '</span>' +
+        (u.bestaetigt ? '' : '<span class="tr-paar-dienst">bei DeepL nicht bestätigt</span>');
+      b.addEventListener('click', () => extern(u.url));
+      raster.appendChild(b);
+    });
+    box.appendChild(raster);
   });
   document.getElementById('trHinweis').textContent = 'Öffnet die Übersetzung im Browser oder in der App. Braucht Netz.';
 }
@@ -5950,12 +5968,12 @@ function sprachBlatt() {
   sheet.appendChild(wahl);
   const l2 = document.createElement('div');
   l2.className = 'sheet-label';
-  l2.textContent = 'In welche Sprachen möchtest du übersetzen?';
+  l2.textContent = 'In welche Sprachen möchtest du übersetzen? Bis zu ' + Kern.ZIELE_MAX + ', mit der Muttersprache zusammen ' + (Kern.ZIELE_MAX + 1) + '.';
   sheet.appendChild(l2);
   const reihe = document.createElement('div');
   reihe.className = 'chip-reihe';
   reihe.id = 'trZiele';
-  const vorschlag = alt ? alt.ziele : ['en', Kern.landSprache(aktLand())].filter(Boolean);
+  const vorschlag = (alt ? alt.ziele : ['en', Kern.landSprache(aktLand())].filter(Boolean)).slice(0, Kern.ZIELE_MAX);
   const gewaehlt = new Set(vorschlag);
   const chipsZeichnen = () => {
     reihe.innerHTML = '';
@@ -5966,7 +5984,9 @@ function sprachBlatt() {
       c.dataset.code = x.code;
       c.textContent = x.name;
       c.addEventListener('click', () => {
-        if (gewaehlt.has(x.code)) gewaehlt.delete(x.code); else gewaehlt.add(x.code);
+        if (gewaehlt.has(x.code)) gewaehlt.delete(x.code);
+        else if (gewaehlt.size >= Kern.ZIELE_MAX) { alert('Höchstens ' + Kern.ZIELE_MAX + ' Sprachen. Erst eine andere abwählen.'); return; }
+        else gewaehlt.add(x.code);
         c.classList.toggle('an', gewaehlt.has(x.code));
       });
       reihe.appendChild(c);

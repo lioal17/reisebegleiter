@@ -185,21 +185,25 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
     gleich('Translator: fragt zuerst, Vorschlag Englisch und Sprache des Reiselands', [await page.inputValue('#trMutter'),
       await page.evaluate(() => Array.from(document.querySelectorAll('#trZiele .chip-wahl.an')).map(c => c.dataset.code))], ['de', ['en', 'th']]);
     await page.click('#trZiele .chip-wahl[data-code="ja"]');
+    await page.click('#trZiele .chip-wahl[data-code="fr"]');
+    wahr('Translator: höchstens 3 Zielsprachen, mit Muttersprache 4', f.log.dialoge.some(d => /Höchstens 3 Sprachen/.test(d)) &&
+      (await page.locator('#trZiele .chip-wahl.an').count()) === 3);
     await page.click('#trSpeichern');
     await blattZu(page);
-    gleich('Translator: ein Knopf pro Sprachpaar, mit Dienst', await page.evaluate(() => Array.from(document.querySelectorAll('#trKnoepfe .tr-paar')).map(b => b.textContent)),
-      ['DE – ENGDeepL', 'DE – ThaiGoogle Translate', 'DE – JPDeepL']);
+    gleich('Translator: DeepL und Google, je dieselben Paare', await page.evaluate(() => ['deepl', 'google'].map(d =>
+      Array.from(document.querySelectorAll('#tr-' + d + ' .tr-paar')).map(b => b.textContent))),
+      [['DE / ENG', 'DE / Thaibei DeepL nicht bestätigt', 'DE / JP'], ['DE / ENG', 'DE / Thai', 'DE / JP']]);
     await page.evaluate(() => { window.__extern = []; window.__externAlt = extern; extern = u => window.__extern.push(u); });
-    for (const z of ['en', 'th', 'ja']) await page.click('#trKnoepfe .tr-paar[data-ziel="' + z + '"]');
+    for (const d of ['deepl', 'google']) for (const z of ['en', 'th']) await page.click('#tr-' + d + ' .tr-paar[data-ziel="' + z + '"]');
     await page.evaluate(() => { extern = window.__externAlt; });
-    gleich('Translator: DeepL zuerst, Google als Rückfall, kein Text in der Adresse', await page.evaluate(() => window.__extern),
-      ['https://www.deepl.com/translator#de/en/', 'https://translate.google.com/?sl=de&tl=th', 'https://www.deepl.com/translator#de/ja/']);
+    gleich('Translator: Adressen ohne Text', await page.evaluate(() => window.__extern),
+      ['https://www.deepl.com/translator#de/en/', 'https://www.deepl.com/translator#de/th/', 'https://translate.google.com/?sl=de&tl=en', 'https://translate.google.com/?sl=de&tl=th']);
     await page.click('#trEinrichten');
     await page.waitForSelector('#trSpeichern');
     await page.click('#trZiele .chip-wahl[data-code="ja"]');
     await page.click('#trSpeichern');
     await blattZu(page);
-    gleich('Translator: Sprachen ändern', await page.locator('#trKnoepfe .tr-paar').count(), 2);
+    gleich('Translator: Sprachen ändern', [await page.locator('#tr-deepl .tr-paar').count(), await page.locator('#tr-google .tr-paar').count()], [2, 2]);
     /* Plus oben in Dokumente: Dokument hinzufuegen, nicht Reise planen */
     await tippeReiter(page, 'screenTickets');
     await page.click('#addTicketTop');
