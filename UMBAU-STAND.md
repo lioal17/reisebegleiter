@@ -662,3 +662,21 @@ Branch `claude/epic-feynman-vrd04b`. Kein Pull Request ohne Auftrag.
 - Die zwei Uhren bleiben weg. Lio am 17.11.: nicht wichtig, die Zeiten
   folgen der Uhr des Handys (automatische Zeitzone).
 - Tests: Kern 115, Oberflaeche 145.
+
+### Nachtrag 18.11.2026: Ende der Reiter hinter der Leiste
+
+**Befund am Geraet:** Unten in Dokumente waren die Kacheln abgeschnitten,
+weiter scrollen ging nicht. **Ursache, nachgestellt im Test:** Jeder
+Reiter hielt unten fest 96 px frei. Auf Android zeichnet die installierte
+App unter die Systemleiste, und groessere Systemschrift macht die eigene
+Leiste hoeher. Mit 48 px Systemleiste waren 12 bis 24 px jedes Reiters
+verdeckt und nicht erreichbar.
+
+**Behoben fuer alle Reiter:** Die App misst die Hoehe ihrer Leiste und
+haelt genau so viel plus 24 px frei. Oben wird die Statuszeile
+eingerechnet. Kinder eines Reiters schrumpfen nicht mehr (betraf die
+Karte). Blaetter nutzen 84 % der sichtbaren Hoehe (`dvh`). Hinweise
+(Toast, «Neue Version») stehen ueber der gemessenen Leiste.
+
+Neuer Test: Ende jedes Reiters und letzter Knopf eines langen Blatts
+erreichbar, mit hoher Leiste nachgestellt. Kern 115, Oberflaeche 152.

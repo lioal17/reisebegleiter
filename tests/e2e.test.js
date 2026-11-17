@@ -535,6 +535,36 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
       gleich('Handy 390 px, kein seitlicher Überlauf: ' + id, breit, [true, true]);
     }
 
+    /* --- Ende jedes Reiters erreichbar, auch mit hoher Leiste ---
+       Auf Android liegt die Systemleiste unter der App, und groessere
+       Systemschrift macht die eigene Leiste hoeher. Nachgestellt mit
+       48 px mehr Leiste und groesserer Beschriftung. */
+    const hoch = await page.addStyleTag({ content: '.nav { padding-bottom: 56px !important; } .nav-label { font-size: 14px !important; }' });
+    await page.waitForTimeout(150);
+    for (const id of ['screenToday', 'screenPlan', 'screenBudget', 'screenTickets', 'screenTranslator', 'screenTools']) {
+      const verdeckt = await page.evaluate(async s => {
+        showScreen(s);
+        if (s === 'screenTickets') { offeneKachel = 'hotel'; renderDocPanel(); }
+        const e = document.getElementById(s);
+        e.scrollTop = e.scrollHeight;
+        await new Promise(r => setTimeout(r, 50));
+        const navTop = document.querySelector('.nav').getBoundingClientRect().top;
+        let tief = 0;
+        e.querySelectorAll('*').forEach(x => { const b = x.getBoundingClientRect(); if (b.height > 0 && x.offsetParent !== null) tief = Math.max(tief, b.bottom); });
+        return Math.max(0, Math.round(tief - navTop));
+      }, id);
+      gleich('Hohe Leiste: Ende des Reiters nicht verdeckt: ' + id, verdeckt, 0);
+    }
+    await page.evaluate(() => sprachBlatt());
+    await page.waitForSelector('#trSpeichern');
+    gleich('Blatt: letzter Knopf erreichbar', await page.evaluate(async () => {
+      const sh = document.getElementById('sheet'); sh.scrollTop = sh.scrollHeight; await new Promise(r => setTimeout(r, 300));
+      return document.getElementById('trSpeichern').getBoundingClientRect().bottom <= window.innerHeight; }), true);
+    await page.keyboard.press('Escape');
+    await blattZu(page);
+    await hoch.evaluate(n => n.remove());
+    await page.evaluate(() => { offeneKachel = null; renderDocPanel(); });
+
     /* --- Szenario 4: offline --- */
     await page.evaluate(() => navigator.serviceWorker.ready);
     /* Die Bibliotheken holt die Seite selbst in den Offline-Speicher
