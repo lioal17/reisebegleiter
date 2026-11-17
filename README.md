@@ -6,12 +6,12 @@ Reisebegleiter als Offline-PWA. Alles läuft lokal auf dem Handy: Reiseplan, Buc
 
 | Reiter | Inhalt |
 |---|---|
-| **Heute** | Reisetag, Ort, Unterkunft, alle Verbindungen des Tages, Programm, Budgetstand, Wetter, zwei Uhren |
-| **Reiseplan** | Stationen und Tage, Knopf **«Reise planen»**, Liste der Buchungen, Tagesplan mit Beleg an jeder Buchung |
-| **Dokumente** | Eingang, acht Kacheln, Suche, PDF und Bilder direkt in der App, alles offline |
-| **Budget** | Umrechner mit Land und Währung, Ausgaben, Verlauf, Budget und Abrechnung |
-| **Translator** | Öffnet Google Translate, braucht Netz |
-| **Mehr** | Notizen, Notfall, Datensicherung |
+| **Heute** | Nur was heute anfällt: zuoberst die gespeicherte Notiz, dann Wetter (vor der Reise am ersten Zielort), Eingang, Unterkunft, Verbindungen, Programm, «Nicht vergessen» |
+| **Reiseplan** | Stationen und Tage, Knopf **«Reise planen»** (nur hier), Liste der Buchungen, Tagesplan mit Beleg an jeder Buchung |
+| **Budget** | Umrechner mit Land und Währung, Ausgaben, Verlauf, Budget, verbleibend, bezahlt, Reise in Zahlen |
+| **Dokumente** | Eingang, acht Kacheln, Suche, PDF und Bilder direkt in der App, alles offline. Das Plus oben ordnet ein Dokument zu |
+| **Translator** | Fragt zuerst nach Muttersprache und Zielsprachen. Ein Knopf pro Sprachpaar, DeepL zuerst, sonst Google Translate. Braucht Netz |
+| **Mehr** | Notizen, Notfall, Auswertung und Abschluss, Archiv früherer Reisen, Datensicherung |
 
 ### «Reise planen»
 
@@ -43,6 +43,22 @@ Alle Wege enden in derselben Vorschau:
 - **Budget und Abrechnung:** Budget, bezahlt, offen, verbleibend, nach Kategorie, Land, Ort und Tag.
 - **«Reise beenden»** markiert die Reise als abgeschlossen und zeigt die Abrechnung. Es wird nichts gelöscht, und die Markierung lässt sich wieder aufheben.
 - Export als **CSV** und als **Reisebericht** über den Druckdialog («Als PDF speichern»).
+
+### Dokument hinzufügen (Plus in Dokumente)
+
+Foto, Bild, PDF oder Link. Die Datei liegt sofort im Eingang, dann liest die App sie auf dem Gerät und schlägt vor, zu welcher Buchung sie gehört, mit Grund («erkannt an Buchungsnummer …»). **«Bestätigen»** hängt sie an. Sonst sagt man im Suchfeld, wohin sie gehört: Tippen filtert Buchungen und Kacheln, der Text bleibt als Notiz am Dokument. Reisepass, Visa, Versicherung und Weitere sind immer wählbar. **«Im Eingang lassen»** lässt sie liegen. Aus Dokumente heraus entsteht keine Buchung im Reiseplan, das macht «Reise planen».
+
+### Auswertung und Abschluss (unter Mehr)
+
+**«Endauswertung ansehen»**: was wofür wie viel gekostet hat, nach Kategorie, Land, Reiseort und Tag, jederzeit und für jede Reise im Archiv. Dazu CSV, Reisebericht, Kategorien, «Reise beenden» und «Ins Archiv verschieben».
+
+### Mehrere Reisen
+
+Es ist immer genau eine Reise aktiv. **«Ins Archiv verschieben, neue Reise anlegen»** unter Mehr legt die Reise mit Plan, Ausgaben, Notizen und Dokumenten ins Archiv, danach ist die App leer für die nächste. Das Archiv steht unter Mehr: Abrechnung, Reiseplan und Dokumente zum Lesen. **«Wieder aktiv machen»** holt eine Reise zurück, solange keine andere aktiv ist. Das Archiv liegt nur auf dem Gerät und steckt in der Reiseplan-Sicherung, seine Belege in der Dokumenten-Sicherung.
+
+### Reiseland
+
+Das Reiseland (Budget, «Reiseland wählen») bestimmt die Währung und ist der Vorschlag für die Zielsprache beim Einrichten des Translators.
 
 ## Installation auf Android (Chrome)
 
