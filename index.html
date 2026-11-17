@@ -1194,7 +1194,7 @@ body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.92); } /* ohne Weichz
 
     <!-- Notfall -->
     <div class="card card-notfall">
-      <div class="card-label card-label-red"><span class="ic" data-icon="siren" data-size="15"></span>Notfall</div>
+      <div class="card-label card-label-red"><span class="ic" data-icon="siren" data-size="15"></span><span id="notfallTitel">Notfall</span></div>
       <div class="row">
         <button class="btn btn-danger btn-inline" id="notPolizei">Polizei 1155</button>
         <button class="btn btn-danger btn-inline" id="notAmbulanz">Ambulanz 1669</button>
@@ -2669,11 +2669,32 @@ var Kern = (function () {
     const r = (daten && daten.reise) || {};
     return r.zeitzone || r.zielZeitzone || '';
   }
+  /* Notfallnummern je Land (Entscheid 35, 18.11.2026). Nur Laender,
+     deren Nummern aus einer belegten Quelle stammen. Fehlt ein Land,
+     zeigt die App keine Nummer statt einer falschen. Jede Zeile nennt
+     ihre Quelle. Thailand: die bisherigen Vorgaben der App, die aus
+     den Reisedaten stammen. */
+  const NOTRUF = {
+    TH: { polizei: '1155', polizeiName: 'Touristenpolizei', ambulanz: '1669', feuerwehr: '199', notruf: '191',
+          quelle: 'bisherige Vorgabe der App, aus den Reisedaten' }
+  };
+  /* Welche Nummern gelten im Land "land"? Die Reisedaten gewinnen,
+     aber nur fuer das Land, zu dem sie gehoeren ("datenLand"). Sonst
+     gilt die Tabelle. Fehlt beides, kommt null zurueck. */
+  function notrufFuer(land, daten, datenLand) {
+    if (!land) return null;
+    const t = NOTRUF[land] || null;
+    const d = (daten && datenLand === land) ? daten : null;
+    const wert = function (k) { return (d && d[k]) ? String(d[k]) : (t && t[k]) || ''; };
+    const raus = { land: land, polizei: wert('polizei'), polizeiName: (t && t.polizeiName) || 'Polizei', ambulanz: wert('ambulanz'),
+      feuerwehr: wert('feuerwehr'), notruf: wert('notruf'), quelle: d ? 'Reisedaten' : (t ? t.quelle : '') };
+    return (raus.polizei || raus.ambulanz || raus.feuerwehr || raus.notruf) ? raus : null;
+  }
   function landAusZone(tz) { const l = LAENDER.find(function (x) { return x.tz && x.tz === tz; }); return l ? l.code : ''; }
 
   return {
     LAENDER: LAENDER, FLUGHAEFEN: FLUGHAEFEN, AIRLINES: AIRLINES, TYPEN: TYPEN, ZAHLUNG: ZAHLUNG, KATEGORIEN: KATEGORIEN,
-    WEG: WEG, CODES: CODES, SPRACHEN: SPRACHEN, ZIELE_MAX: ZIELE_MAX, sprachInfo: sprachInfo, landSprache: landSprache, uebersetzer: uebersetzer, zoneAmTag: zoneAmTag,
+    WEG: WEG, CODES: CODES, SPRACHEN: SPRACHEN, ZIELE_MAX: ZIELE_MAX, NOTRUF: NOTRUF, notrufFuer: notrufFuer, sprachInfo: sprachInfo, landSprache: landSprache, uebersetzer: uebersetzer, zoneAmTag: zoneAmTag,
     typInfo: typInfo, felderFuer: felderFuer, istIso: istIso, plusTage: plusTage, tageDiff: tageDiff, wochentag: wochentag,
     tagAusZeit: tagAusZeit, alleDaten: alleDaten, alleZeiten: alleZeiten, betragLesen: betragLesen, geldStellen: geldStellen,
     dauerMin: dauerMin, dauerText: dauerText, ortszeitAlsUtc: ortszeitAlsUtc,
@@ -6055,30 +6076,56 @@ function renderRegeln() {
   liste.innerHTML = regeln.map(r => '<div class="hinweis-zeile">' + esc(r) + '</div>').join('');
 }
 
-/* ---------- Notfall ---------- */
-/* Die beiden roten Knoepfe lesen ihre Nummern aus den Reisedaten.
-   Fehlen sie dort, bleiben die bisherigen thailaendischen Nummern
-   stehen, damit sich fuer die laufende Reise nichts aendert. */
-function notfallNr(feld, sonst) { return String(((appData && appData.notfall) || {})[feld] || sonst); }
-document.getElementById('notPolizei').addEventListener('click', () => window.location = 'tel:' + notfallNr('polizei', '1155').replace(/\s/g, ''));
-document.getElementById('notAmbulanz').addEventListener('click', () => window.location = 'tel:' + notfallNr('ambulanz', '1669').replace(/\s/g, ''));
+/* ---------- Notfall ----------
+   Entscheid 35 (18.11.2026): Die Nummern richten sich nach dem Land,
+   in dem man heute ist: Land des Reisetags, sonst das Reiseland unter
+   Budget. Vorher standen fest die thailaendischen Nummern da, auch in
+   jedem anderen Land. Fuer ein Land ohne belegte Nummern zeigt die App
+   keine Nummer statt einer falschen. Botschaft, DAN und weitere
+   Nummern kommen aus den Reisedaten und tragen ihren eigenen Namen. */
+let notfallAktuell = null;
+function notfallLand() { return (heuteTag && heuteTag.land) || aktLand(); }
+function notfallDatenLand() {
+  const n = (appData && appData.notfall) || {};
+  const r = (appData && appData.reise) || {};
+  return n.land || r.land || Kern.landAusZone(r.zeitzone || r.zielZeitzone || '') || '';
+}
+function notfallWaehlen(nr) { if (nr) window.location = 'tel:' + String(nr).replace(/\s/g, ''); }
+document.getElementById('notPolizei').addEventListener('click', () => notfallWaehlen(notfallAktuell && notfallAktuell.polizei));
+document.getElementById('notAmbulanz').addEventListener('click', () => notfallWaehlen(notfallAktuell && notfallAktuell.ambulanz));
 function renderNotfall() {
   const box = document.getElementById('notfallListe');
   const n = (appData && appData.notfall) || {};
-  document.getElementById('notPolizei').textContent = 'Polizei ' + notfallNr('polizei', '1155');
-  document.getElementById('notAmbulanz').textContent = 'Ambulanz ' + notfallNr('ambulanz', '1669');
+  const land = notfallLand();
+  const info = Kern.landInfo(land);
+  const k = Kern.notrufFuer(land, n, notfallDatenLand());
+  notfallAktuell = k;
+  document.getElementById('notfallTitel').textContent = 'Notfall' + (info ? ' · ' + info.name : '');
+  const pol = document.getElementById('notPolizei'), amb = document.getElementById('notAmbulanz');
+  pol.style.display = k && k.polizei ? '' : 'none';
+  amb.style.display = k && k.ambulanz ? '' : 'none';
+  pol.parentElement.style.display = k && (k.polizei || k.ambulanz) ? '' : 'none';
+  if (k) {
+    pol.textContent = k.polizeiName + ' ' + k.polizei;
+    amb.textContent = 'Ambulanz ' + k.ambulanz;
+  }
   /* Rettungsdienst und DAN standen in den Daten und wurden hier
      ignoriert. Beim Tauchen ist DAN die Nummer, die zaehlt: eine
-     Dekompressionskammer findet man nicht ueber 191. */
+     Dekompressionskammer findet man nicht ueber die Polizei. */
   const zeilen = [
-    { label: 'Notruf allgemein', nr: n.notruf || '191' },
-    { label: 'Rettungsdienst', nr: n.ambulanz || '1669' },
-    { label: 'Feuerwehr', nr: n.feuerwehr || '199' },
-    { label: n.botschaftName || 'Schweizer Botschaft Bangkok', nr: n.botschaft || '' },
+    { label: 'Notruf allgemein', nr: k ? k.notruf : '' },
+    { label: 'Rettungsdienst', nr: k ? k.ambulanz : '' },
+    { label: 'Feuerwehr', nr: k ? k.feuerwehr : '' },
+    /* Die Botschaft aus den Reisedaten gehoert zu deren Land. In einem
+       anderen Land waere sie die falsche Nummer. */
+    { label: n.botschaftName || 'Botschaft', nr: notfallDatenLand() === land ? (n.botschaft || '') : '' },
     { label: 'Divers Alert Network, 24 h', nr: n.dan || '' }
   ].concat(Array.isArray(n.weitere) ? n.weitere.filter(z => z && z.nr) : [])
    .filter(z => z.nr);
-  box.innerHTML = zeilen.map(z =>
+  const hinweis = k ? '' : '<div class="badge-label" id="notfallKeine">' +
+    (info ? 'Für ' + esc(info.name) + ' sind keine Notfallnummern hinterlegt.' : 'Kein Reiseland gewählt (unter Budget, Umrechner).') +
+    ' Die Nummern stehen in den Reisehinweisen des EDA zum Land. In den Reisedaten unter «notfall» eintragen, dann erscheinen sie hier.</div>';
+  box.innerHTML = hinweis + zeilen.map(z =>
     '<a class="notfall-zeile" href="tel:' + esc(String(z.nr).replace(/\s/g, '')) + '">' +
       '<span>' + esc(z.label) + '</span><span class="notfall-nr">' + esc(z.nr) + '</span>' +
     '</a>'
@@ -7946,6 +7993,7 @@ function budgetZeilen() {
 function finanzenNeuZeichnen() {
   waehlerFuellen();
   uebersetzerZeichnen();
+  renderNotfall();
   const w = aktWaehrung();
   document.getElementById('thbInput').placeholder = w;
   document.getElementById('chfInput').placeholder = heimat();

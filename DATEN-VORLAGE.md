@@ -254,9 +254,12 @@ Der Preis einer Buchung zählt in der Abrechnung aus der Buchung. Er darf nicht 
   "polizei": "1155",            // die beiden roten Knöpfe unter Mehr
   "ambulanz": "1669",
   "botschaft": "+66 2 674 6900",
-  "botschaftName": "Schweizer Botschaft Bangkok"
+  "botschaftName": "Schweizer Botschaft Bangkok",
+  "land": "TH"                  // optional: Land dieser Nummern, sonst das Reiseland
 }
 ```
+
+Die Notfallnummern unter Mehr richten sich nach dem Land, in dem du heute bist (Land des Reisetags, sonst Reiseland unter Budget). Die Nummern im Block `notfall` gelten nur für ihr Land. In einem anderen Land nimmt die App ihre eigene Liste; steht das Land dort nicht, zeigt sie keine Nummer statt einer falschen.
 
 Das Budget aus dem `budget`-Block (`gesamt_chf`) erscheint auf **Heute** und im Reiter **Budget**. Es lässt sich dort auch ändern.
 

@@ -180,6 +180,13 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
     }), [true, true, true]);
     await tippeReiter(page, 'screenTools');
     gleich('Mehr: Regeln für unterwegs sind ausgeblendet, Notizen und Notfall da', [await page.isVisible('#regelnKarte'), await page.isVisible('#notizFeld'), await page.isVisible('#notPolizei'), await page.isVisible('#spendCard')], [false, true, true, false]);
+    gleich('Notfall: Thailand, Knöpfe und Land im Titel', [await page.textContent('#notfallTitel'), await page.textContent('#notPolizei'), await page.textContent('#notAmbulanz')],
+      ['Notfall · Thailand', 'Touristenpolizei 1155', 'Ambulanz 1669']);
+    await page.evaluate(() => { einst.land = 'JP'; renderNotfall(); });
+    gleich('Notfall: Japan ohne belegte Nummern zeigt keine Thai-Nummern', [await page.textContent('#notfallTitel'), await page.isVisible('#notPolizei'), await page.isVisible('#notAmbulanz'),
+      /Für Japan sind keine Notfallnummern hinterlegt/.test(await page.textContent('#notfallListe')), /1155|1669|191\b|199\b|674 6900/.test(await page.textContent('#notfallListe'))],
+      ['Notfall · Japan', false, false, true, false]);
+    await page.evaluate(() => { delete einst.land; renderNotfall(); });
     await tippeReiter(page, 'screenTranslator');
     await page.waitForSelector('#trSpeichern');
     gleich('Translator: fragt zuerst, Vorschlag Englisch und Sprache des Reiselands', [await page.inputValue('#trMutter'),
@@ -556,7 +563,10 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
       gleich('Hohe Leiste: Ende des Reiters nicht verdeckt: ' + id, verdeckt, 0);
     }
     await page.evaluate(() => sprachBlatt());
-    await page.waitForSelector('#trSpeichern');
+    /* Erst messen, wenn das Blatt fertig hochgefahren ist. Waehrend der
+       Animation (0.22 s) liegt es noch tiefer. */
+    await page.waitForFunction(() => { const sh = document.getElementById('sheet'); const t = getComputedStyle(sh).transform;
+      return sh.classList.contains('auf') && (t === 'none' || /, 0\)$/.test(t)); });
     gleich('Blatt: letzter Knopf erreichbar', await page.evaluate(async () => {
       const sh = document.getElementById('sheet'); sh.scrollTop = sh.scrollHeight; await new Promise(r => setTimeout(r, 300));
       return document.getElementById('trSpeichern').getBoundingClientRect().bottom <= window.innerHeight; }), true);

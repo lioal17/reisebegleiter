@@ -222,6 +222,13 @@ const zuDatei = { tickets: [{ id: 't-flug', gruppe: 'Flüge', titel: 'Zürich �
 gleich('Zuordnen: Eintrag aus der Reisedatei, Nummer und Code im Infotext', [
   K.belegZuordnen(K.erkennen('Flug ZB 415 Abflug 20.12.2026 17:30'), 'Flug ZB 415 Abflug 20.12.2026 17:30', zuDatei).vorschlag.id,
   K.belegZuordnen(K.erkennen('Booking reference: DEMO02'), 'Booking reference: DEMO02', zuDatei).vorschlag.id], ['t-flug', 't-flug2']);
+/* ---------- Notfallnummern je Land (18.11.2026) ---------- */
+gleich('Notfall: Thailand aus der Tabelle', K.notrufFuer('TH', null, ''), { land: 'TH', polizei: '1155', polizeiName: 'Touristenpolizei', ambulanz: '1669', feuerwehr: '199', notruf: '191', quelle: 'bisherige Vorgabe der App, aus den Reisedaten' });
+gleich('Notfall: Reisedaten gewinnen im eigenen Land', [K.notrufFuer('TH', { polizei: '1234' }, 'TH').polizei, K.notrufFuer('TH', { polizei: '1234' }, 'TH').ambulanz, K.notrufFuer('TH', { polizei: '1234' }, 'TH').quelle], ['1234', '1669', 'Reisedaten']);
+gleich('Notfall: Reisedaten eines anderen Landes gelten nicht', K.notrufFuer('JP', { polizei: '1155', ambulanz: '1669' }, 'TH'), null);
+gleich('Notfall: Land ohne Tabelle, aber mit eigenen Reisedaten', K.notrufFuer('LA', { polizei: '9999' }, 'LA').polizei, '9999');
+gleich('Notfall: ohne Land nichts', K.notrufFuer('', { polizei: '1' }, ''), null);
+wahr('Notfall: jede Tabellenzeile nennt ihre Quelle', Object.keys(K.NOTRUF).every(c => K.NOTRUF[c].quelle));
 gleich('Zuordnen: Kacheln', [K.kachelVon('Einreise & Visa'), K.kachelVon('Reisepass'), K.kachelVon('Boote & Fähren'), K.kachelVon('Hotels'), K.kachelVon('xyz')], ['visa', 'pass', 'boot', 'hotel', 'rest']);
 const zPlan = { reise: { zeitzone: 'Asia/Tokyo' }, buchungen: [
   { typ: 'flug', datum: '2026-12-20', bisDatum: '2026-12-21', bisZeit: '06:10', nachTz: 'Asia/Bangkok' },

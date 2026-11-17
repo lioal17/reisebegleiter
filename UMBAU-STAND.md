@@ -680,3 +680,18 @@ Karte). Blaetter nutzen 84 % der sichtbaren Hoehe (`dvh`). Hinweise
 
 Neuer Test: Ende jedes Reiters und letzter Knopf eines langen Blatts
 erreichbar, mit hoher Leiste nachgestellt. Kern 115, Oberflaeche 152.
+
+### Nachtrag 18.11.2026: Notfallnummern je Land
+
+| # | Entscheid | Begruendung |
+|---|---|---|
+| 35 | **Notfallnummern richten sich nach dem Land von heute.** Tabelle je Land im Kern, nur mit belegter Quelle. Reisedaten gelten nur fuer ihr Land, die Botschaft ebenso. Ohne Eintrag keine Nummer statt einer falschen | Vorher standen in jedem Land die thailaendischen Nummern. Entscheid Lio: Weg 1 |
+
+**Stand:** Die Logik ist gebaut und getestet (Kern 121, Oberflaeche 154).
+Die Tabelle enthaelt erst Thailand. Die uebrigen Laender fehlen, weil
+die offizielle Liste (US-Aussenministerium, «911 Abroad») in dieser
+Sitzung nicht abgerufen werden durfte. Nummern aus dem Gedaechtnis
+kommen nicht hinein.
+
+Nebenbei: Der Test «Blatt: letzter Knopf erreichbar» mass gelegentlich
+waehrend der Animation des Blatts. Er wartet jetzt, bis das Blatt oben ist.

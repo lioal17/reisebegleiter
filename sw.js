@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reisebegleiter-v24';
+const CACHE_NAME = 'reisebegleiter-v25';
 
 /* Bibliotheken (pdf.js, Texterkennung) liegen in einem eigenen
    Speicher, der einen Versionswechsel der App ueberlebt. Sie sind
