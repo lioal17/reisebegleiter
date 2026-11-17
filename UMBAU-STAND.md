@@ -648,3 +648,17 @@ Branch `claude/epic-feynman-vrd04b`. Kein Pull Request ohne Auftrag.
   mehreren Eintraegen entsteht ein neuer Traeger mit dem Dateinamen.
 - `Kern.zoneAmTag` ist seit dem Wegfall der Uhren ungenutzt, aber
   getestet. Bleibt fuer den Fall, dass die Uhren zurueckkommen.
+
+### Nachtrag 18.11.2026: Translator mit DeepL und Google
+
+| # | Entscheid | Begruendung |
+|---|---|---|
+| 34 | **Zwei Bloecke, DeepL und Google, je dieselben Paare.** Hoechstens 4 Sprachen, die Muttersprache mitgezaehlt, also 3 Zielsprachen | Entscheid Lio. Hebt den Rueckfall-Teil von Entscheid 31 auf |
+
+- Bei DeepL steht unter einem Paar «bei DeepL nicht bestaetigt», wenn
+  DeepL eine der Sprachen nicht sicher anbietet, etwa Thai. Der Knopf
+  fuehrt trotzdem zu DeepL. Stand 18.11.2026: DeepL hat Thai fuer die
+  Schnittstelle angekuendigt, fuer Webseite und App nur «bald».
+- Die zwei Uhren bleiben weg. Lio am 17.11.: nicht wichtig, die Zeiten
+  folgen der Uhr des Handys (automatische Zeitzone).
+- Tests: Kern 115, Oberflaeche 145.

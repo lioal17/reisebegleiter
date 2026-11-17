@@ -10,7 +10,7 @@ Reisebegleiter als Offline-PWA. Alles läuft lokal auf dem Handy: Reiseplan, Buc
 | **Reiseplan** | Stationen und Tage, Knopf **«Reise planen»** (nur hier), Liste der Buchungen, Tagesplan mit Beleg an jeder Buchung |
 | **Budget** | Umrechner mit Land und Währung, Ausgaben, Verlauf, Budget, verbleibend, bezahlt, Reise in Zahlen |
 | **Dokumente** | Eingang, acht Kacheln, Suche, PDF und Bilder direkt in der App, alles offline. Das Plus oben ordnet ein Dokument zu |
-| **Translator** | Fragt zuerst nach Muttersprache und Zielsprachen. Ein Knopf pro Sprachpaar, DeepL zuerst, sonst Google Translate. Braucht Netz |
+| **Translator** | Fragt zuerst nach Muttersprache und bis zu 3 Zielsprachen (4 Sprachen zusammen). Jedes Paar einmal bei DeepL und einmal bei Google Translate, z.B. DE / ENG, DE / Thai. Braucht Netz |
 | **Mehr** | Notizen, Notfall, Auswertung und Abschluss, Archiv früherer Reisen, Datensicherung |
 
 ### «Reise planen»

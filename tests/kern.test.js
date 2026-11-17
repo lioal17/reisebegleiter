@@ -193,14 +193,15 @@ const aus = K.auswertung(plan);
 gleich('Auswertung', [aus.tage, aus.naechte, aus.verkehr.map(v => v.name + v.anzahl).sort()], [9, 4, ['Flug2', 'Fähre1']]);
 
 /* ---------- Uebersetzer und Zeitzone (16.11.2026) ---------- */
-gleich('Übersetzer: DE - ENG über DeepL', K.uebersetzer('de', 'en'), { name: 'DE – ENG', dienst: 'DeepL', url: 'https://www.deepl.com/translator#de/en/' });
-gleich('Übersetzer: DE - Japanisch über DeepL', K.uebersetzer('de', 'ja').url, 'https://www.deepl.com/translator#de/ja/');
-gleich('Übersetzer: DE - Thai über Google, bis DeepL geprüft ist', K.uebersetzer('de', 'th'), { name: 'DE – Thai', dienst: 'Google Translate', url: 'https://translate.google.com/?sl=de&tl=th' });
-gleich('Übersetzer: Muttersprache ohne DeepL führt zu Google', K.uebersetzer('th', 'en').dienst, 'Google Translate');
-gleich('Übersetzer: gleiche Sprache oder unbekannt ergibt nichts', [K.uebersetzer('de', 'de'), K.uebersetzer('de', 'xx')], [null, null]);
+gleich('Übersetzer: DE / ENG bei DeepL', K.uebersetzer('de', 'en', 'deepl'), { name: 'DE / ENG', dienst: 'DeepL', bestaetigt: true, url: 'https://www.deepl.com/translator#de/en/' });
+gleich('Übersetzer: DE / ENG bei Google', K.uebersetzer('de', 'en', 'google'), { name: 'DE / ENG', dienst: 'Google Translate', bestaetigt: true, url: 'https://translate.google.com/?sl=de&tl=en' });
+gleich('Übersetzer: DE / Thai bei DeepL, als nicht bestätigt markiert', K.uebersetzer('de', 'th', 'deepl'), { name: 'DE / Thai', dienst: 'DeepL', bestaetigt: false, url: 'https://www.deepl.com/translator#de/th/' });
+gleich('Übersetzer: DE / Thai bei Google', K.uebersetzer('de', 'th', 'google').url, 'https://translate.google.com/?sl=de&tl=th');
+gleich('Übersetzer: gleiche Sprache oder unbekannt ergibt nichts', [K.uebersetzer('de', 'de', 'deepl'), K.uebersetzer('de', 'xx', 'google')], [null, null]);
+gleich('Übersetzer: höchstens 3 Zielsprachen, mit Muttersprache 4', K.ZIELE_MAX, 3);
 gleich('Übersetzer: Vorschlag aus dem Reiseland', [K.landSprache('TH'), K.landSprache('JP'), K.landSprache('CH')], ['th', 'ja', '']);
-wahr('Übersetzer: keine Adresse enthält mehr als Sprachcodes', K.SPRACHEN.every(a => K.SPRACHEN.every(b => { const u = K.uebersetzer(a.code, b.code);
-  return !u || /^https:\/\/(www\.deepl\.com\/translator#[a-z-]+\/[a-z-]+\/|translate\.google\.com\/\?sl=[a-zA-Z-]+&tl=[a-zA-Z-]+)$/.test(u.url); })));
+wahr('Übersetzer: keine Adresse enthält mehr als Sprachcodes', K.SPRACHEN.every(a => K.SPRACHEN.every(b => ['deepl', 'google'].every(d => { const u = K.uebersetzer(a.code, b.code, d);
+  return !u || /^https:\/\/(www\.deepl\.com\/translator#[a-z-]+\/[a-z-]+\/|translate\.google\.com\/\?sl=[a-zA-Z-]+&tl=[a-zA-Z-]+)$/.test(u.url); }))));
 
 /* ---------- Dokument zuordnen (17.11.2026) ---------- */
 const zuPlan = { buchungen: [
