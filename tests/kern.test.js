@@ -193,11 +193,35 @@ const aus = K.auswertung(plan);
 gleich('Auswertung', [aus.tage, aus.naechte, aus.verkehr.map(v => v.name + v.anzahl).sort()], [9, 4, ['Flug2', 'Fähre1']]);
 
 /* ---------- Uebersetzer und Zeitzone (16.11.2026) ---------- */
-gleich('Übersetzer: ohne Land nur DE - EN über DeepL', K.uebersetzer('').map(u => [u.name, u.dienst]), [['EN', 'DeepL']]);
-gleich('Übersetzer: Schweiz braucht keine zweite Sprache', K.uebersetzer('CH').length, 1);
-gleich('Übersetzer: Japan über DeepL', K.uebersetzer('JP')[1], { name: 'Japanisch', dienst: 'DeepL', url: 'https://www.deepl.com/translator#de/ja/' });
-gleich('Übersetzer: Thai über Google, bis DeepL geprüft ist', K.uebersetzer('TH')[1], { name: 'Thai', dienst: 'Google Translate', url: 'https://translate.google.com/?sl=de&tl=th' });
-wahr('Übersetzer: keine Adresse enthält mehr als Sprachcodes', K.LAENDER.every(l => K.uebersetzer(l.code).every(u => /^https:\/\/(www\.deepl\.com\/translator#de\/[a-z-]+\/|translate\.google\.com\/\?sl=de&tl=[a-zA-Z-]+)$/.test(u.url))));
+gleich('Übersetzer: DE - ENG über DeepL', K.uebersetzer('de', 'en'), { name: 'DE – ENG', dienst: 'DeepL', url: 'https://www.deepl.com/translator#de/en/' });
+gleich('Übersetzer: DE - Japanisch über DeepL', K.uebersetzer('de', 'ja').url, 'https://www.deepl.com/translator#de/ja/');
+gleich('Übersetzer: DE - Thai über Google, bis DeepL geprüft ist', K.uebersetzer('de', 'th'), { name: 'DE – Thai', dienst: 'Google Translate', url: 'https://translate.google.com/?sl=de&tl=th' });
+gleich('Übersetzer: Muttersprache ohne DeepL führt zu Google', K.uebersetzer('th', 'en').dienst, 'Google Translate');
+gleich('Übersetzer: gleiche Sprache oder unbekannt ergibt nichts', [K.uebersetzer('de', 'de'), K.uebersetzer('de', 'xx')], [null, null]);
+gleich('Übersetzer: Vorschlag aus dem Reiseland', [K.landSprache('TH'), K.landSprache('JP'), K.landSprache('CH')], ['th', 'ja', '']);
+wahr('Übersetzer: keine Adresse enthält mehr als Sprachcodes', K.SPRACHEN.every(a => K.SPRACHEN.every(b => { const u = K.uebersetzer(a.code, b.code);
+  return !u || /^https:\/\/(www\.deepl\.com\/translator#[a-z-]+\/[a-z-]+\/|translate\.google\.com\/\?sl=[a-zA-Z-]+&tl=[a-zA-Z-]+)$/.test(u.url); })));
+
+/* ---------- Dokument zuordnen (17.11.2026) ---------- */
+const zuPlan = { buchungen: [
+  { id: 'b-flug', typ: 'flug', nummer: 'ZB 902', datum: '2027-01-06', referenz: 'DEMO77', vonCode: 'ZRH', nachCode: 'BKK' },
+  { id: 'b-hotel', typ: 'unterkunft', titel: 'Mangrovenblick Resort', datum: '2027-01-02', bisDatum: '2027-01-05' },
+  { id: 'b-boot', typ: 'faehre', titel: 'Fähre Demo', datum: '2027-01-02' },
+  { id: 'b-alt', typ: 'flug', nummer: 'ZB 902', datum: '2027-01-06', zahlung: 'storniert' }].map(b => K.buchungSauber(b)),
+  tickets: [{ id: 't-pass', gruppe: 'Reisepass', titel: 'Pass Demo' }] };
+const zu = (text, erg) => K.belegZuordnen(erg || K.erkennen(text), text, zuPlan);
+gleich('Zuordnen: über die Buchungsnummer', [zu('Ihre Buchung DEMO77, Total CHF 950').vorschlag.id, zu('Ihre Buchung DEMO77').vorschlag.grund], ['b-flug', 'Buchungsnummer DEMO77']);
+gleich('Zuordnen: über Flugnummer und Datum, stornierte verliert', zu('Flug ZB 902 Abflug 06.01.2027 17:30 Zürich (ZRH)').vorschlag.id, 'b-flug');
+gleich('Zuordnen: über den Namen im Text', zu('Check-in 02.01.2027 Mangrovenblick Resort, Uferweg 3').vorschlag.id, 'b-hotel');
+gleich('Zuordnen: Datum allein reicht nicht', zu('Quittung vom 02.01.2027, 300 THB').vorschlag, null);
+gleich('Zuordnen: Versicherung ohne Treffer geht in die Kachel', [zu('Reiseversicherung Police Nr. 55, gültig weltweit').vorschlag, zu('Reiseversicherung Police Nr. 55, gültig weltweit').kachel], [null, 'schutz']);
+gleich('Zuordnen: Visum ohne Treffer', zu('Thailand Digital Arrival Card TDAC').kachel, 'visa');
+const zuDatei = { tickets: [{ id: 't-flug', gruppe: 'Flüge', titel: 'Zürich – Bangkok', info: 'ZB 415 · 20.12.2026 17:30 · Code DEMO01', abDatum: '2026-12-20' },
+  { id: 't-flug2', gruppe: 'Flüge', titel: 'Bangkok – Zürich', info: 'ZB 416 · 10.01.2027 · Code DEMO02', abDatum: '2027-01-10' }] };
+gleich('Zuordnen: Eintrag aus der Reisedatei, Nummer und Code im Infotext', [
+  K.belegZuordnen(K.erkennen('Flug ZB 415 Abflug 20.12.2026 17:30'), 'Flug ZB 415 Abflug 20.12.2026 17:30', zuDatei).vorschlag.id,
+  K.belegZuordnen(K.erkennen('Booking reference: DEMO02'), 'Booking reference: DEMO02', zuDatei).vorschlag.id], ['t-flug', 't-flug2']);
+gleich('Zuordnen: Kacheln', [K.kachelVon('Einreise & Visa'), K.kachelVon('Reisepass'), K.kachelVon('Boote & Fähren'), K.kachelVon('Hotels'), K.kachelVon('xyz')], ['visa', 'pass', 'boot', 'hotel', 'rest']);
 const zPlan = { reise: { zeitzone: 'Asia/Tokyo' }, buchungen: [
   { typ: 'flug', datum: '2026-12-20', bisDatum: '2026-12-21', bisZeit: '06:10', nachTz: 'Asia/Bangkok' },
   { typ: 'flug', datum: '2026-12-28', bisZeit: '11:00', nachTz: 'Asia/Ho_Chi_Minh' },

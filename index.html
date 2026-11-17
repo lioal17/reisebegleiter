@@ -365,29 +365,16 @@ body.foto-an .palm-deco, body.foto-an .hero-bg { display: none; }
 .wx-main { flex: 1; min-width: 0; }
 .wx-temp { font-size: var(--fs-h2); font-weight: var(--fw-bold); letter-spacing: var(--ls-tight); line-height: var(--lh-tight); }
 .wx-desc { font-size: var(--fs-sub); color: var(--muted); }
+.tr-paar { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.tr-paar-name { display: inline-flex; align-items: center; gap: 6px; }
+.tr-paar-dienst { font-size: var(--fs-mini); color: var(--muted); font-weight: 400; }
+.wx-ort { font-size: var(--fs-mini); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.wx-ort:empty { display: none; }
+.notiz-vorschau { white-space: pre-line; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; color: var(--text); }
 .wx-side { text-align: right; flex: 0 0 auto; }
 .wx-range { font-size: var(--fs-sub); color: var(--text); font-weight: var(--fw-med); }
 .wx-stamp { font-size: var(--fs-mini); color: var(--muted); margin-top: 2px; }
 .wx.wx-mittel .wx-ic { color: var(--muted); }
-
-/* Zwei Uhren auf Heute */
-.uhren { display: flex; gap: var(--sp-s); margin-top: var(--sp-m); }
-.uhr {
-  flex: 1; min-width: 0;
-  background: rgba(8, 18, 22, 0.5);
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  padding: 9px 12px;
-}
-.uhr-ort {
-  font-size: var(--fs-mini); color: var(--muted);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.uhr-zeit {
-  font-size: var(--fs-h2); font-weight: var(--fw-bold);
-  letter-spacing: var(--ls-tight); line-height: var(--lh-tight);
-}
-.uhr-tag { font-size: var(--fs-mini); color: var(--faint); }
 
 /* Reiseplan */
 .day-list { display: flex; flex-direction: column; gap: 10px; }
@@ -910,6 +897,7 @@ a { color: var(--teal); }
 .liste-zeile:first-of-type { border-top: none; }
 .liste-zeile .hist-ic { flex: 0 0 auto; }
 .zahl-raster { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap-card); margin-bottom: var(--gap-card); }
+.zahl-breit { grid-column: 1 / -1; }
 .zahl-kachel { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: var(--sp-m); }
 body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.92); } /* ohne Weichzeichner, siehe .card */
 .zahl-wort { font-size: var(--fs-mini); color: var(--muted); }
@@ -988,22 +976,50 @@ body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.92); } /* ohne Weichz
       <div class="sub" id="todayDate">–</div>
       <div class="loc-pill" id="todayLocPill"><span class="ic" data-icon="pin" data-size="15"></span><span id="todayLocText">–</span></div>
 
-      <!-- Zwei Uhren. Beide rechnen über eine feste Zeitzone, nicht
-           über die Geräteuhr. Dadurch stimmen sie zu Hause wie vor
-           Ort, und die Logik gilt für jedes Reiseland. -->
-      <div class="uhren" id="uhrenZeile" style="display: none;">
-        <div class="uhr">
-          <div class="uhr-ort" id="uhrHeimOrt">Zuhause</div>
-          <div class="uhr-zeit" id="uhrHeimZeit">–</div>
-          <div class="uhr-tag" id="uhrHeimTag"></div>
+    </div>
+
+    <!-- Notizen aus Mehr (Entscheid 27, 17.11.2026). Steht zuoberst,
+         weil es das ist, was man sich selbst fuer heute gemerkt hat.
+         Erscheint nur, wenn etwas gespeichert ist. -->
+    <button class="card card-knopf" id="todayNotiz" type="button" style="display: none;">
+      <div class="card-row">
+        <div class="badge-ic"><span class="ic" data-icon="note"></span></div>
+        <div style="flex: 1; min-width: 0; text-align: left;">
+          <div class="card-label">Notiz</div>
+          <div class="card-sub notiz-vorschau" id="todayNotizText"></div>
         </div>
-        <div class="uhr">
-          <div class="uhr-ort" id="uhrZielOrt">Ziel</div>
-          <div class="uhr-zeit" id="uhrZielZeit">–</div>
-          <div class="uhr-tag" id="uhrZielTag"></div>
-        </div>
+        <div class="chevron ic" data-icon="chevR"></div>
+      </div>
+    </button>
+
+    <!-- Wetter: Beiwerk, nie Voraussetzung. Faellt der Dienst aus,
+         stehen hier zwischengespeicherte Werte oder Klimamittel. -->
+    <div class="wx" id="wxCard" style="display: none;">
+      <div class="wx-ic ic" id="wxIcon"></div>
+      <div class="wx-main">
+        <div class="wx-ort" id="wxOrt"></div>
+        <div class="wx-temp" id="wxTemp">–</div>
+        <div class="wx-desc" id="wxDesc">Wetter wird geladen …</div>
+      </div>
+      <div class="wx-side">
+        <div class="wx-range" id="wxRange"></div>
+        <div class="wx-stamp" id="wxStamp"></div>
       </div>
     </div>
+
+    <!-- Belege, die abgelegt, aber noch keiner Buchung zugeordnet
+         sind. Erscheint nur, wenn es welche gibt. -->
+    <button class="card card-knopf" id="todayEingang" type="button" style="display: none;">
+      <div class="card-row">
+        <div class="badge-ic" style="color: var(--gold);"><span class="ic" data-icon="doc"></span></div>
+        <div style="flex: 1; min-width: 0; text-align: left;">
+          <div class="card-label">Eingang</div>
+          <div class="card-title card-title-sm" id="todayEingangTitel">–</div>
+          <div class="card-sub">Antippen zum Zuordnen</div>
+        </div>
+        <div class="chevron ic" data-icon="chevR"></div>
+      </div>
+    </button>
 
     <!-- Zustand vor, nach und neben der Reise.
          Ohne diesen Block fiel Heute stillschweigend auf Tag 1 zurueck
@@ -1021,48 +1037,6 @@ body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.92); } /* ohne Weichz
       </div>
       <div id="vorReiseListe"></div>
       <div class="card-sub" id="vorReiseRest" style="display: none;"></div>
-    </div>
-
-    <!-- Belege, die abgelegt, aber noch keiner Buchung zugeordnet
-         sind. Erscheint nur, wenn es welche gibt. -->
-    <button class="card card-knopf" id="todayEingang" type="button" style="display: none;">
-      <div class="card-row">
-        <div class="badge-ic" style="color: var(--gold);"><span class="ic" data-icon="doc"></span></div>
-        <div style="flex: 1; min-width: 0; text-align: left;">
-          <div class="card-label">Eingang</div>
-          <div class="card-title card-title-sm" id="todayEingangTitel">–</div>
-          <div class="card-sub">Antippen zum Zuordnen</div>
-        </div>
-        <div class="chevron ic" data-icon="chevR"></div>
-      </div>
-    </button>
-
-    <!-- Budget in einer Zeile. Die Eingabe der Ausgaben bleibt unter
-         Mehr (Entscheid vom 09.08.2026), hier steht nur der Stand. -->
-    <button class="card card-knopf" id="todayBudget" type="button" style="display: none;">
-      <div class="card-row">
-        <div class="badge-ic"><span class="ic" data-icon="wallet"></span></div>
-        <div style="flex: 1; min-width: 0; text-align: left;">
-          <div class="card-label">Budget</div>
-          <div class="card-title card-title-sm" id="todayBudgetTitel">–</div>
-          <div class="card-sub" id="todayBudgetSub"></div>
-        </div>
-        <div class="chevron ic" data-icon="chevR"></div>
-      </div>
-    </button>
-
-    <!-- Wetter: Beiwerk, nie Voraussetzung. Faellt der Dienst aus,
-         stehen hier zwischengespeicherte Werte oder Klimamittel. -->
-    <div class="wx" id="wxCard" style="display: none;">
-      <div class="wx-ic ic" id="wxIcon"></div>
-      <div class="wx-main">
-        <div class="wx-temp" id="wxTemp">–</div>
-        <div class="wx-desc" id="wxDesc">Wetter wird geladen …</div>
-      </div>
-      <div class="wx-side">
-        <div class="wx-range" id="wxRange"></div>
-        <div class="wx-stamp" id="wxStamp"></div>
-      </div>
     </div>
 
     <div class="card card-teal" id="todayNight">
@@ -1185,7 +1159,7 @@ body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.92); } /* ohne Weichz
     <div class="topbar">
       <div style="flex: 1;">
         <h1 class="h1">Mehr</h1>
-        <div class="topbar-sub">Notizen, Notfall, Datensicherung</div>
+        <div class="topbar-sub">Notizen, Notfall, Auswertung, Archiv, Sicherung</div>
       </div>
     </div>
 
@@ -1214,6 +1188,10 @@ body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.92); } /* ohne Weichz
       </div>
       <div class="notfall-liste" id="notfallListe"></div>
     </div>
+
+    <!-- Auswertung und Abschluss (Entscheid 29, 17.11.2026: aus Budget
+         hierher). Wird von auswertungKarteZeichnen gefuellt. -->
+    <div class="card" id="auswertungKarte"></div>
 
     <!-- Archiv: abgeschlossene Reisen, nur zum Lesen -->
     <div class="card" id="archivKarte" style="display: none;">
@@ -1325,18 +1303,16 @@ body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.92); } /* ohne Weichz
     <div class="topbar">
       <div style="flex: 1;">
         <h1 class="h1">Translator</h1>
-        <div class="topbar-sub">Öffnet DeepL, Sprache nach Reiseland</div>
+        <div class="topbar-sub">DeepL zuerst, sonst Google Translate</div>
       </div>
     </div>
 
     <!-- Übersetzer -->
     <div class="card">
       <div class="card-label">Übersetzer</div>
-      <div class="row-2">
-        <button class="btn btn-secondary" id="trDeEn"><span class="ic" data-icon="translate" data-size="17"></span>DE – ENG</button>
-        <button class="btn btn-secondary" id="trDeTh"><span class="ic" data-icon="translate" data-size="17"></span><span id="trDeThText">DE – Thai</span></button>
-      </div>
-      <div class="badge-label" id="trHinweis">Öffnet DeepL im Browser. Braucht Netz.</div>
+      <div class="row-2" id="trKnoepfe"></div>
+      <div class="badge-label" id="trHinweis">Öffnet die Übersetzung im Browser. Braucht Netz.</div>
+      <button class="btn btn-secondary btn-inline" id="trEinrichten" type="button" style="margin-top: var(--sp-s);"><span class="ic" data-icon="pencil" data-size="16"></span>Sprachen ändern</button>
     </div>
 
   </div>
@@ -1366,13 +1342,13 @@ body.foto-an .zahl-kachel { background: rgba(21, 29, 30, 0.92); } /* ohne Weichz
       <span class="ic" data-icon="calendar"></span>
       <span class="nav-label">Reiseplan</span>
     </button>
-    <button class="nav-btn" data-screen="screenTickets">
-      <span class="ic" data-icon="doc"></span>
-      <span class="nav-label">Dokumente</span>
-    </button>
     <button class="nav-btn" data-screen="screenBudget">
       <span class="ic" data-icon="wallet"></span>
       <span class="nav-label">Budget</span>
+    </button>
+    <button class="nav-btn" data-screen="screenTickets">
+      <span class="ic" data-icon="doc"></span>
+      <span class="nav-label">Dokumente</span>
     </button>
     <button class="nav-btn" data-screen="screenTranslator">
       <span class="ic" data-icon="translate"></span>
@@ -2192,6 +2168,88 @@ var Kern = (function () {
       gps: WEG.indexOf(b.typ) !== -1 ? (b.gps || '') : '', buchungId: b.id
     };
   }
+  /* Kachel unter Dokumente zu einer Gruppe. Die Reihenfolge der
+     Pruefungen ist Absicht: "einreise" muss vor "pass" stehen, sonst
+     zieht die Pass-Kachel einen Eintrag namens "Einreisepapiere" an
+     sich. Stand frueher in der Oberflaeche (ticketKat). */
+  function kachelVon(gruppe) {
+    const g = (gruppe || '').toLowerCase();
+    if (g.includes('flug') || g.includes('flüg') || g.includes('flight')) return 'flug';
+    if (g.includes('boot') || g.includes('fähre') || g.includes('faehre') || g.includes('schiff') ||
+        g.includes('transport') || g.includes('zug') || g.includes('bus') || g.includes('transfer') || g.includes('miet')) return 'boot';
+    if (g.includes('aktivit') || g.includes('ausfl') || g.includes('tauch') || g.includes('eintritt')) return 'akt';
+    if (g.includes('hotel') || g.includes('unterkunft')) return 'hotel';
+    if (g.includes('visa') || g.includes('einreise')) return 'visa';
+    if (g.includes('pass')) return 'pass';
+    if (g.includes('versicher')) return 'schutz';
+    return 'rest';
+  }
+
+  /* Wohin gehoert ein Dokument? (Entscheid 28, 17.11.2026)
+     Bekommt das Ergebnis von erkennen, den gelesenen Text und die
+     Reisedaten. Liefert die Kandidaten mit Punktzahl und Grund, den
+     besten als Vorschlag, wenn er sicher genug ist, und sonst eine
+     Kachel nach der erkannten Art. Erfunden wird nichts: ohne
+     Anhaltspunkt gibt es keinen Vorschlag.
+
+     Punkte: Buchungsnummer 100, Flug- oder Zugnummer am selben Tag 90,
+     gleiches Datum 30, dazu passende Art 25, Wort aus dem Titel im
+     Text je 10 (hoechstens 30). Storniertes verliert 40. Vorschlag ab
+     50 Punkten. */
+  const ALLTAGSWORT = ['hotel', 'resort', 'flug', 'flight', 'demo', 'boot', 'faehre', 'fähre', 'transfer', 'ticket', 'buchung', 'booking', 'reise', 'the', 'and', 'und'];
+  function belegZuordnen(erg, text, daten) {
+    const f = (erg && erg.felder) || {};
+    const roh = glatt(text || '');
+    const ergKachel = kachelVon(typInfo(erg && erg.typ).gruppe);
+    const buchungen = (daten && daten.buchungen) || [];
+    const kandidaten = belegTraeger(daten).map(function (t) {
+      const b = t.buchungId ? buchungen.find(function (x) { return x.id === t.buchungId; }) : null;
+      let punkte = 0;
+      const gruende = [];
+      /* Eintraege aus der Reisedatei kennen Nummer und Code oft nur
+         im Infotext ("ZB 415 · 20.12.2026 · Code DEMO01"). */
+      const info = glatt(t.info);
+      let ref = (b && b.referenz) || t.referenz || '';
+      if (!ref && f.referenz && glatt(f.referenz).length >= 4 && info.indexOf(glatt(f.referenz)) !== -1) ref = f.referenz;
+      if (ref && glatt(ref).length >= 4 && ((f.referenz && glatt(f.referenz) === glatt(ref)) || roh.indexOf(glatt(ref)) !== -1)) {
+        punkte += 100; gruende.push('Buchungsnummer ' + ref);
+      }
+      const datum = (b && b.datum) || t.abDatum || '';
+      const nr = (b && b.nummer) || (f.nummer && glatt(f.nummer).length >= 3 && info.indexOf(glatt(f.nummer)) !== -1 ? f.nummer : '');
+      if (nr && f.nummer && glatt(nr) === glatt(f.nummer) && (!f.datum || !datum || f.datum === datum)) {
+        punkte += 90; gruende.push('Nummer ' + nr);
+      }
+      if (f.datum && datum && f.datum === datum) {
+        punkte += 30;
+        if (kachelVon(t.gruppe) === ergKachel && erg.typ !== 'sonstiges') { punkte += 25; gruende.push('Datum und Art'); }
+        else gruende.push('Datum');
+      }
+      let woerter = 0;
+      String(t.titel || '').split(/[^A-Za-zÄÖÜäöüéèàç0-9]+/).forEach(function (w) {
+        const g = glatt(w);
+        if (g.length < 4 || ALLTAGSWORT.indexOf(g) !== -1 || /^\d+$/.test(g)) return;
+        if (roh.indexOf(g) !== -1 && woerter < 30) woerter += 10;
+      });
+      if (woerter) { punkte += woerter; gruende.push('Name im Text'); }
+      if (t.status === 'storniert' || (b && b.zahlung === 'storniert')) punkte -= 40;
+      return { id: t.id, titel: t.titel, info: t.info || '', gruppe: t.gruppe, kachel: kachelVon(t.gruppe), punkte: punkte, grund: gruende.join(', ') };
+    }).filter(function (k) { return k.punkte > 0; })
+      .sort(function (a, b) { return b.punkte - a.punkte; });
+    const beste = kandidaten[0] && kandidaten[0].punkte >= 50 ? kandidaten[0] : null;
+    /* Ohne Treffer: Kachel nach der Art. Nur die Kacheln ohne Reiseplan
+       kommen in Frage, alles andere ist eine Buchung, und die entsteht
+       nur ueber "Reise planen". */
+    let kachel = '';
+    if (!beste) {
+      const t = String(text || '');
+      if (erg && erg.typ === 'versicherung' || /versicherung|insurance|police|policy/i.test(t)) kachel = 'schutz';
+      else if (/visum|visa|einreise|arrival card|e-?visa|tdac/i.test(t)) kachel = 'visa';
+      else if (/reisepass|passport|identit/i.test(t)) kachel = 'pass';
+      else if (!erg || erg.typ === 'sonstiges' || erg.typ === 'dokument') kachel = 'rest';
+    }
+    return { vorschlag: beste, kandidaten: kandidaten, kachel: kachel };
+  }
+
   function belegTraeger(daten) {
     return ((daten && daten.tickets) || []).concat(((daten && daten.buchungen) || []).map(buchungAlsTicket));
   }
@@ -2529,35 +2587,45 @@ var Kern = (function () {
   }
 
   function landInfo(code) { return LAENDER.find(function (l) { return l.code === code; }) || null; }
-  /* Landessprache je Land: Code fuer Google | Name | Code fuer DeepL.
-     Laender mit Deutsch oder Englisch stehen nicht drin, dafuer gibt
-     es den festen Knopf DE - EN. Der dritte Wert ist leer, wenn DeepL
-     die Sprache nicht sicher anbietet: dann oeffnet der Knopf Google
-     Translate. Thai ist bewusst leer, bis am Geraet geprueft ist, ob
-     DeepL es auf der Webseite anbietet (Stand 16.11.2026). */
-  const SPRACHEN = {};
-  ('FR|fr|Französisch|fr;IT|it|Italienisch|it;ES|es|Spanisch|es;PT|pt|Portugiesisch|pt-pt;NL|nl|Niederländisch|nl;' +
-    'BE|nl|Niederländisch|nl;GR|el|Griechisch|el;HR|hr|Kroatisch|;DK|da|Dänisch|da;SE|sv|Schwedisch|sv;NO|no|Norwegisch|nb;' +
-    'FI|fi|Finnisch|fi;IS|is|Isländisch|;PL|pl|Polnisch|pl;CZ|cs|Tschechisch|cs;HU|hu|Ungarisch|hu;RO|ro|Rumänisch|ro;' +
-    'BG|bg|Bulgarisch|bg;TR|tr|Türkisch|tr;TH|th|Thai|;JP|ja|Japanisch|ja;VN|vi|Vietnamesisch|vi;KH|km|Khmer|;LA|lo|Laotisch|;' +
-    'MY|ms|Malaiisch|;ID|id|Indonesisch|id;PH|tl|Filipino|;MM|my|Birmanisch|;CN|zh-CN|Chinesisch|zh;HK|zh-TW|Chinesisch|;' +
-    'TW|zh-TW|Chinesisch|;KR|ko|Koreanisch|ko;IN|hi|Hindi|;LK|si|Singhalesisch|;NP|ne|Nepali|;MV|dv|Dhivehi|;' +
-    'AE|ar|Arabisch|ar;QA|ar|Arabisch|ar;OM|ar|Arabisch|ar;JO|ar|Arabisch|ar;EG|ar|Arabisch|ar;MA|ar|Arabisch|ar;' +
-    'TN|ar|Arabisch|ar;IL|iw|Hebräisch|he;KE|sw|Swahili|;TZ|sw|Swahili|;MX|es|Spanisch|es;CU|es|Spanisch|es;' +
-    'DO|es|Spanisch|es;CR|es|Spanisch|es;CO|es|Spanisch|es;PE|es|Spanisch|es;AR|es|Spanisch|es;CL|es|Spanisch|es;' +
-    'BR|pt|Portugiesisch|pt-br').split(';').forEach(function (z) {
+  /* Sprachen fuer den Translator (Entscheid 31, 17.11.2026).
+     Code | Name | kurz auf dem Knopf | Code fuer Google | Code fuer DeepL.
+     Der DeepL-Code ist leer, wenn DeepL die Sprache nicht sicher
+     anbietet: dann fuehrt der Knopf zu Google Translate. Thai ist
+     bewusst leer, bis am Geraet geprueft ist, ob DeepL es auf der
+     Webseite anbietet (Stand 17.11.2026). */
+  const SPRACHEN = ('de|Deutsch|DE|de|de;en|Englisch|ENG|en|en;fr|Französisch|FR|fr|fr;it|Italienisch|IT|it|it;' +
+    'es|Spanisch|ES|es|es;pt|Portugiesisch|PT|pt|pt;nl|Niederländisch|NL|nl|nl;el|Griechisch|GR|el|el;' +
+    'hr|Kroatisch|HR|hr|;da|Dänisch|DK|da|da;sv|Schwedisch|SE|sv|sv;no|Norwegisch|NO|no|nb;fi|Finnisch|FI|fi|fi;' +
+    'is|Isländisch|IS|is|;pl|Polnisch|PL|pl|pl;cs|Tschechisch|CZ|cs|cs;hu|Ungarisch|HU|hu|hu;ro|Rumänisch|RO|ro|ro;' +
+    'bg|Bulgarisch|BG|bg|bg;tr|Türkisch|TR|tr|tr;ru|Russisch|RU|ru|ru;uk|Ukrainisch|UA|uk|uk;' +
+    'th|Thai|Thai|th|;ja|Japanisch|JP|ja|ja;vi|Vietnamesisch|VN|vi|vi;km|Khmer|Khmer|km|;lo|Laotisch|Lao|lo|;' +
+    'ms|Malaiisch|MS|ms|;id|Indonesisch|ID|id|id;tl|Filipino|PH|tl|;my|Birmanisch|MM|my|;zh|Chinesisch|CN|zh-CN|zh;' +
+    'ko|Koreanisch|KR|ko|ko;hi|Hindi|HI|hi|;si|Singhalesisch|SI|si|;ne|Nepali|NE|ne|;ar|Arabisch|AR|ar|ar;' +
+    'he|Hebräisch|HE|iw|he;sw|Swahili|SW|sw|')
+    .split(';').map(function (z) {
       const p = z.split('|');
-      SPRACHEN[p[0]] = { google: p[1], name: p[2], deepl: p[3] || '' };
+      return { code: p[0], name: p[1], kurz: p[2], google: p[3], deepl: p[4] || '' };
     });
-  /* Wohin der Uebersetzer-Knopf fuehrt. Es wird nur eine Adresse
-     gebaut, nie ein Text uebergeben. ohne Land: nur DE - EN. */
-  function uebersetzer(land) {
-    const liste = [{ name: 'EN', dienst: 'DeepL', url: 'https://www.deepl.com/translator#de/en/' }];
-    const s = SPRACHEN[land];
-    if (s) liste.push(s.deepl
-      ? { name: s.name, dienst: 'DeepL', url: 'https://www.deepl.com/translator#de/' + s.deepl + '/' }
-      : { name: s.name, dienst: 'Google Translate', url: 'https://translate.google.com/?sl=de&tl=' + s.google });
-    return liste;
+  function sprachInfo(code) { return SPRACHEN.find(function (x) { return x.code === code; }) || null; }
+  /* Landessprache als Vorschlag beim Einrichten. Laender mit Deutsch
+     oder Englisch fehlen, dort reicht der Rest. */
+  const LAND_SPRACHE = {};
+  ('FR:fr;BE:nl;IT:it;ES:es;PT:pt;NL:nl;GR:el;HR:hr;DK:da;SE:sv;NO:no;FI:fi;IS:is;PL:pl;CZ:cs;HU:hu;RO:ro;BG:bg;TR:tr;' +
+    'TH:th;JP:ja;VN:vi;KH:km;LA:lo;MY:ms;ID:id;PH:tl;MM:my;CN:zh;HK:zh;TW:zh;KR:ko;IN:hi;LK:si;NP:ne;AE:ar;QA:ar;OM:ar;' +
+    'JO:ar;EG:ar;MA:ar;TN:ar;IL:he;KE:sw;TZ:sw;MX:es;CU:es;DO:es;CR:es;CO:es;PE:es;AR:es;CL:es;BR:pt')
+    .split(';').forEach(function (z) { const p = z.split(':'); LAND_SPRACHE[p[0]] = p[1]; });
+  function landSprache(land) { return LAND_SPRACHE[land] || ''; }
+  /* Wohin der Knopf fuer ein Sprachpaar fuehrt. DeepL, wenn beide
+     Sprachen dort gefuehrt sind, sonst Google Translate. Es wird nur
+     eine Adresse gebaut, nie ein Text uebergeben. */
+  function uebersetzer(von, nach) {
+    const a = sprachInfo(von), b = sprachInfo(nach);
+    if (!a || !b || a.code === b.code) return null;
+    const name = a.kurz + ' – ' + b.kurz;
+    if (a.deepl && b.deepl) {
+      return { name: name, dienst: 'DeepL', url: 'https://www.deepl.com/translator#' + a.deepl + '/' + b.deepl + '/' };
+    }
+    return { name: name, dienst: 'Google Translate', url: 'https://translate.google.com/?sl=' + a.google + '&tl=' + b.google };
   }
   /* Zeitzone vor Ort an einem Tag (Entscheid 24, 16.11.2026).
      Reihenfolge: Angabe am Tag, Land des Tages, Ankunftszone der
@@ -2586,12 +2654,12 @@ var Kern = (function () {
 
   return {
     LAENDER: LAENDER, FLUGHAEFEN: FLUGHAEFEN, AIRLINES: AIRLINES, TYPEN: TYPEN, ZAHLUNG: ZAHLUNG, KATEGORIEN: KATEGORIEN,
-    WEG: WEG, CODES: CODES, SPRACHEN: SPRACHEN, uebersetzer: uebersetzer, zoneAmTag: zoneAmTag,
+    WEG: WEG, CODES: CODES, SPRACHEN: SPRACHEN, sprachInfo: sprachInfo, landSprache: landSprache, uebersetzer: uebersetzer, zoneAmTag: zoneAmTag,
     typInfo: typInfo, felderFuer: felderFuer, istIso: istIso, plusTage: plusTage, tageDiff: tageDiff, wochentag: wochentag,
     tagAusZeit: tagAusZeit, alleDaten: alleDaten, alleZeiten: alleZeiten, betragLesen: betragLesen, geldStellen: geldStellen,
     dauerMin: dauerMin, dauerText: dauerText, ortszeitAlsUtc: ortszeitAlsUtc,
     erkennen: erkennen, neueId: neueId, buchungSauber: buchungSauber, buchungTitel: buchungTitel, dublette: dublette,
-    buchungMischen: buchungMischen, buchungAlsTicket: buchungAlsTicket, belegTraeger: belegTraeger,
+    buchungMischen: buchungMischen, buchungAlsTicket: buchungAlsTicket, belegTraeger: belegTraeger, kachelVon: kachelVon, belegZuordnen: belegZuordnen,
     tagesAnsicht: tagesAnsicht, istUnterkunft: istUnterkunft,
     chfSchaetzen: chfSchaetzen, kursFuer: kursFuer, ausgabeMigrieren: ausgabeMigrieren, ausgabeNeu: ausgabeNeu,
     buchungChf: buchungChf, abrechnung: abrechnung, auswertung: auswertung, csv: csv, csvFeld: csvFeld,
@@ -2845,6 +2913,9 @@ function showScreen(screenId, navScreenId) {
   });
   document.getElementById(screenId).scrollTop = 0;
   if (screenId === 'screenBudget' && typeof renderBudget === 'function') renderBudget();
+  if (screenId === 'screenTools' && typeof auswertungKarteZeichnen === 'function') auswertungKarteZeichnen();
+  /* Translator: zuerst fragen (Entscheid 31). */
+  if (screenId === 'screenTranslator' && typeof sprachWahl === 'function') { uebersetzerZeichnen(); if (!sprachWahl()) sprachBlatt(); }
   if (typeof hintergrundUmschalten === 'function') hintergrundUmschalten();
 }
 document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -3032,62 +3103,11 @@ function greeting() {
 
 /* Optionale Bild-Assets aus dem Repo (assets/…) – rein lokal, mit Fallback */
 const assetCache = {};
-/* ---------- Zwei Uhren ----------
-   Beide Zeiten kommen aus einer benannten Zeitzone, nicht aus der
-   Geraeteuhr. Sonst zeigt die Heimatuhr in Thailand thailaendische
-   Zeit an, also genau das, was sie nicht soll.
-
-   Die Zielzone steht pro Tag in "tz", ersatzweise in
-   reise.zeitzone. Damit gilt dieselbe Logik fuer Vietnam, ohne
-   eine Zeile Code zu aendern. Intl rechnet lokal, ohne Netz. */
-const HEIMAT_STD = 'Europe/Zurich';
-
-function zoneOk(tz) {
-  if (!tz) return false;
-  try { new Intl.DateTimeFormat('de-CH', { timeZone: tz }); return true; }
-  catch(e) { return false; }
-}
-function zoneZeit(tz) {
-  return new Intl.DateTimeFormat('de-CH', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
-}
-function zoneTag(tz) {
-  return new Intl.DateTimeFormat('de-CH', { timeZone: tz, weekday: 'short', day: 'numeric', month: 'short' }).format(new Date());
-}
+/* Zwei Uhren gibt es nicht mehr (Entscheid 27, 17.11.2026: Heute
+   zeigt nur, was heute anfaellt). Die Zeitzonen der Buchungen bleiben,
+   sie rechnen die Flugdauer. zoneName beschriftet sie im Formular. */
 function zoneName(tz) {
   return String(tz).split('/').pop().replace(/_/g, ' ');
-}
-function zielZone(tag) {
-  const reise = (appData && appData.reise) || {};
-  /* Ohne Tag gilt heute. Das Land kommt vom Tag, sonst aus der
-     Einstellung unter Budget. */
-  const datum = (tag && tag.datum) || heuteLokal();
-  const kandidaten = [
-    Kern.zoneAmTag(appData, datum, tag && tag.tz, tag && tag.land, aktLand()),
-    reise.zeitzone, reise.zielZeitzone];
-  return kandidaten.find(zoneOk) || '';
-}
-let uhrenTag = null;
-function uhrenZeichnen(tag) {
-  if (tag !== undefined) uhrenTag = tag;
-  const zeile = document.getElementById('uhrenZeile');
-  if (!zeile) return;
-  const reise = (appData && appData.reise) || {};
-  const heim = zoneOk(reise.heimatZeitzone) ? reise.heimatZeitzone : HEIMAT_STD;
-  const ziel = zielZone(uhrenTag);
-
-  /* Ohne Zielzone, oder wenn beide Uhren dasselbe zeigen, sind zwei
-     Uhren nur Platzverbrauch. */
-  if (!ziel || zoneZeit(heim) === zoneZeit(ziel)) {
-    zeile.style.display = 'none';
-    return;
-  }
-  zeile.style.display = '';
-  document.getElementById('uhrHeimOrt').textContent = reise.heimatOrt || zoneName(heim);
-  document.getElementById('uhrHeimZeit').textContent = zoneZeit(heim);
-  document.getElementById('uhrHeimTag').textContent = zoneTag(heim);
-  document.getElementById('uhrZielOrt').textContent = zoneName(ziel);
-  document.getElementById('uhrZielZeit').textContent = zoneZeit(ziel);
-  document.getElementById('uhrZielTag').textContent = zoneTag(ziel);
 }
 
 function withAsset(url, cb, sonst) {
@@ -3173,76 +3193,42 @@ function reiseLage(reise, heute) {
    Dinge, die von selbst passieren und nur dann schieflaufen, wenn das
    Konto leer ist. Die teuersten davon liegen mitten in der Reise. */
 function fristenZeichnen(heute, listeEl) {
-  const fristen = (appData.fristen || [])
-    .filter(f => f && f.datum && f.titel)
-    .sort((a, b) => String(a.datum).localeCompare(String(b.datum)));
-  if (!fristen.length) return;
-
-  const kopf = document.createElement('div');
-  kopf.className = 'grp-head';
-  kopf.textContent = 'Termine mit Frist';
-  listeEl.appendChild(kopf);
-
+  const fristen = (appData.fristen || []).filter(f => f && f.titel && f.datum === heute);
   fristen.forEach(f => {
-    const rest = tageZwischen(heute, f.datum);
-    const vorbei = rest !== null && rest < 0;
     const eintrag = document.createElement('div');
     eintrag.className = 'doc-eintrag';
     eintrag.innerHTML =
       '<div class="doc-eintrag-titel">' + esc(f.titel) + '</div>' +
-      '<div class="doc-eintrag-zeile">' + esc(formatDateFull(f.datum)) +
-        (rest !== null && rest > 0 ? ', in ' + tageWortDativ(rest) : '') +
-        (rest === 0 ? ', heute' : '') +
-        (f.detail ? ' · ' + esc(f.detail) : '') + '</div>' +
-      '<div class="status-line ' + (!vorbei && rest !== null && rest <= 14 ? 'status-red' : 'status-gold') + '">' +
-        (vorbei ? 'Datum vorbei' : 'Offen') + '</div>';
+      '<div class="doc-eintrag-zeile">Frist heute' + (f.detail ? ' · ' + esc(f.detail) : '') + '</div>' +
+      '<div class="status-line status-red">Offen</div>';
     listeEl.appendChild(eintrag);
   });
+  return fristen.length;
 }
 
-function faelligZeichnen(reise, heute, listeEl, restEl, subEl) {
-  const fehlend = alleTickets()
-    .filter(t => t.status === 'fehlt' && t.abDatum)
-    .sort((a, b) => String(a.abDatum).localeCompare(String(b.abDatum)));
-
-  if (!fehlend.length) {
-    subEl.textContent = 'Alle Unterlagen sind hinterlegt.';
-    return;
-  }
-
-  const bisAbflug = fehlend.filter(t => t.abDatum <= reise.start);
-  const unterwegs = fehlend.filter(t => t.abDatum > reise.start);
-
-  subEl.textContent = bisAbflug.length
-    ? bisAbflug.length + ' von ' + fehlend.length + ' fehlenden Unterlagen brauchst du bis zum Abflug'
-    : 'Bis zum Abflug fehlt nichts mehr';
-
-  bisAbflug.forEach(t => {
-    const rest = tageZwischen(heute, t.abDatum);
+/* Unterlagen, die ab heute gebraucht werden und noch fehlen. */
+function faelligZeichnen(heute, listeEl) {
+  const fehlend = alleTickets().filter(t => t.status === 'fehlt' && t.abDatum === heute);
+  fehlend.forEach(t => {
     const eintrag = document.createElement('div');
     eintrag.className = 'doc-eintrag';
     eintrag.innerHTML =
       '<div class="doc-eintrag-titel">' + esc(t.titel) + '</div>' +
-      '<div class="doc-eintrag-zeile">' + esc(t.gruppe) + ' · gebraucht ab ' +
-        esc(formatDateFull(t.abDatum)) +
-        (rest !== null && rest > 0 ? ', in ' + tageWortDativ(rest) : '') +
-        (rest === 0 ? ', heute' : '') + '</div>' +
-      '<div class="status-line ' + (rest !== null && rest <= 7 ? 'status-red' : 'status-gold') +
-        '">Fehlt noch</div>';
+      '<div class="doc-eintrag-zeile">' + esc(t.gruppe) + ' · ab heute gebraucht</div>' +
+      '<div class="status-line status-red">Fehlt noch</div>';
     listeEl.appendChild(eintrag);
   });
-
-  if (unterwegs.length) {
-    restEl.style.display = '';
-    restEl.textContent = unterwegs.length + ' weitere werden erst unterwegs gebraucht, siehe Dokumente.';
-  }
+  return fehlend.length;
 }
 
-/* Zeichnet Heute, wenn heute kein Reisetag ist. Drei Faelle, und keiner
-   davon darf einen Reisetag vortaeuschen:
-     'vor'     noch nicht abgereist, Countdown und Faelligkeiten
-     'nach'    Reise vorbei, Plan und Belege bleiben abrufbar
-     'luecke'  Datum liegt im Reisezeitraum, fehlt aber in den Daten */
+/* Zeichnet Heute, wenn heute kein Reisetag ist. Entscheid 27
+   (17.11.2026): Heute zeigt nur, was heute anfaellt. Kein Countdown,
+   keine Liste fuer die naechsten Wochen. Was bleibt:
+     'vor'     Fristen und fehlende Unterlagen mit Datum heute
+     'nach'    nichts ausser Kopf, Notiz und Eingang
+     'leer'    eine neue Reise ohne Buchung: Hinweis auf den Reiseplan
+     'luecke'  Datum liegt im Reisezeitraum, fehlt aber in den Daten.
+               Das betrifft heute und bleibt deshalb sichtbar. */
 function renderAusserhalbReise(lage, reise, heute) {
   ['todayNight', 'todayTransfer', 'todayProgramm', 'todayNotes', 'wxCard'].forEach(id => {
     const el = document.getElementById(id);
@@ -3260,75 +3246,63 @@ function renderAusserhalbReise(lage, reise, heute) {
   const labelEl = document.getElementById('vorReiseLabel');
   const ikonEl = document.getElementById('vorReiseIcon');
 
-  karte.style.display = '';
+  karte.style.display = 'none';
   listeEl.innerHTML = '';
   restEl.style.display = 'none';
   restEl.textContent = '';
   subEl.textContent = '';
+  kopf.textContent = 'Heute';
+  datum.textContent = formatDateFull(heute);
 
-  if (lage === 'vor') {
-    /* Kein Sonderfall fuer null Tage: der Abflugtag selbst ist bereits
-       ein Reisetag und wird oben von reiseLage als 'waehrend' geliefert.
-       Hier kommt nur an, wer wirklich noch wartet. */
-    const bis = tageZwischen(heute, reise.start);
-    kopf.textContent = 'Noch ' + tageWort(bis);
-    datum.textContent = 'Abflug ' + formatDateFull(reise.start);
-    labelEl.textContent = 'Bis zum Abflug';
-    ikonEl.innerHTML = icon('calendar', 20);
-    /* Vor der Reise ist Planen die Hauptsache, deshalb steht der
-       Einstieg auch hier. */
-    const planen = document.createElement('button');
-    planen.className = 'btn btn-secondary';
-    planen.type = 'button';
-    planen.style.cssText = 'width:100%;margin-top:var(--sp-m);';
-    planen.innerHTML = icon('plus', 16) + 'Reise planen';
-    planen.addEventListener('click', planenBlatt);
-    fristenZeichnen(heute, listeEl);
-    faelligZeichnen(reise, heute, listeEl, restEl, subEl);
-    listeEl.appendChild(planen);
-    return;
-  }
-
-  if (lage === 'nach') {
-    const her = tageZwischen(reise.ende, heute);
-    kopf.textContent = 'Reise beendet';
-    datum.textContent = 'Letzter Reisetag ' + formatDateFull(reise.ende) +
-      (her ? ', ' + tageWort(her) + ' her' : '');
-    labelEl.textContent = 'Nach der Reise';
-    ikonEl.innerHTML = icon('plane', 20);
-    subEl.textContent = (reise.status === 'abgeschlossen'
-      ? 'Abgeschlossen am ' + datumKurz(reise.abgeschlossenAm) + '. '
-      : 'Unter Budget lässt sich die Reise beenden und abrechnen. ') +
-      'Reiseplan, Belege und erfasste Ausgaben bleiben vollständig abrufbar.';
-    return;
-  }
-
-  /* Frisch angelegte Reise ohne einen einzigen Tag: keine Luecke,
-     sondern der Anfang. */
-  if (!ansicht.length && !reise.start) {
-    kopf.textContent = reise.titel || 'Neue Reise';
-    datum.textContent = formatDateFull(heute);
+  if (!ansicht.length && !reise.start && !(appData.buchungen || []).length) {
+    karte.style.display = '';
     labelEl.textContent = 'Noch leer';
     ikonEl.innerHTML = icon('calendar', 20);
-    subEl.textContent = 'Mit «Reise planen» die erste Buchung erfassen: Foto, PDF, Link, Text oder von Hand.';
-    const planen = document.createElement('button');
-    planen.className = 'btn btn-secondary';
-    planen.type = 'button';
-    planen.style.cssText = 'width:100%;margin-top:var(--sp-m);';
-    planen.innerHTML = icon('plus', 16) + 'Reise planen';
-    planen.addEventListener('click', planenBlatt);
-    listeEl.appendChild(planen);
+    subEl.textContent = 'Buchungen erfasst du im Reiter Reiseplan über «Reise planen»: Foto, PDF, Link, Text oder von Hand.';
     return;
   }
 
-  /* Datenluecke. Der Tag wird ausdruecklich nicht durch einen anderen
-     ersetzt, sonst entsteht genau die stille Falschanzeige zurueck,
-     die dieser Block behebt. */
-  kopf.textContent = 'Kein Eintrag für heute';
-  datum.textContent = formatDateFull(heute) + ' liegt im Reisezeitraum, fehlt aber in den Reisedaten';
-  labelEl.textContent = 'Datenlücke';
-  ikonEl.innerHTML = icon('warn', 20);
-  subEl.textContent = 'Es wird bewusst kein Ersatztag angezeigt. Reiseplan und Dokumente sind unberührt nutzbar.';
+  if (lage === 'vor') {
+    const n = fristenZeichnen(heute, listeEl) + faelligZeichnen(heute, listeEl);
+    if (n) {
+      karte.style.display = '';
+      labelEl.textContent = 'Heute fällig';
+      ikonEl.innerHTML = icon('calendar', 20);
+      subEl.textContent = n === 1 ? '1 Punkt für heute' : n + ' Punkte für heute';
+    }
+    return;
+  }
+
+  if (lage === 'luecke') {
+    karte.style.display = '';
+    labelEl.textContent = 'Datenlücke';
+    ikonEl.innerHTML = icon('warn', 20);
+    subEl.textContent = formatDateFull(heute) + ' liegt im Reisezeitraum, fehlt aber in den Reisedaten. ' +
+      'Es wird bewusst kein Ersatztag angezeigt. Reiseplan und Dokumente sind unberührt nutzbar.';
+  }
+}
+
+/* Koordinaten einer Unterkunft, oder null. Geraten wird nichts. */
+function gpsVon(t) {
+  const p = String((t && t.hotel && t.hotel.gps) || '').split(',').map(Number);
+  return (p.length === 2 && !isNaN(p[0]) && !isNaN(p[1])) ? p : null;
+}
+/* Wetter fuer den Tag mit Index ab, sonst den naechsten Tag mit
+   Koordinaten. Die Karte nennt den Ort, damit klar ist, wofuer sie
+   gilt, vor allem vor der Reise. Gibt es keine Koordinaten, bleibt
+   die Karte weg. */
+let wetterOrt = '';
+function wetterFuer(tage, ab) {
+  for (let i = Math.max(0, ab); i < tage.length; i++) {
+    const g = gpsVon(tage[i]);
+    if (!g) continue;
+    wetterOrt = zielOrt(tage[i].ort) || '';
+    wetterLaden(g[0], g[1]);
+    return tage[i];
+  }
+  wetterOrt = '';
+  wxZeigen(null);
+  return null;
 }
 
 function loadUIFromAppData() {
@@ -3354,10 +3328,9 @@ function loadUIFromAppData() {
   heuteTag = todayData || null;
   if (!todayData) {
     renderAusserhalbReise(lage === 'waehrend' ? 'luecke' : lage, reise, todayStr);
-    /* Die beiden Uhren bleiben sinnvoll, auch vor der Reise. Als
-       Zielzone dient der erste Tag, der eine andere als die Heimatzone
-       fuehrt. Sind beide gleich, blendet uhrenZeichnen selbst aus. */
-    uhrenZeichnen(tage.find(t => t.tz && t.tz !== reise.heimatZeitzone) || tage[0]);
+    /* Wetter schon vor der Reise: am ersten Ort mit Koordinaten.
+       Das macht Vorfreude und kostet keine weitere Abfrage. */
+    if (lage === 'vor') wetterFuer(tage, 0);
   }
 
   if (todayData) {
@@ -3405,23 +3378,7 @@ function loadUIFromAppData() {
        am Startort. Hat der heutige Tag keine Koordinaten, wird der
        naechste Tag genommen, der welche hat. Geraten wird nichts:
        gibt es gar keine, bleibt die Karte weg. */
-    const gpsVon = t => {
-      const p = String((t && t.hotel && t.hotel.gps) || '').split(',').map(Number);
-      return (p.length === 2 && !isNaN(p[0]) && !isNaN(p[1])) ? p : null;
-    };
-    let wetterTag = todayData;
-    let gpsRoh = gpsVon(todayData);
-    if (!gpsRoh) {
-      const ab = tage.indexOf(todayData);
-      for (let i = ab + 1; i < tage.length; i++) {
-        const g = gpsVon(tage[i]);
-        if (g) { gpsRoh = g; wetterTag = tage[i]; break; }
-      }
-    }
-    if (gpsRoh) wetterLaden(gpsRoh[0], gpsRoh[1]);
-    else wxZeigen(null);
-
-    uhrenZeichnen(wetterTag);
+    wetterFuer(tage, tage.indexOf(todayData));
 
     /* Knoepfe erscheinen nur, wenn sie etwas tun koennen. Ein
        ausgegrauter Knopf kostet denselben Platz wie ein echter. */
@@ -4231,21 +4188,7 @@ const DOC_KAT = [
    es kein Bild, sie stehen auf dem Farbverlauf. */
 let offeneKachel = null;
 
-/* Die Reihenfolge der Pruefungen ist Absicht: "einreise" muss vor
-   "pass" stehen, sonst zieht die Pass-Kachel einen Eintrag namens
-   "Einreisepapiere" an sich. */
-function ticketKat(gruppe) {
-  const g = (gruppe || '').toLowerCase();
-  if (g.includes('flug') || g.includes('flüg') || g.includes('flight')) return 'flug';
-  if (g.includes('boot') || g.includes('fähre') || g.includes('faehre') || g.includes('schiff') ||
-      g.includes('transport') || g.includes('zug') || g.includes('bus') || g.includes('transfer') || g.includes('miet')) return 'boot';
-  if (g.includes('aktivit') || g.includes('ausfl') || g.includes('tauch') || g.includes('eintritt')) return 'akt';
-  if (g.includes('hotel') || g.includes('unterkunft')) return 'hotel';
-  if (g.includes('visa') || g.includes('einreise')) return 'visa';
-  if (g.includes('pass')) return 'pass';
-  if (g.includes('versicher')) return 'schutz';
-  return 'rest';
-}
+function ticketKat(gruppe) { return Kern.kachelVon(gruppe); }
 
 function mapsUrl(h) {
   const gps = String(h.gps || '').trim();
@@ -4412,7 +4355,7 @@ function ticketEintrag(t) {
     ticketStatusZeile(t);
 
   const dokus = dokListe(t.id);
-  if (dokus.length) div.appendChild(dokReihe(t, dokus));
+  if (dokus.length) { div.appendChild(dokReihe(t, dokus)); const n = dokNotizenEl(dokus); if (n) div.appendChild(n); }
 
   const knopf = document.createElement('button');
   knopf.className = 'btn btn-secondary btn-inline';
@@ -4974,6 +4917,7 @@ function wxZeigen(o) {
   document.getElementById('wxDesc').textContent = o.desc;
   document.getElementById('wxRange').textContent = o.range || '';
   document.getElementById('wxStamp').textContent = o.stamp || '';
+  document.getElementById('wxOrt').textContent = wetterOrt ? 'Wetter in ' + wetterOrt : '';
 }
 function wxAusEintrag(e) {
   const w = wmoInfo(e.code);
@@ -5911,8 +5855,24 @@ function ausgabeBlatt(o) {
    Ausgaben. Wird beim Tippen gesichert, ohne Speichern-Knopf. */
 const NOTIZ_KEY = 'reisebegleiter_notizen';
 let notizTimer = null;
+/* Die gespeicherte Notiz steht auf Heute zuoberst (Entscheid 27). */
+function heuteNotizZeichnen() {
+  let text = '';
+  try { text = localStorage.getItem(NOTIZ_KEY) || ''; } catch(e) {}
+  const karte = document.getElementById('todayNotiz');
+  if (!karte) return;
+  karte.style.display = text.trim() ? '' : 'none';
+  document.getElementById('todayNotizText').textContent = text.trim();
+}
+document.getElementById('todayNotiz').addEventListener('click', () => {
+  showScreen('screenTools');
+  const feld = document.getElementById('notizFeld');
+  feld.scrollIntoView({ block: 'center' });
+  setTimeout(() => feld.focus(), 120);
+});
 function notizenLaden() {
   const feld = document.getElementById('notizFeld');
+  heuteNotizZeichnen();
   if (!feld) return;
   try { feld.value = localStorage.getItem(NOTIZ_KEY) || ''; } catch(e) { /* egal */ }
   feld.addEventListener('input', () => {
@@ -5920,6 +5880,7 @@ function notizenLaden() {
     notizTimer = setTimeout(() => {
       try {
         localStorage.setItem(NOTIZ_KEY, feld.value);
+        heuteNotizZeichnen();
         const st = document.getElementById('notizStatus');
         st.textContent = 'Gesichert ' + uhrzeit(Date.now()) + '. Keine PINs, keine Kartennummern.';
       } catch(e) {
@@ -5932,25 +5893,107 @@ function notizenLaden() {
 /* ---------- Uebersetzer ----------
    Braucht Netz. Ein eingebauter Uebersetzer laesst sich in einer
    PWA nicht offline betreiben, deshalb der ehrliche Umweg. */
-/* Entscheid 23 (16.11.2026): DeepL statt Google. Die zweite Sprache
-   folgt dem Reiseland (Budget, "Reiseland waehlen"). Kennt DeepL die
-   Sprache nicht sicher, fuehrt der Knopf zu Google Translate. Es wird
-   nur ein Link geoeffnet, die App uebergibt keinen Text. */
-function uebersetzerZeichnen() {
-  const liste = Kern.uebersetzer(aktLand());
-  const zweit = liste[1];
-  const knopf = document.getElementById('trDeTh');
-  knopf.style.display = zweit ? '' : 'none';
-  if (zweit) document.getElementById('trDeThText').textContent = 'DE – ' + zweit.name;
-  const land = Kern.landInfo(aktLand());
-  document.getElementById('trHinweis').textContent =
-    (zweit && zweit.dienst !== 'DeepL'
-      ? 'DE – EN öffnet DeepL. ' + zweit.name + ' öffnet Google Translate, weil DeepL die Sprache nicht sicher anbietet. '
-      : 'Öffnet DeepL im Browser. ') + 'Braucht Netz.' +
-    (land ? ' Reiseland: ' + land.name + '.' : ' Ohne Reiseland (unter Budget wählbar) gibt es nur DE – EN.');
+/* Entscheid 31 (17.11.2026): Der Translator fragt zuerst nach der
+   Muttersprache und nach den Sprachen, in die uebersetzt werden soll.
+   Pro Zielsprache ein Knopf "DE – ENG", "DE – Thai". DeepL zuerst,
+   Google Translate nur, wenn DeepL eine der beiden Sprachen nicht
+   sicher anbietet. Die Einstellung liegt unter einem eigenen Schluessel,
+   damit sie das Archivieren einer Reise ueberlebt. Es wird nur ein
+   Link geoeffnet, die App uebergibt keinen Text. */
+const SPRACH_KEY = 'reisebegleiter_sprachen';
+function sprachWahl() {
+  try {
+    const w = JSON.parse(localStorage.getItem(SPRACH_KEY) || 'null');
+    if (w && Kern.sprachInfo(w.mutter) && Array.isArray(w.ziele)) {
+      return { mutter: w.mutter, ziele: w.ziele.filter(z => Kern.sprachInfo(z) && z !== w.mutter) };
+    }
+  } catch(e) {}
+  return null;
 }
-document.getElementById('trDeEn').addEventListener('click', () => extern(Kern.uebersetzer(aktLand())[0].url));
-document.getElementById('trDeTh').addEventListener('click', () => { const z = Kern.uebersetzer(aktLand())[1]; if (z) extern(z.url); });
+function uebersetzerZeichnen() {
+  const box = document.getElementById('trKnoepfe');
+  if (!box) return;
+  const w = sprachWahl();
+  box.innerHTML = '';
+  document.getElementById('trEinrichten').innerHTML = icon('pencil', 16) + (w ? 'Sprachen ändern' : 'Sprachen einrichten');
+  if (!w || !w.ziele.length) {
+    document.getElementById('trHinweis').textContent = 'Noch nicht eingerichtet. Wähle deine Muttersprache und die Sprachen, in die du übersetzen willst.';
+    return;
+  }
+  w.ziele.forEach(z => {
+    const u = Kern.uebersetzer(w.mutter, z);
+    if (!u) return;
+    const b = document.createElement('button');
+    b.className = 'btn btn-secondary tr-paar';
+    b.type = 'button';
+    b.dataset.ziel = z;
+    b.innerHTML = '<span class="tr-paar-name">' + icon('translate', 17) + esc(u.name) + '</span><span class="tr-paar-dienst">' + esc(u.dienst) + '</span>';
+    b.addEventListener('click', () => extern(u.url));
+    box.appendChild(b);
+  });
+  document.getElementById('trHinweis').textContent = 'Öffnet die Übersetzung im Browser oder in der App. Braucht Netz.';
+}
+function sprachBlatt() {
+  const alt = sprachWahl();
+  const sheet = document.getElementById('sheet');
+  sheet.innerHTML = '';
+  blattKopf(sheet, 'Sprachen', 'Für die Knöpfe im Translator. Bleibt auf diesem Gerät.');
+  const l1 = document.createElement('div');
+  l1.className = 'sheet-label';
+  l1.textContent = 'Was ist deine Muttersprache?';
+  sheet.appendChild(l1);
+  const wahl = document.createElement('select');
+  wahl.className = 'input-field';
+  wahl.id = 'trMutter';
+  wahl.innerHTML = Kern.SPRACHEN.map(x => '<option value="' + esc(x.code) + '">' + esc(x.name) + '</option>').join('');
+  wahl.value = alt ? alt.mutter : 'de';
+  sheet.appendChild(wahl);
+  const l2 = document.createElement('div');
+  l2.className = 'sheet-label';
+  l2.textContent = 'In welche Sprachen möchtest du übersetzen?';
+  sheet.appendChild(l2);
+  const reihe = document.createElement('div');
+  reihe.className = 'chip-reihe';
+  reihe.id = 'trZiele';
+  const vorschlag = alt ? alt.ziele : ['en', Kern.landSprache(aktLand())].filter(Boolean);
+  const gewaehlt = new Set(vorschlag);
+  const chipsZeichnen = () => {
+    reihe.innerHTML = '';
+    Kern.SPRACHEN.filter(x => x.code !== wahl.value).forEach(x => {
+      const c = document.createElement('button');
+      c.type = 'button';
+      c.className = 'chip-wahl' + (gewaehlt.has(x.code) ? ' an' : '');
+      c.dataset.code = x.code;
+      c.textContent = x.name;
+      c.addEventListener('click', () => {
+        if (gewaehlt.has(x.code)) gewaehlt.delete(x.code); else gewaehlt.add(x.code);
+        c.classList.toggle('an', gewaehlt.has(x.code));
+      });
+      reihe.appendChild(c);
+    });
+  };
+  wahl.addEventListener('change', () => { gewaehlt.delete(wahl.value); chipsZeichnen(); });
+  chipsZeichnen();
+  sheet.appendChild(reihe);
+  const ok = document.createElement('button');
+  ok.className = 'btn';
+  ok.type = 'button';
+  ok.id = 'trSpeichern';
+  ok.style.cssText = 'width:100%;margin-top:var(--sp-m);';
+  ok.textContent = 'Speichern';
+  ok.addEventListener('click', () => {
+    /* Reihenfolge wie in der Liste, damit die Knoepfe nicht springen. */
+    const ziele = Kern.SPRACHEN.map(x => x.code).filter(c => gewaehlt.has(c) && c !== wahl.value);
+    if (!ziele.length) { alert('Bitte mindestens eine Sprache wählen, in die übersetzt werden soll.'); return; }
+    try { localStorage.setItem(SPRACH_KEY, JSON.stringify({ mutter: wahl.value, ziele: ziele })); }
+    catch(e) { alert('Die Sprachen wurden NICHT gespeichert, der Speicher ist voll.'); return; }
+    sheetSchliessen();
+    uebersetzerZeichnen();
+  });
+  sheet.appendChild(ok);
+  blattAuf(sheet);
+}
+document.getElementById('trEinrichten').addEventListener('click', sprachBlatt);
 
 /* ---------- Regeln fuer unterwegs ----------
    Stehen im Datenblock "regeln", einer Liste von Saetzen. Fehlt der
@@ -6148,7 +6191,9 @@ async function dokDateiGewaehlt(e) {
   const ticketId = dokZielTicket;
   this.value = '';
   dokZielTicket = null;
-  if (!file || !ticketId) return;
+  if (!file) return;
+  /* Ohne Ziel kommt die Datei vom Plus oben: zuordnen lassen. */
+  if (!ticketId) { dokPlusDatei(file); return; }
 
   try {
     const meta = await dokSpeichern(ticketId, file);
@@ -6170,61 +6215,293 @@ async function dokDateiGewaehlt(e) {
 document.getElementById('dokInput').addEventListener('change', dokDateiGewaehlt);
 document.getElementById('dokKamera').addEventListener('change', dokDateiGewaehlt);
 
-/* Der Plus-Knopf oben kennt keine Buchung. Er fragt deshalb zuerst,
-   danach kommt die Auswahl Foto, Galerie, PDF oder Link. Reihenfolge
-   der Liste: erst was noch fehlt, dann der Rest. Wer 21 Belege abarbeitet, sieht oben immer
-   das Naechste. */
-function dokZielWaehlen() {
-  const alle = alleTickets().slice();
-  if (!alle.length) {
-    alert('Es sind noch keine Buchungen erfasst. Erst den Reiseplan importieren.');
+/* ---------- Dokumente: Plus oben (Entscheid 28, 17.11.2026) ----------
+   Ein Dokument wird abgelegt, gelesen und einer Buchung oder Kachel
+   zugeordnet. Die App schlaegt vor, Lio bestaetigt oder sagt per
+   Suchtext, wohin es gehoert. Der Suchtext bleibt als Notiz am
+   Dokument. Aus Dokumente heraus entsteht keine Buchung im Reiseplan:
+   das bleibt "Reise planen" im Reiter Reiseplan vorbehalten. Was
+   nicht zugeordnet wird, bleibt im Eingang. */
+function dokPlusBlatt() {
+  if (dokAblageDefekt) {
+    alert('Die Dokumenten-Ablage ist in diesem Browser nicht verfügbar.\n\n' +
+      'Meist liegt das am privaten Modus. Ohne Ablage würde die Datei verloren gehen, deshalb wird sie nicht angenommen.');
     return;
   }
-  const offen = alle.filter(t => !dokListe(t.id).length);
-  const fertig = alle.filter(t => dokListe(t.id).length);
-
   const sheet = document.getElementById('sheet');
   sheet.innerHTML = '';
-  const titel = document.createElement('div');
-  titel.className = 'sheet-titel';
-  titel.textContent = 'Zu welcher Buchung?';
-  sheet.appendChild(titel);
-  const sub = document.createElement('div');
-  sub.className = 'sheet-sub';
-  sub.textContent = offen.length
-    ? offen.length + ' von ' + alle.length + ' Buchungen haben noch kein Dokument.'
-    : 'Alle ' + alle.length + ' Buchungen haben ein Dokument.';
-  sheet.appendChild(sub);
-
-  const gruppe = (kopf, liste) => {
-    if (!liste.length) return;
-    const h = document.createElement('div');
-    h.className = 'grp-head';
-    h.textContent = kopf;
-    sheet.appendChild(h);
-    liste.forEach(t => {
-      const b = document.createElement('button');
-      b.className = 'btn btn-secondary';
-      b.type = 'button';
-      b.style.cssText = 'width:100%;text-align:left;margin-bottom:6px;';
-      b.innerHTML = '<div>' + esc(t.titel) + '</div>' +
-        (t.info ? '<div class="hint-line">' + esc(t.info) + '</div>' : '');
-      b.addEventListener('click', () => { sheetSchliessen(); dokAufnehmen(t.id); });
-      sheet.appendChild(b);
-    });
+  blattKopf(sheet, 'Dokument hinzufügen', 'Die App liest es auf diesem Gerät und schlägt vor, wohin es gehört.');
+  const wege = document.createElement('div');
+  wege.className = 'planen-wege';
+  const weg = (text, ikone, zweit, id, aktion) => {
+    const b = document.createElement('button');
+    b.className = 'btn planen-weg' + (zweit ? ' btn-secondary' : '');
+    b.type = 'button';
+    b.id = id;
+    b.innerHTML = icon(ikone, 26) + esc(text);
+    b.addEventListener('click', aktion);
+    wege.appendChild(b);
   };
-  gruppe('Noch ohne Dokument', offen);
-  gruppe('Schon hinterlegt', fertig);
+  const datei = (id, accept) => {
+    dokZielTicket = null;
+    const inp = document.getElementById(id);
+    if (accept) inp.accept = accept;
+    sheetSchliessen();
+    inp.click();
+  };
+  weg('Foto aufnehmen', 'camera', false, 'dokPlusFoto', () => datei('dokKamera'));
+  weg('Bild oder PDF wählen', 'doc', true, 'dokPlusDatei', () => datei('dokInput', 'image/*,application/pdf,.pdf'));
+  sheet.appendChild(wege);
 
-  document.getElementById('sheetBg').classList.add('auf');
-  requestAnimationFrame(() => { sheet.classList.add('auf'); sheet.scrollTop = 0; });
+  const l1 = document.createElement('div');
+  l1.className = 'sheet-label';
+  l1.textContent = 'Oder einen Link einfügen';
+  sheet.appendChild(l1);
+  const feld = document.createElement('input');
+  feld.type = 'url';
+  feld.className = 'sheet-feld';
+  feld.id = 'dokPlusLink';
+  feld.placeholder = 'https://…';
+  feld.autocomplete = 'off';
+  sheet.appendChild(feld);
+  const ok = document.createElement('button');
+  ok.className = 'btn';
+  ok.type = 'button';
+  ok.id = 'dokPlusLinkOk';
+  ok.style.cssText = 'width:100%;margin-top:var(--sp-s);';
+  ok.innerHTML = icon('link', 18) + 'Link zuordnen';
+  ok.addEventListener('click', async () => {
+    const treffer = /https?:\/\/[^\s<>"']+/i.exec(feld.value.trim());
+    if (!treffer) { alert('Bitte einen Link einfügen, der mit http:// oder https:// beginnt.'); feld.focus(); return; }
+    const url = treffer[0].replace(/[).,;]+$/, '');
+    try {
+      const meta = await dokLinkSpeichern(EINGANG, url);
+      renderDokumente();
+      zuordnenBlatt(meta, Kern.erkennen(url), url);
+    } catch(err) {
+      alert('Der Link wurde NICHT gespeichert.\n\n' + (err && err.message ? err.message : String(err)));
+    }
+  });
+  sheet.appendChild(ok);
+  const hinweis = document.createElement('div');
+  hinweis.className = 'badge-label';
+  hinweis.textContent = 'Ein Link wird gespeichert, die Seite dahinter ruft die App nicht ab. Neue Buchungen erfasst du im Reiter Reiseplan.';
+  sheet.appendChild(hinweis);
+  blattAuf(sheet);
 }
-/* Entscheid 22 (16.11.2026): Das Plus oben in Dokumente oeffnet
-   denselben Einstieg wie "Reise planen": Foto, PDF, Bild, Link, Text
-   oder Handeingabe, mit Texterkennung und Zuordnung. Vorher fragte es
-   zuerst nach einer Buchung und tat ohne Buchung gar nichts.
-   dokZielWaehlen bleibt fuer "Beleg an eine bestehende Buchung". */
-document.getElementById('addTicketTop').addEventListener('click', planenBlatt);
+
+async function dokPlusDatei(file) {
+  const r = await eingangAblegen(file, false);
+  if (!r) return;
+  if (r.schon) {
+    const t = alleTickets().find(x => x.id === r.schon.ticketId);
+    alert('Diese Datei liegt bereits in der Ablage' + (t ? ', bei «' + t.titel + '»' : '') + '. Sie wird kein zweites Mal gespeichert.');
+    return;
+  }
+  renderDokumente();
+  speicherPruefen().then(renderSpeicherLage).catch(() => {});
+  leseBlatt(r.meta.name);
+  const erg = await belegLesen(file, r.meta.name, r.meta.typ);
+  zuordnenBlatt(r.meta, erg, erg.text || '');
+}
+
+/* "Zuordnen" im Eingang: dasselbe Blatt. */
+async function dokEingangZuordnen(meta) {
+  if (meta.url) { zuordnenBlatt(meta, Kern.erkennen(meta.url), meta.url); return; }
+  leseBlatt(meta.name);
+  let erg;
+  try {
+    const b = await dokBlob(meta);
+    if (!b) throw new Error('Die Datei ist nicht mehr in der Ablage.');
+    erg = await belegLesen(b, meta.name, meta.typ);
+  } catch(e) {
+    erg = { typ: 'sonstiges', felder: {}, sicher: {}, hinweise: [], text: '' };
+  }
+  zuordnenBlatt(meta, erg, erg.text || '');
+}
+
+const KACHEL_TRAEGER = {
+  pass:   { titel: 'Reisepass',         typ: 'dokument', dokArt: 'pass' },
+  visa:   { titel: 'Einreise und Visa', typ: 'dokument', dokArt: 'visa' },
+  schutz: { titel: 'Versicherung',      typ: 'versicherung' },
+  rest:   { titel: 'Weitere',           typ: 'dokument', dokArt: 'rest' }
+};
+/* Ziel fuer eine Kachel ohne Reiseplan. Gibt es dort genau einen
+   Traeger, kommt das Dokument dazu. Sonst entsteht ein neuer, mit dem
+   Dateinamen als Titel. Diese Arten haben keine Tage und erscheinen
+   deshalb nicht im Tagesplan. */
+function kachelTraeger(kat, name) {
+  const da = alleTickets().filter(t => ticketKat(t.gruppe) === kat);
+  if (da.length === 1) return da[0].id;
+  const v = KACHEL_TRAEGER[kat];
+  const titel = kat === 'rest' || da.length ? (String(name || '').replace(/\.[a-z0-9]{2,4}$/i, '') || v.titel) : v.titel;
+  const b = Kern.buchungSauber({ id: Kern.neueId(), typ: v.typ, dokArt: v.dokArt, titel: titel, zahlung: 'bezahlt' });
+  appData.buchungen = (appData.buchungen || []).concat([b]);
+  if (!datenSpeichern()) { appData.buchungen = appData.buchungen.filter(x => x.id !== b.id); return null; }
+  return b.id;
+}
+
+function zuordnenBlatt(meta, erg, text) {
+  const z = Kern.belegZuordnen(erg || {}, text || '', appData);
+  const sheet = document.getElementById('sheet');
+  sheet.innerHTML = '';
+  planenOffen = false;
+  blattKopf(sheet, 'Wohin gehört das?', meta.name || '');
+  const kachelName = id => (DOC_KAT.find(k => k.id === id) || {}).name || id;
+
+  const notizFeld = document.createElement('input');
+  const zuordnen = async (ziel, titel) => {
+    let id = ziel;
+    if (ziel.indexOf('kachel:') === 0) id = kachelTraeger(ziel.slice(7), meta.name);
+    if (!id) return;
+    try {
+      const notiz = notizFeld.value.trim();
+      const m = Object.assign({}, meta, notiz ? { notiz: notiz } : {});
+      await dokUmhaengen(m, id);
+      sheetSchliessen();
+      renderDokumente();
+      loadUIFromAppData();
+      meldung('Zugeordnet: ' + titel);
+    } catch(err) {
+      alert('Die Zuordnung wurde NICHT gespeichert.\n\n' + (err && err.message ? err.message : String(err)));
+    }
+  };
+
+  if (z.vorschlag) {
+    const v = z.vorschlag;
+    const karte = document.createElement('div');
+    karte.className = 'card zuordnen-vorschlag';
+    karte.id = 'zuordnenVorschlag';
+    karte.innerHTML = '<div class="card-label">Vorschlag</div>' +
+      '<div class="card-title card-title-sm">' + esc(v.titel) + '</div>' +
+      '<div class="card-sub">' + esc([kachelName(v.kachel), v.info].filter(Boolean).join(' · ')) + '</div>' +
+      '<div class="badge-label">Erkannt an: ' + esc(v.grund) + '</div>';
+    const ok = document.createElement('button');
+    ok.className = 'btn';
+    ok.type = 'button';
+    ok.id = 'zuordnenOk';
+    ok.style.cssText = 'width:100%;margin-top:var(--sp-s);';
+    ok.textContent = 'Bestätigen';
+    ok.addEventListener('click', () => zuordnen(v.id, v.titel));
+    karte.appendChild(ok);
+    sheet.appendChild(karte);
+  } else {
+    const leer = document.createElement('div');
+    leer.className = 'hinweis-box';
+    leer.id = 'zuordnenKeiner';
+    leer.textContent = 'Keine passende Buchung gefunden.' + (z.kachel ? ' Am ehesten passt die Kachel «' + kachelName(z.kachel) + '».' : '') +
+      ' Unten wählen, wohin es gehört, oder im Eingang lassen.';
+    sheet.appendChild(leer);
+    if (z.kachel) {
+      const k = document.createElement('button');
+      k.className = 'btn';
+      k.type = 'button';
+      k.id = 'zuordnenKachel';
+      k.style.cssText = 'width:100%;margin-top:var(--sp-s);';
+      k.textContent = 'In «' + kachelName(z.kachel) + '» ablegen';
+      k.addEventListener('click', () => zuordnen('kachel:' + z.kachel, kachelName(z.kachel)));
+      sheet.appendChild(k);
+    }
+  }
+
+  const l1 = document.createElement('div');
+  l1.className = 'sheet-label';
+  l1.textContent = 'Wo gehört es hin? Tippen sucht, der Text bleibt als Notiz am Dokument.';
+  sheet.appendChild(l1);
+  notizFeld.type = 'text';
+  notizFeld.className = 'sheet-feld';
+  notizFeld.id = 'zuordnenSuche';
+  notizFeld.placeholder = 'z.B. Hotel Krabi, Rückflug, 12.01.';
+  notizFeld.autocomplete = 'off';
+  if (meta.notiz) notizFeld.value = meta.notiz;
+  sheet.appendChild(notizFeld);
+
+  const liste = document.createElement('div');
+  liste.id = 'zuordnenListe';
+  sheet.appendChild(liste);
+  const punkte = {};
+  z.kandidaten.forEach(k => { punkte[k.id] = k.punkte; });
+  const ziele = Object.keys(KACHEL_TRAEGER).map(k => ({ id: 'kachel:' + k, titel: kachelName(k), info: 'Kachel', such: kachelName(k) }))
+    .concat(alleTickets().filter(t => t.status !== 'storniert').map(t => ({
+      id: t.id, titel: t.titel, info: [kachelName(ticketKat(t.gruppe)), t.info].filter(Boolean).join(' · '),
+      such: [t.titel, t.info, t.gruppe, t.ort, t.abDatum, t.abDatum ? t.abDatum.split('-').reverse().join('.') : ''].join(' ')
+    })));
+  const zeichnen = () => {
+    const woerter = notizFeld.value.toLowerCase().split(/[\s,]+/).filter(w => w.length >= 2);
+    const passend = ziele.filter(x => {
+      const h = x.such.toLowerCase();
+      return woerter.every(w => h.indexOf(w) !== -1) || (woerter.length > 1 && woerter.filter(w => h.indexOf(w) !== -1).length >= 2);
+    }).sort((a, b) => (punkte[b.id] || 0) - (punkte[a.id] || 0));
+    liste.innerHTML = '';
+    passend.slice(0, 40).forEach(x => {
+      const b = document.createElement('button');
+      b.className = 'btn btn-secondary zuordnen-ziel';
+      b.type = 'button';
+      b.dataset.id = x.id;
+      b.style.cssText = 'width:100%;text-align:left;margin-top:6px;display:block;';
+      b.innerHTML = '<div>' + esc(x.titel) + '</div>' + (x.info ? '<div class="hint-line">' + esc(x.info) + '</div>' : '');
+      b.addEventListener('click', () => zuordnen(x.id, x.titel));
+      liste.appendChild(b);
+    });
+    if (!passend.length) {
+      const n = document.createElement('div');
+      n.className = 'badge-label';
+      n.textContent = 'Nichts gefunden. Die Notiz bleibt trotzdem, wenn du es im Eingang lässt.';
+      liste.appendChild(n);
+    }
+  };
+  notizFeld.addEventListener('input', zeichnen);
+  zeichnen();
+
+  const spaeter = document.createElement('button');
+  spaeter.className = 'btn btn-secondary';
+  spaeter.type = 'button';
+  spaeter.id = 'zuordnenSpaeter';
+  spaeter.style.cssText = 'width:100%;margin-top:var(--sp-m);';
+  spaeter.textContent = 'Im Eingang lassen';
+  spaeter.addEventListener('click', async () => {
+    const notiz = notizFeld.value.trim();
+    if (notiz !== (meta.notiz || '')) {
+      try { await dokMetaSetzen(Object.assign({}, meta, { notiz: notiz })); } catch(e) { /* Notiz ist Beiwerk */ }
+    }
+    sheetSchliessen();
+    renderDokumente();
+  });
+  sheet.appendChild(spaeter);
+  blattAuf(sheet);
+}
+
+/* Schreibt einen Metasatz neu, etwa fuer die Notiz, und zieht den
+   Index nach. */
+async function dokMetaSetzen(meta) {
+  const db = await dokDb();
+  await new Promise((ok, fehler) => {
+    const tx = db.transaction('meta', 'readwrite');
+    tx.objectStore('meta').put(meta);
+    tx.oncomplete = () => ok();
+    tx.onabort = () => fehler(tx.error || new Error('Transaktion abgebrochen'));
+    tx.onerror = () => fehler(tx.error || new Error('Schreibfehler'));
+  });
+  const liste = dokIndex[meta.ticketId] || [];
+  const i = liste.findIndex(m => m.id === meta.id);
+  if (i !== -1) liste[i] = meta;
+}
+
+/* Notizen unter den Dokumenten einer Buchung. */
+function dokNotizenEl(dokus) {
+  const mit = dokus.filter(m => m.notiz);
+  if (!mit.length) return null;
+  const d = document.createElement('div');
+  d.className = 'dok-notizen';
+  mit.forEach(m => {
+    const z = document.createElement('div');
+    z.className = 'doc-eintrag-zeile';
+    z.textContent = 'Notiz: ' + m.notiz;
+    d.appendChild(z);
+  });
+  return d;
+}
+document.getElementById('addTicketTop').addEventListener('click', dokPlusBlatt);
 document.getElementById('dokVollZu').addEventListener('click', dokVollSchliessen);
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape') dokVollSchliessen(); });
 
@@ -6951,13 +7228,13 @@ function eingangZeichnen() {
     zeile.appendChild(dokReihe({ id: EINGANG, titel: 'Eingang' }, [m]));
     const mitte = document.createElement('div');
     mitte.className = 'hist-main';
-    mitte.innerHTML = '<div class="hist-titel">' + esc(m.name) + '</div><div class="hist-sub">' + esc(datumKurz(m.erfasst)) + ' · ' + esc(mb(m.groesse)) + '</div>';
+    mitte.innerHTML = '<div class="hist-titel">' + esc(m.name) + '</div><div class="hist-sub">' + esc(datumKurz(m.erfasst)) + (m.url ? '' : ' · ' + esc(mb(m.groesse))) + (m.notiz ? ' · ' + esc(m.notiz) : '') + '</div>';
     zeile.appendChild(mitte);
     const knopf = document.createElement('button');
     knopf.className = 'btn';
     knopf.type = 'button';
     knopf.textContent = 'Zuordnen';
-    knopf.addEventListener('click', () => eingangZuordnen(m));
+    knopf.addEventListener('click', () => dokEingangZuordnen(m));
     zeile.appendChild(knopf);
     panel.appendChild(zeile);
   });
@@ -7016,6 +7293,7 @@ async function belegLesen(blob, name, typ) {
     }
   }
   erg = Kern.erkennen(text);
+  erg.text = text;
   if (perOcr) {
     Object.keys(erg.sicher).forEach(k => { if (erg.sicher[k] === 'hoch') erg.sicher[k] = 'mittel'; });
     erg.hinweise.unshift('Der Text wurde aus einem Bild gelesen. Dabei können Ziffern und Buchstaben verwechselt werden, bitte Datum, Uhrzeit, Betrag und Buchungsnummer mit dem Beleg vergleichen.');
@@ -7420,7 +7698,7 @@ function buchungBlatt(o) {
       bl.className = 'sheet-label';
       bl.textContent = 'Belege';
       sheet.appendChild(bl);
-      if (dokus.length) sheet.appendChild(dokReihe({ id: o.buchung.id, titel: Kern.buchungTitel(o.buchung) }, dokus));
+      if (dokus.length) { sheet.appendChild(dokReihe({ id: o.buchung.id, titel: Kern.buchungTitel(o.buchung) }, dokus)); const n = dokNotizenEl(dokus); if (n) sheet.appendChild(n); }
       const r = document.createElement('div');
       r.className = 'row';
       r.appendChild(tagKnopf(dokus.length ? 'Weiteren Beleg hinterlegen' : 'Beleg hinterlegen', 'plus', () => { sheetSchliessen(); dokAufnehmen(o.buchung.id); }, true));
@@ -7610,28 +7888,13 @@ document.getElementById('dokSuche').addEventListener('input', dokSuchen);
 function abrechnungJetzt() { return Kern.abrechnung(appData || {}, ausgaben, kurse); }
 
 function budgetOeffnen() { showScreen('screenBudget'); }
-document.getElementById('todayBudget').addEventListener('click', budgetOeffnen);
 document.getElementById('todayEingang').addEventListener('click', () => showScreen('screenTickets'));
 
 /* Die Zeilen auf Heute und unter Mehr. */
 function budgetZeilen() {
   if (!appData) return;
-  const ab = abrechnungJetzt();
-  const heuteKarte = document.getElementById('todayBudget');
-  const hat = ab.budget > 0 || ab.gesamt > 0;
-  heuteKarte.style.display = hat ? '' : 'none';
-  const h = heimat();
-  let titel, sub;
-  if (ab.budget > 0) {
-    titel = (ab.verbleibend >= 0 ? 'Noch ' + geld(ab.verbleibend) : geld(-ab.verbleibend) + ' über Budget') + ' ' + h;
-    sub = 'von ' + geld(ab.budget) + ' ' + h + ' · bezahlt ' + geld(ab.tatsaechlich) + (ab.offen + ab.geplant > 0 ? ' · offen ' + geld(ab.offen + ab.geplant) : '');
-  } else {
-    titel = 'Bisher ' + geld(ab.tatsaechlich) + ' ' + h + ' bezahlt';
-    sub = (ab.offen + ab.geplant > 0 ? 'Noch offen ' + geld(ab.offen + ab.geplant) + ' ' + h + ' · ' : '') + 'Kein Budget gesetzt';
-  }
-  document.getElementById('todayBudgetTitel').textContent = titel;
-  document.getElementById('todayBudgetSub').textContent = sub;
   if (document.getElementById('screenBudget').classList.contains('active')) renderBudget();
+  auswertungKarteZeichnen();
 }
 
 /* Alles neu zeichnen, was von Land, Waehrung, Kurs oder Kategorien
@@ -7639,7 +7902,6 @@ function budgetZeilen() {
 function finanzenNeuZeichnen() {
   waehlerFuellen();
   uebersetzerZeichnen();
-  uhrenZeichnen();
   const w = aktWaehrung();
   document.getElementById('thbInput').placeholder = w;
   document.getElementById('chfInput').placeholder = heimat();
@@ -7682,15 +7944,13 @@ function renderBudget() {
     box.appendChild(band);
   }
 
-  const offenGesamt = Math.round((ab.offen + ab.geplant) * 100) / 100;
   const raster = document.createElement('div');
   raster.className = 'zahl-raster';
   raster.innerHTML =
     '<div class="zahl-kachel" id="zkBudget"><div class="zahl-wort">Budget</div><div class="zahl-wert">' + (ab.budget ? geld(ab.budget) : '–') + '</div><div class="zahl-sub">' + (ab.budget ? h + ' · antippen zum Ändern' : 'antippen zum Setzen') + '</div></div>' +
     '<div class="zahl-kachel"><div class="zahl-wort">' + (ab.budget ? (ab.verbleibend >= 0 ? 'Verbleibend' : 'Über Budget') : 'Gesamtkosten') + '</div><div class="zahl-wert ' + (ab.budget ? (ab.verbleibend >= 0 ? 'plus' : 'minus') : '') + '" id="zwVerbleibend">' +
       geld(ab.budget ? Math.abs(ab.verbleibend) : ab.gesamt) + '</div><div class="zahl-sub">' + h + (ab.budget ? ' · nach bezahlt und offen' : '') + '</div></div>' +
-    '<div class="zahl-kachel"><div class="zahl-wort">Bezahlt</div><div class="zahl-wert" id="zwBezahlt">' + geld(ab.tatsaechlich) + '</div><div class="zahl-sub">Buchungen ' + geld(ab.bezahltBuchungen) + ' · unterwegs ' + geld(ab.unterwegs) + '</div></div>' +
-    '<div class="zahl-kachel"><div class="zahl-wort">Noch offen</div><div class="zahl-wert" id="zwOffen">' + geld(offenGesamt) + '</div><div class="zahl-sub">gebucht ' + geld(ab.offen) + ' · geplant ' + geld(ab.geplant) + '</div></div>';
+    '<div class="zahl-kachel zahl-breit"><div class="zahl-wort">Bezahlt</div><div class="zahl-wert" id="zwBezahlt">' + geld(ab.tatsaechlich) + '</div><div class="zahl-sub">Buchungen ' + geld(ab.bezahltBuchungen) + ' · unterwegs ' + geld(ab.unterwegs) + '</div></div>';
   box.appendChild(raster);
   raster.querySelector('#zkBudget').addEventListener('click', budgetBlatt);
 
@@ -7707,26 +7967,6 @@ function renderBudget() {
     warn.textContent = ab.ohneKurs.length + (ab.ohneKurs.length === 1 ? ' Posten fehlt' : ' Posten fehlen') + ' in der Summe, weil für die Währung kein Kurs hinterlegt ist: ' +
       ab.ohneKurs.map(z => z.waehrung).filter((v, i, a) => a.indexOf(v) === i).join(', ') + '. Oben im Umrechner einen Kurs eintragen.';
     box.appendChild(warn);
-  }
-
-  if (ab.kategorien.length) {
-    const max = ab.kategorien[0].chf;
-    box.appendChild(karteMit('Nach Kategorie, in ' + h, ab.kategorien.map(k => balkenZeile(k.name, k.chf, max)).join('')));
-  }
-  if (ab.laender.length > 1 || (ab.laender[0] && ab.laender[0].name !== 'Ohne Land')) {
-    const max = ab.laender[0].chf;
-    box.appendChild(karteMit('Nach Land', ab.laender.map(k => balkenZeile(k.name, k.chf, max)).join('')));
-  }
-  if (ab.orte.length) {
-    const max = ab.orte[0].chf;
-    box.appendChild(karteMit('Nach Reiseort', ab.orte.map(k => balkenZeile(k.name, k.chf, max)).join('')));
-  }
-  if (ab.proTag.length) {
-    const max = Math.max.apply(null, ab.proTag.map(t => t.chf));
-    box.appendChild(karteMit('Pro Tag, unterwegs erfasst',
-      '<div class="badge-label">Schnitt ' + geld(ab.tagesSchnittUnterwegs || 0) + ' ' + h + ' pro Reisetag' +
-      (ab.teuersterTag ? ' · teuerster Tag ' + datumKurz(ab.teuersterTag.tag) + ' mit ' + geld(ab.teuersterTag.chf) : '') + '</div>' +
-      ab.proTag.map(t => balkenZeile(datumKurz(t.tag), t.chf, max)).join('')));
   }
 
   /* Reise in Zahlen */
@@ -7752,9 +7992,66 @@ function renderBudget() {
     box.appendChild(n);
   }
 
-  const knoepfe = document.createElement('div');
-  knoepfe.className = 'card';
+}
+
+/* ---------- Endauswertung (Entscheid 30, 17.11.2026) ----------
+   Was wofuer wie viel gekostet hat: nach Kategorie, Land, Reiseort
+   und Tag. Stand frueher im Reiter Budget, gehoert aber zur
+   Auswertung. Jederzeit sichtbar, auch mitten in der Reise, und fuer
+   jede Reise im Archiv dieselbe Ansicht. */
+function auswertungKarten(ab, h) {
+  const karten = [];
+  if (ab.kategorien.length) {
+    const max = ab.kategorien[0].chf;
+    karten.push(karteMit('Nach Kategorie, in ' + h, ab.kategorien.map(k => balkenZeile(k.name, k.chf, max)).join('')));
+  }
+  if (ab.laender.length > 1 || (ab.laender[0] && ab.laender[0].name !== 'Ohne Land')) {
+    const max = ab.laender[0].chf;
+    karten.push(karteMit('Nach Land', ab.laender.map(k => balkenZeile(k.name, k.chf, max)).join('')));
+  }
+  if (ab.orte.length) {
+    const max = ab.orte[0].chf;
+    karten.push(karteMit('Nach Reiseort', ab.orte.map(k => balkenZeile(k.name, k.chf, max)).join('')));
+  }
+  if (ab.proTag.length) {
+    const max = Math.max.apply(null, ab.proTag.map(t => t.chf));
+    karten.push(karteMit('Pro Tag, unterwegs erfasst',
+      '<div class="badge-label">Schnitt ' + geld(ab.tagesSchnittUnterwegs || 0) + ' ' + h + ' pro Reisetag' +
+      (ab.teuersterTag ? ' · teuerster Tag ' + datumKurz(ab.teuersterTag.tag) + ' mit ' + geld(ab.teuersterTag.chf) : '') + '</div>' +
+      ab.proTag.map(t => balkenZeile(datumKurz(t.tag), t.chf, max)).join('')));
+  }
+  return karten;
+}
+function endauswertungBlatt(daten, ausgabenListe, h, titel) {
+  const ab = Kern.abrechnung(daten || {}, ausgabenListe || [], kurse);
+  const sheet = document.getElementById('sheet');
+  sheet.innerHTML = '';
+  blattKopf(sheet, 'Endauswertung', (titel || Kern.auswertung(daten).titel) + ' · gesamt ' + geld(ab.gesamt) + ' ' + h);
+  const karten = auswertungKarten(ab, h);
+  if (!karten.length) {
+    const leer = document.createElement('div');
+    leer.className = 'badge-label';
+    leer.textContent = 'Noch keine Kosten erfasst. Sobald Buchungen mit Preis oder Ausgaben da sind, steht hier, was wofür wie viel gekostet hat.';
+    sheet.appendChild(leer);
+  }
+  karten.forEach(k => { k.classList.add('auswertung-karte'); sheet.appendChild(k); });
+  blattAuf(sheet);
+}
+
+/* Karte "Auswertung und Abschluss" unter Mehr. */
+function auswertungKarteZeichnen() {
+  const box = document.getElementById('auswertungKarte');
+  if (!box || !appData) return;
+  const reise = appData.reise || {};
+  const fertig = reise.status === 'abgeschlossen';
+  const knoepfe = box;
   knoepfe.innerHTML = '<div class="card-label">Auswertung und Abschluss</div>';
+  const r0 = document.createElement('div');
+  r0.className = 'row';
+  const ansehen = tagKnopf('Endauswertung ansehen', 'grid', () => endauswertungBlatt(appData, ausgaben, heimat()), false);
+  ansehen.id = 'endauswertungBtn';
+  r0.appendChild(ansehen);
+  knoepfe.appendChild(r0);
   const r1 = document.createElement('div');
   r1.className = 'row';
   r1.appendChild(tagKnopf('CSV exportieren', 'down', csvExport, true));
@@ -7781,9 +8078,8 @@ function renderBudget() {
   knoepfe.appendChild(r3);
   const erkl2 = document.createElement('div');
   erkl2.className = 'badge-label';
-  erkl2.textContent = 'Die Reise wandert mit Plan, Ausgaben, Notizen und Dokumenten ins Archiv unter Mehr. Danach ist die App leer für die nächste Reise.';
+  erkl2.textContent = 'Die Reise wandert mit Plan, Ausgaben, Notizen und Dokumenten ins Archiv weiter unten. Danach ist die App leer für die nächste Reise.';
   knoepfe.appendChild(erkl2);
-  box.appendChild(knoepfe);
 }
 
 function budgetBlatt() {
@@ -7883,8 +8179,7 @@ function reiseBeenden() {
   if (!datenSpeichern()) { appData.reise = vorher; return; }
   loadUIFromAppData();
   renderBudget();
-  const band = document.getElementById('abgeschlossenBand');
-  if (band && band.scrollIntoView) band.scrollIntoView({ block: 'start' });
+  auswertungKarteZeichnen();
   meldung('Reise abgeschlossen');
 }
 function reiseOeffnen() {
@@ -7894,6 +8189,7 @@ function reiseOeffnen() {
   if (!datenSpeichern()) { appData.reise = vorher; return; }
   loadUIFromAppData();
   renderBudget();
+  auswertungKarteZeichnen();
   meldung('Reise wieder geöffnet');
 }
 
@@ -8042,7 +8338,7 @@ async function reiseArchivieren() {
 }
 async function reiseAusArchivHolen(eintrag) {
   if (!aktiveReiseLeer()) {
-    alert('Es ist noch eine Reise aktiv.\n\nErst die aktive Reise unter Budget ins Archiv verschieben, dann lässt sich diese wieder aktiv machen. So landen nie zwei Reisen ineinander.');
+    alert('Es ist noch eine Reise aktiv.\n\nErst die aktive Reise unter Mehr, Auswertung und Abschluss ins Archiv verschieben, dann lässt sich diese wieder aktiv machen. So landen nie zwei Reisen ineinander.');
     return;
   }
   if (!confirm('«' + eintrag.titel + '» wieder zur aktiven Reise machen?\n\nPlan, Ausgaben, Notizen und Dokumente kommen zurück. Der Eintrag verschwindet aus dem Archiv.')) return;
@@ -8149,6 +8445,15 @@ function archivBlatt(e) {
     n.textContent = e.notizen;
     sheet.appendChild(n);
   }
+
+  const auswerten = document.createElement('button');
+  auswerten.className = 'btn btn-secondary';
+  auswerten.type = 'button';
+  auswerten.id = 'archivAuswertung';
+  auswerten.style.cssText = 'width:100%;margin-top:var(--sp-m);';
+  auswerten.innerHTML = icon('grid', 16) + 'Endauswertung';
+  auswerten.addEventListener('click', () => endauswertungBlatt(e.daten, e.ausgaben || [], h, e.titel));
+  sheet.appendChild(auswerten);
 
   const zurueck = document.createElement('button');
   zurueck.className = 'btn btn-secondary';
@@ -8332,11 +8637,10 @@ function tagNachziehen() {
   loadUIFromAppData();
   renderDokumente();
 }
-setInterval(() => { tagNachziehen(); uhrenZeichnen(); }, 30000);
+setInterval(tagNachziehen, 30000);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) return;
   tagNachziehen();
-  uhrenZeichnen();
 });
 
 /* PWA-Schnellzugriff: langes Druecken aufs App-Icon fuehrt direkt

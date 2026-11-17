@@ -616,3 +616,35 @@ Branch `claude/epic-feynman-vrd04b`. Kein Pull Request ohne Auftrag.
   Teilen-Menue von Android, Screenshot aus der Zwischenablage,
   Druckdialog.
 - Texterkennung liest keine thailaendische Schrift.
+
+---
+
+## Umbau vom 17.11.2026: Heute, Dokumente-Plus, Budget, Mehr, Translator
+
+Branch `claude/epic-feynman-vrd04b`. Kein Pull Request ohne Auftrag.
+
+### Entscheide vom 17.11.2026
+
+| # | Entscheid | Begruendung |
+|---|---|---|
+| 27 | **Heute zeigt nur, was heute anfaellt.** Zuoberst die gespeicherte Notiz, dann Wetter, dann Eingang. Weg sind Budget-Karte, Countdown, Faelligkeitsliste und die **zwei Uhren** | Entscheid Lio. Die Uhren hat Lio bei der Auswahl nicht behalten. Die Zeitzonen der Buchungen rechnen weiter die Flugdauer |
+| 28 | **Plus in Dokumente ordnet zu.** Vorschlag mit Grund, Bestaetigen, sonst Suchfeld, dessen Text als Notiz am Dokument bleibt. Ohne Treffer Kachel oder Eingang | Entscheid Lio. Aus Dokumente entsteht keine Buchung im Reiseplan |
+| 29 | **«Reise planen» nur im Reiseplan** | Entscheid Lio. Hebt Entscheid 22 auf |
+| 30 | **Budget ohne «Noch offen» und ohne Aufschluesselungen.** Nach Kategorie, Land, Ort und Tag stehen in der Endauswertung, jederzeit sichtbar | Entscheid Lio |
+| 31 | **Translator fragt zuerst** nach Muttersprache und Zielsprachen. Ein Knopf pro Paar, DeepL zuerst, sonst Google | Entscheid Lio. Hebt Entscheid 23 auf. Eigener Speicherplatz, ueberlebt das Archivieren |
+| 32 | **«Auswertung und Abschluss» unter Mehr** | Entscheid Lio |
+| 33 | **Reiter: Heute, Reiseplan, Budget, Dokumente, Translator, Mehr** | Entscheid Lio |
+
+### Fertig und geprueft
+
+`tests/kern.test.js` 114 Pruefungen, `tests/e2e.test.js` 144.
+
+### Offen
+
+- Thai bei DeepL am Geraet pruefen (unveraendert). Bis dahin «DE – Thai» ueber Google.
+- Die Zuordnung braucht Buchungsnummer, Flugnummer mit Datum oder den
+  Namen im Text. Ein Foto ohne solche Angaben bekommt keinen Vorschlag.
+- Kachel mit genau einem Eintrag nimmt das Dokument dort auf. Bei
+  mehreren Eintraegen entsteht ein neuer Traeger mit dem Dateinamen.
+- `Kern.zoneAmTag` ist seit dem Wegfall der Uhren ungenutzt, aber
+  getestet. Bleibt fuer den Fall, dass die Uhren zurueckkommen.

@@ -162,7 +162,17 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
     wahr('Start: Reiseplan gezeichnet', (await page.locator('#dayList .ort-card').count()) > 3);
     gleich('Start: alte Daten ohne Buchungen unverändert', await page.evaluate(() => [ansicht.length, appData.tage.length]), [28, 28]);
     gleich('Start: acht Dokumenten-Kacheln', await page.locator('#docTiles .doc-tile').count(), 8);
-    gleich('Start: sechs Reiter in der Leiste', await page.locator('.nav .nav-btn .nav-label').allTextContents(), ['Heute', 'Reiseplan', 'Dokumente', 'Budget', 'Translator', 'Mehr']);
+    gleich('Heute: keine Budget-Karte, keine Uhren', await page.evaluate(() => [!!document.getElementById('todayBudget'), !!document.getElementById('uhrenZeile')]), [false, false]);
+    await page.evaluate(() => { localStorage.setItem('reisebegleiter_notizen', 'Taxi um 7 Uhr bestellen'); heuteNotizZeichnen(); });
+    gleich('Heute: gespeicherte Notiz steht zuoberst, vor Wetter und Eingang', await page.evaluate(() => {
+      const n = document.getElementById('todayNotiz'), w = document.getElementById('wxCard'), e = document.getElementById('todayEingang');
+      return [n.style.display !== 'none', document.getElementById('todayNotizText').textContent,
+        !!(n.compareDocumentPosition(w) & Node.DOCUMENT_POSITION_FOLLOWING), !!(w.compareDocumentPosition(e) & Node.DOCUMENT_POSITION_FOLLOWING)];
+    }), [true, 'Taxi um 7 Uhr bestellen', true, true]);
+    gleich('Heute: Wetter nennt den Ort', /^Wetter in /.test(await page.textContent('#wxOrt')), true);
+    await page.evaluate(() => { localStorage.setItem('reisebegleiter_notizen', ''); heuteNotizZeichnen(); });
+    gleich('Heute: ohne Notiz keine Notiz-Karte', await page.isVisible('#todayNotiz'), false);
+    gleich('Start: sechs Reiter in der Leiste', await page.locator('.nav .nav-btn .nav-label').allTextContents(), ['Heute', 'Reiseplan', 'Budget', 'Dokumente', 'Translator', 'Mehr']);
     gleich('Leiste bei 390 px: kein Überlauf, jeder Knopf gross genug, keine Beschriftung abgeschnitten', await page.evaluate(() => {
       const nav = document.querySelector('.nav'), k = Array.from(nav.querySelectorAll('.nav-btn'));
       return [nav.scrollWidth <= nav.clientWidth, k.every(b => b.getBoundingClientRect().height >= 44 && b.getBoundingClientRect().width >= 44),
@@ -171,24 +181,30 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
     await tippeReiter(page, 'screenTools');
     gleich('Mehr: Regeln für unterwegs sind ausgeblendet, Notizen und Notfall da', [await page.isVisible('#regelnKarte'), await page.isVisible('#notizFeld'), await page.isVisible('#notPolizei'), await page.isVisible('#spendCard')], [false, true, true, false]);
     await tippeReiter(page, 'screenTranslator');
-    gleich('Translator: eigener Reiter mit beiden Knöpfen', [await page.isVisible('#trDeEn'), await page.isVisible('#trDeTh')], [true, true]);
-    gleich('Translator: zweite Sprache folgt dem Reiseland Thailand', [await page.textContent('#trDeThText'), /Reiseland: Thailand/.test(await page.textContent('#trHinweis'))], ['DE – Thai', true]);
+    await page.waitForSelector('#trSpeichern');
+    gleich('Translator: fragt zuerst, Vorschlag Englisch und Sprache des Reiselands', [await page.inputValue('#trMutter'),
+      await page.evaluate(() => Array.from(document.querySelectorAll('#trZiele .chip-wahl.an')).map(c => c.dataset.code))], ['de', ['en', 'th']]);
+    await page.click('#trZiele .chip-wahl[data-code="ja"]');
+    await page.click('#trSpeichern');
+    await blattZu(page);
+    gleich('Translator: ein Knopf pro Sprachpaar, mit Dienst', await page.evaluate(() => Array.from(document.querySelectorAll('#trKnoepfe .tr-paar')).map(b => b.textContent)),
+      ['DE – ENGDeepL', 'DE – ThaiGoogle Translate', 'DE – JPDeepL']);
     await page.evaluate(() => { window.__extern = []; window.__externAlt = extern; extern = u => window.__extern.push(u); });
-    await page.click('#trDeEn');
-    await page.click('#trDeTh');
-    await page.evaluate(() => { einst.land = 'JP'; uebersetzerZeichnen(); });
-    gleich('Translator: Japan gewählt, Knopf heisst Japanisch', await page.textContent('#trDeThText'), 'DE – Japanisch');
-    await page.click('#trDeTh');
-    await page.evaluate(() => { einst.land = 'CH'; uebersetzerZeichnen(); });
-    gleich('Translator: Schweiz, zweiter Knopf fällt weg', await page.isVisible('#trDeTh'), false);
-    await page.evaluate(() => { delete einst.land; uebersetzerZeichnen(); extern = window.__externAlt; });
-    gleich('Translator: DeepL, Google nur als Rückfall, kein Text in der Adresse', await page.evaluate(() => window.__extern),
+    for (const z of ['en', 'th', 'ja']) await page.click('#trKnoepfe .tr-paar[data-ziel="' + z + '"]');
+    await page.evaluate(() => { extern = window.__externAlt; });
+    gleich('Translator: DeepL zuerst, Google als Rückfall, kein Text in der Adresse', await page.evaluate(() => window.__extern),
       ['https://www.deepl.com/translator#de/en/', 'https://translate.google.com/?sl=de&tl=th', 'https://www.deepl.com/translator#de/ja/']);
-    /* Plus oben in Dokumente: derselbe Einstieg wie "Reise planen" */
+    await page.click('#trEinrichten');
+    await page.waitForSelector('#trSpeichern');
+    await page.click('#trZiele .chip-wahl[data-code="ja"]');
+    await page.click('#trSpeichern');
+    await blattZu(page);
+    gleich('Translator: Sprachen ändern', await page.locator('#trKnoepfe .tr-paar').count(), 2);
+    /* Plus oben in Dokumente: Dokument hinzufuegen, nicht Reise planen */
     await tippeReiter(page, 'screenTickets');
     await page.click('#addTicketTop');
-    await page.waitForSelector('#planenErkennen');
-    gleich('Dokumente-Plus: Foto, Datei, Text und Handeingabe stehen bereit', [await page.isVisible('#planenFoto'), await page.isVisible('#planenWaehlen'), await page.isVisible('#planenText'), (await page.locator('#sheet .chip-wahl').count()) > 3], [true, true, true, true]);
+    await page.waitForSelector('#dokPlusLinkOk');
+    gleich('Dokumente-Plus: Foto, Datei und Link, kein «Reise planen»', [await page.isVisible('#dokPlusFoto'), await page.isVisible('#dokPlusDatei'), await page.isVisible('#dokPlusLink'), await page.isVisible('#planenErkennen')], [true, true, true, false]);
     await page.keyboard.press('Escape');
     await blattZu(page);
     await tippeReiter(page, 'screenBudget');
@@ -469,11 +485,20 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
        zaehlen nicht. */
     gleich('S6: Abrechnung ohne doppelte Kosten', soll, [950, 43.35, 993.35, 340, 40, 1373.35, 1626.65]);
     /* Das Tausender-Zeichen haengt vom Browser ab, gerade oder typografisch. */
-    gleich('S6: Anzeige stimmt mit der Rechnung überein', [await page.textContent('#zwBezahlt'), await page.textContent('#zwOffen'), (await page.textContent('#zwVerbleibend')).replace('’', "'")],
-      ['993.35', '380.00', "1'626.65"]);
+    gleich('S6: Anzeige stimmt mit der Rechnung überein', [await page.textContent('#zwBezahlt'), (await page.textContent('#zwVerbleibend')).replace('’', "'")],
+      ['993.35', "1'626.65"]);
+    gleich('S6: Budget ohne «Noch offen» und ohne Aufschlüsselung', await page.evaluate(() => { const t = document.getElementById('budgetInhalt').textContent;
+      return [!!document.getElementById('zwOffen'), /Nach Kategorie|Nach Land|Nach Reiseort|Pro Tag/.test(t), /Auswertung und Abschluss/.test(t)]; }), [false, false, false]);
+    await tippeReiter(page, 'screenTools');
+    await page.click('#endauswertungBtn');
+    await page.waitForSelector('#sheet.auf .auswertung-karte');
+    wahr('S6: Endauswertung unter Mehr mit Kategorie, Ort und Tag', await page.evaluate(() => { const t = document.getElementById('sheet').textContent;
+      return /Nach Kategorie/.test(t) && /Nach Reiseort/.test(t) && /Pro Tag, unterwegs erfasst/.test(t) && /1’373\.35|1'373\.35/.test(t); }));
+    await page.keyboard.press('Escape');
+    await blattZu(page);
     const vorEnde = await page.evaluate(() => [appData.buchungen.length, ausgaben.length, Object.values(dokIndex).reduce((n, l) => n + l.length, 0), appData.tage.length]);
     await page.click('#reiseEndeBtn');
-    await page.waitForSelector('#abgeschlossenBand');
+    await page.waitForFunction(() => appData.reise.status === 'abgeschlossen' && !!document.getElementById('abgeschlossenBand'));
     gleich('S6: Reise als abgeschlossen markiert', await page.evaluate(() => [appData.reise.status, appData.reise.abgeschlossenAm]), ['abgeschlossen', '2026-12-24']);
     gleich('S6: nichts gelöscht', await page.evaluate(() => [appData.buchungen.length, ausgaben.length, Object.values(dokIndex).reduce((n, l) => n + l.length, 0), appData.tage.length]), vorEnde);
     /* Bezahlen ist ein Zustandswechsel: die Gesamtsumme bleibt gleich */
@@ -483,7 +508,7 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
     await blattZu(page);
     gleich('S6: nach dem Bezahlen gleiche Gesamtsumme, nichts doppelt', await page.evaluate(() => { const a = Kern.abrechnung(appData, ausgaben, kurse); return [a.gesamt, a.offen, a.geplant, a.bezahltBuchungen]; }), [1373.35, 20, 40, 1270]);
     /* CSV */
-    const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#budgetInhalt .btn >> text=CSV exportieren')]);
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#auswertungKarte .btn >> text=CSV exportieren')]);
     const csvPfad = path.join(tmp, 'kosten.csv');
     await dl.saveAs(csvPfad);
     const csv = fs.readFileSync(csvPfad, 'utf8').split('\r\n').filter(Boolean);
@@ -491,13 +516,13 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
     wahr('S6: CSV enthält Hotel und Ausgaben', csv.some(z => /Mangrovenblick Resort/.test(z) && /320\.00/.test(z)) && csv.some(z => /;Ausgabe;Essen;/.test(z)));
     /* Reisebericht fuer den Druck */
     await page.evaluate(() => { window.print = () => { window.__gedruckt = true; }; });
-    await page.click('#budgetInhalt .btn >> text=Reisebericht drucken');
+    await page.click('#auswertungKarte .btn >> text=Reisebericht drucken');
     const bericht = await page.textContent('#druckBericht');
     wahr('S6: Reisebericht mit Route, Unterkünften und Summe', await page.evaluate(() => window.__gedruckt) && /Kosten nach Kategorie/.test(bericht) && /Mangrovenblick Resort/.test(bericht) && /1’373\.35|1'373\.35/.test(bericht));
     /* Wieder oeffnen */
     await page.click('#reiseEndeBtn');
     await page.waitForFunction(() => appData.reise.status === 'aktiv');
-    gleich('S6: Reise lässt sich wieder öffnen', await page.isVisible('#abgeschlossenBand'), false);
+    gleich('S6: Reise lässt sich wieder öffnen', await page.evaluate(() => !!document.getElementById('abgeschlossenBand')), false);
 
     /* --- Bedienbarkeit auf dem Handy: nichts läuft seitlich aus dem Bild --- */
     for (const id of ['screenToday', 'screenPlan', 'screenTickets', 'screenBudget', 'screenTranslator', 'screenTools']) {
@@ -527,8 +552,9 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
     await page.click('#catGrid .cat-btn >> nth=0', { position: { x: 20, y: 40 } });
     gleich('S4 offline: Ausgabe erfassen geht', await page.evaluate(() => ausgaben.length), 4);
     /* Texterkennung ohne Netz: ein Beleg aus dem Eingang wird gelesen */
-    await tippeReiter(page, 'screenTickets');
-    await page.click('#eingangPanel .eingang-zeile:has-text("foto-faehre2.png") .btn');
+    await tippeReiter(page, 'screenPlan');
+    await page.click('#planenBtn');
+    await page.setInputFiles('#planenDatei', fotoFaehre2);
     await page.waitForSelector('#buchungOk', { timeout: 90000 });
     gleich('S4 offline: Texterkennung läuft aus dem Gerätespeicher', [await feld(page, 'vonOrt'), await feld(page, 'nachOrt'), await feld(page, 'datum')], ['Pier Demo Süd', 'Insel Demo', '2027-01-03']);
     await page.click('#buchungSpaeter'); await blattZu(page);
@@ -540,6 +566,54 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
     wahr('S4 offline: PDF öffnet aus dem Gerätespeicher', (await page.locator('#dokVollFlaeche canvas').count()) >= 1);
     await page.click('#dokVollZu');
     await f.ctx.setOffline(false);
+
+    /* --- Dokumente-Plus: vorschlagen, bestätigen, umlenken --- */
+    const bordkarte = path.join(tmp, 'bordkarte-demo.pdf');
+    await pdfErzeugen(browser, ['Bordkarte'].concat(FLUG.split('\n')), bordkarte);
+    await tippeReiter(page, 'screenTickets');
+    await page.click('#addTicketTop');
+    await page.waitForSelector('#dokPlusDatei');
+    await page.click('#dokPlusDatei');
+    await page.setInputFiles('#dokInput', bordkarte);
+    await page.waitForSelector('#zuordnenVorschlag', { timeout: 90000 });
+    wahr('Dokumente-Plus: schlägt den Flug vor, mit Grund', /ZB 902/.test(await page.textContent('#zuordnenVorschlag')) && /Buchungsnummer DEMO77/.test(await page.textContent('#zuordnenVorschlag')));
+    await page.click('#zuordnenOk');
+    await blattZu(page);
+    gleich('Dokumente-Plus: bestätigt, Dokument liegt am Flug', await page.evaluate(() => { const f = appData.buchungen.find(b => b.nummer === 'ZB 902' && b.zahlung !== 'storniert');
+      return [dokListe(f.id).some(m => m.name === 'bordkarte-demo.pdf'), dokListe('eingang').some(m => m.name === 'bordkarte-demo.pdf')]; }), [true, false]);
+    const police = path.join(tmp, 'police-demo.pdf');
+    await pdfErzeugen(browser, ['Reiseversicherung Demo', 'Police Nr. 55-DEMO', 'Gültig weltweit'], police);
+    await page.click('#addTicketTop');
+    await page.click('#dokPlusDatei');
+    await page.setInputFiles('#dokInput', police);
+    await page.waitForSelector('#zuordnenKeiner', { timeout: 90000 });
+    gleich('Dokumente-Plus: ohne Treffer kein Vorschlag, Kachel Versicherung', [await page.isVisible('#zuordnenVorschlag'), await page.textContent('#zuordnenKachel')], [false, 'In «Versicherung» ablegen']);
+    await page.fill('#zuordnenSuche', 'versich');
+    gleich('Dokumente-Plus: Suchtext filtert auf Kachel und Versicherung der Demo-Reise', await page.evaluate(() => Array.from(document.querySelectorAll('#zuordnenListe .zuordnen-ziel')).map(b => b.dataset.id).sort()), ['kachel:schutz', 'versicherung']);
+    await page.fill('#zuordnenSuche', 'Versicherung, Police für Thailand');
+    await page.click('#zuordnenKachel');
+    await blattZu(page);
+    gleich('Dokumente-Plus: Kachel mit genau einem Eintrag nimmt das Dokument, Notiz bleibt', await page.evaluate(() => { const d = dokListe('versicherung').find(m => m.name === 'police-demo.pdf');
+      return [!!d, d && d.notiz, appData.buchungen.some(b => b.typ === 'versicherung')]; }), [true, 'Versicherung, Police für Thailand', false]);
+    /* Kachel ohne Eintrag: ein Traeger entsteht, ohne Tag im Reiseplan */
+    await page.evaluate(async () => { const r = await eingangAblegen(new File(['Demo-Quittung'], 'impfausweis-demo.png', { type: 'image/png' }), true); zuordnenBlatt(r.meta, { typ: 'sonstiges', felder: {} }, 'Impfausweis Demo'); });
+    await page.waitForSelector('#zuordnenKachel');
+    gleich('Dokumente-Plus: Unbekanntes geht in die Kachel Weitere', await page.textContent('#zuordnenKachel'), 'In «Weitere» ablegen');
+    const tageVorher = await page.evaluate(() => ansicht.length);
+    await page.click('#zuordnenKachel');
+    await blattZu(page);
+    gleich('Dokumente-Plus: neuer Träger mit Dateiname, kein neuer Reisetag', await page.evaluate(() => { const v = appData.buchungen.find(b => b.typ === 'dokument');
+      return [v && v.titel, v && dokListe(v.id).length, ticketKat(Kern.buchungAlsTicket(v).gruppe), ansicht.length]; }), ['impfausweis-demo', 1, 'rest', tageVorher]);
+    await page.click('.doc-tile[data-kat="schutz"]');
+    wahr('Dokumente-Plus: Notiz sichtbar in der Kachel', /Notiz: Versicherung, Police für Thailand/.test(await page.textContent('#docPanel')));
+    await page.click('#addTicketTop');
+    await page.fill('#dokPlusLink', 'https://example.org/demo-irgendwas');
+    await page.click('#dokPlusLinkOk');
+    await page.waitForSelector('#zuordnenSpaeter');
+    await page.fill('#zuordnenSuche', 'noch klären');
+    await page.click('#zuordnenSpaeter');
+    await blattZu(page);
+    gleich('Dokumente-Plus: «Im Eingang lassen» behält Link und Notiz im Eingang', await page.evaluate(() => { const m = dokListe('eingang').find(x => x.url === 'https://example.org/demo-irgendwas'); return [!!m, m && m.notiz]; }), [true, 'noch klären']);
 
     /* --- Netz: nur die zwei erlaubten Hosts, nur die erlaubten Angaben --- */
     gleich('Netz: keine Anfrage an einen dritten Host', f.log.fremd.filter(h => ERLAUBT.indexOf(h) === -1), []);
@@ -584,7 +658,9 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
       JSON.parse(localStorage.getItem('reisebegleiter_data_vor_v2')).tage.length]), [2, 3]);
     gleich('Umstellung: Hotelfoto einmal statt dreimal', await m.page.evaluate(async () => { await hotelFotosBereitstellen(); return [Object.keys(hotelFotoUrls), appData.fotos === undefined, appData.tage.filter(t => t.hotel.foto).length, appData.schema]; }), [['Sandmond Resort'], true, 0, 2]);
     gleich('Umstellung: Reiseplan unverändert lesbar', await m.page.evaluate(() => [ansicht.length, ansicht[0].hotel.name, alleTickets().length]), [3, 'Sandmond Resort', 1]);
-    wahr('Umstellung: Budget aus den Reisedaten wird jetzt angezeigt', /von 500\.00 CHF/.test(await m.page.textContent('#todayBudgetSub')));
+    await m.page.evaluate(() => showScreen('screenBudget'));
+    wahr('Umstellung: Budget aus den Reisedaten wird jetzt angezeigt', /500\.00/.test(await m.page.textContent('#zkBudget')));
+    await m.page.evaluate(() => showScreen('screenToday'));
     /* Ein Import der Reiseplan-Datei darf in der App erfasste
        Buchungen nicht wegwischen. */
     await m.page.click('.nav-btn[data-screen="screenPlan"]');
@@ -619,8 +695,10 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
     /* ============ Vor der Reise ============ */
     const v = await fenster(browser, basis, { zeit: '2026-11-12T10:00:00' });
     alleLogs.push(['Vor der Reise', v.log]);
-    wahr('Vor der Reise: Countdown statt Reisetag', /^Noch \d+ Tage$/.test(await v.page.textContent('#todayHeading')));
-    wahr('Vor der Reise: Einstieg «Reise planen» auf Heute', await v.page.isVisible('#vorReiseListe .btn >> text=Reise planen'));
+    gleich('Vor der Reise: kein Countdown, kein «Reise planen» auf Heute', [await v.page.textContent('#todayHeading'), await v.page.isVisible('#vorReiseListe .btn >> text=Reise planen'), await v.page.isVisible('#vorReise')], ['Heute', false, false]);
+    await v.page.waitForFunction(() => document.getElementById('wxCard').style.display !== 'none');
+    wahr('Vor der Reise: Wetter am ersten Zielort, nur gerundet abgefragt', /^Wetter in /.test(await v.page.textContent('#wxOrt')) && v.log.wetterAbfragen.length > 0 &&
+      v.log.wetterAbfragen.every(q => /^-?\d+(\.\d)?$/.test(new URLSearchParams(q).get('latitude'))));
     await v.ctx.close();
 
     /* ============ Archiv: aktive Reise plus Archiv ============ */
@@ -632,14 +710,15 @@ const feld = (page, k) => page.inputValue('#bf-' + k);
     await ap.evaluate(async () => { await dokLinkSpeichern('boot-demo', 'https://example.org/demo-beleg'); renderDokumente(); });
     await tippeReiter(ap, 'screenTools');
     gleich('Archiv: ohne archivierte Reise keine Karte', await ap.isVisible('#archivKarte'), false);
-    await tippeReiter(ap, 'screenBudget');
+    await ap.evaluate(() => localStorage.setItem('reisebegleiter_sprachen', JSON.stringify({ mutter: 'de', ziele: ['en'] })));
     await ap.click('#reiseArchivBtn');
     await ap.waitForFunction(() => typeof appData !== 'undefined' && appData && appData.reise && appData.reise.titel === 'Neue Reise');
     await bereit(ap);
     await ap.waitForFunction(() => document.getElementById('archivListe').children.length === 1);
     gleich('Archiv: aktive Reise ist danach leer', await ap.evaluate(() => [appData.tage.length, (appData.buchungen || []).length, alleTickets().length, ausgaben.length, Object.keys(dokIndex).length,
       localStorage.getItem('reisebegleiter_notizen'), !!localStorage.getItem('reisebegleiter_data_vor_archiv')]), [0, 0, 0, 0, 0, '', true]);
-    gleich('Archiv: Heute zeigt die neue, leere Reise mit Einstieg', [await ap.textContent('#todayHeading'), await ap.isVisible('#vorReiseListe .btn >> text=Reise planen')], ['Neue Reise', true]);
+    gleich('Archiv: Spracheinstellung bleibt', await ap.evaluate(() => localStorage.getItem('reisebegleiter_sprachen')), JSON.stringify({ mutter: 'de', ziele: ['en'] }));
+    gleich('Archiv: Heute zeigt die leere Reise mit Hinweis, ohne «Reise planen»', [await ap.textContent('#vorReiseLabel'), await ap.isVisible('#vorReise'), await ap.isVisible('#vorReiseListe .btn')], ['Noch leer', true, false]);
     await tippeReiter(ap, 'screenTools');
     wahr('Archiv: Eintrag mit Titel, Zeitraum und Summe', /Alt-Reise Demo/.test(await ap.textContent('#archivListe')) && /20\.12\.2026 bis 26\.12\.2026/.test(await ap.textContent('#archivListe')) && /12\.75 CHF/.test(await ap.textContent('#archivListe')));
     await ap.click('#archivListe .archiv-zeile');
