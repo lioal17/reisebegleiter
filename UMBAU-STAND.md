@@ -1,10 +1,76 @@
 # Umbau-Stand: Frontend-Redesign TravelMate
 
-**Stand:** 09.08.2026
-**Sicherungspunkt:** Branch `sicherung-2026-08-09-2052` auf `main`
+**Stand:** 26.11.2026
+**Erster Sicherungspunkt:** Branch `sicherung-2026-08-09-2052` auf `main`
 
 Diese Datei ist die Uebergabe fuer die naechste Sitzung. Sie enthaelt
 bewusst **keine** echten Reisedaten, nur Entscheide und offene Punkte.
+
+---
+
+## Offen, Stand 26.11.2026
+
+Diese Liste ersetzt die verstreuten Abschnitte «Offen» weiter unten.
+Was dort steht und hier fehlt, ist erledigt oder gestrichen.
+
+Gemessen am 26.11.2026: `tests/kern.test.js` 115 bestanden,
+`tests/e2e.test.js` 145 bestanden, `.pruefung-sw.js` 17 bestanden.
+Bei 320, 360 und 390 px kein seitlicher Ueberlauf auf allen sechs
+Reitern, Reiterknoepfe 53, 59 und 64 px breit. Lesbarkeit am Geraet
+ist nicht gemessen.
+
+### Am Handy pruefen, vor der Abreise
+
+1. Einmal mit WLAN oeffnen und ein Foto lesen lassen. Die
+   Texterkennung laedt dabei einmalig rund 8 MB, erst danach geht
+   sie offline.
+2. Texterkennung mit echten Fotos und bunten App-Screenshots: Tempo
+   und Trefferquote.
+3. Teilen-Menue von Android (installierte App, Datei und Link aus
+   Mail oder Galerie).
+4. Screenshot aus der Zwischenablage in «Reise planen» einfuegen.
+5. Reisebericht ueber den Druckdialog als PDF speichern.
+6. DeepL: ist Thai auf Webseite oder App waehlbar? Falls ja, in
+   `SPRACHEN` bei `TH` den dritten Wert auf `th` setzen.
+7. Datenpflege «erst im November»: Transfers mit Zeiten, Koordinaten
+   und Nummern der Unterkuenfte. Echte Reisedaten, nur in der App
+   pflegen, nicht ueber Claude.
+
+### Funktionsluecken, gebaut wird nur auf Entscheid
+
+1. Titel und Zeitraum einer Reise lassen sich nicht von Hand setzen.
+   Eine neue Reise hat weder Start noch Ende, bis Buchungen erfasst
+   sind.
+2. Eine Reise im Archiv laesst sich nicht endgueltig loeschen.
+3. Hotelfotos werden nicht mitarchiviert. Sie liegen nach Hotelname in
+   eigener Ablage. Vermutung, nicht geprueft: eine spaetere Reise mit
+   gleichem Hotelnamen zeigt das alte Foto.
+4. Zuordnung im Dokumente-Plus braucht Buchungsnummer, Flugnummer mit
+   Datum oder Namen. Ein Foto ohne diese Angaben bekommt keinen
+   Vorschlag.
+5. Texterkennung liest keine thailaendische Schrift. Thai-Sprachdaten
+   unter `vendor/ocr/` brauchen zuerst eine Aenderung in CLAUDE.md.
+6. Kursdienst fuehrt rund 30 Waehrungen. Dong, Kip, Riel und Rupien
+   nur mit eigenem Kurs. Bleibt so, ein dritter Host ist
+   ausgeschlossen.
+7. Laender mit mehreren Zeitzonen: die Zeit stimmt nur ueber den
+   Ankunftsflughafen.
+8. `Kern.zoneAmTag` ist ungenutzt, aber getestet. Bleibt fuer den
+   Fall, dass die Uhren zurueckkommen.
+
+Empfehlung vom 26.11.2026: Punkte 1 bis 3 erst nach der Reise bauen.
+Die laufende Reise braucht keinen davon.
+
+### Behoben am 26.11.2026
+
+`.gitignore` deckte die Sicherungen der App nicht ab:
+`reiseplan-sicherung-*.json`, `ausgaben-sicherung-*.json`,
+`dokumente-sicherung-*.json` und `reisekosten-*.csv`. Jetzt
+ausgeschlossen.
+
+---
+
+**Ab hier Verlauf.** Fuer den aktuellen Stand gilt der Abschnitt oben.
 
 ---
 
