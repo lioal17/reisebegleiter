@@ -4,6 +4,14 @@ reisedaten*.json
 *.private.json
 reisedaten-backup-*.json
 
+# Sicherungen und Exporte aus der App (enthalten echte Reisedaten,
+# die Dokumenten-Sicherung alle Belege samt Reisepass)
+*-sicherung-*.json
+reiseplan-sicherung*.json
+ausgaben-sicherung*.json
+dokumente-sicherung*.json
+reisekosten-*.csv
+
 # Lokale Einstellungen
 .env
 .env.local
